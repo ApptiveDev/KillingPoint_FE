@@ -40,7 +40,7 @@ class YouTubeViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             
             try {
-                val videos = RetrofitClient.api.getYoutube(
+                val videos = RetrofitClient.api.searchVideos(
                     title = title,
                     artist = artist
                 )
