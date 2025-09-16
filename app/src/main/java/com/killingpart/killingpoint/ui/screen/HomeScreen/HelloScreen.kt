@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +25,8 @@ import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.darkGray
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.theme.textGray1
+import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
+import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 
 @Composable
 fun HelloScreen() {
@@ -49,7 +52,10 @@ fun HelloScreen() {
         ){
             Text(
                 text = "LOGIN",
-                color = Color.White
+                color = Color.White,
+                fontFamily = UnboundedFontFamily,
+                fontWeight = FontWeight.Black,
+                fontSize = 12.sp
             )
         }
 
@@ -58,7 +64,9 @@ fun HelloScreen() {
         Text(
             text = "SNS로 간편 로그인",
             color = textGray1,
-            fontSize = 12.sp
+            fontSize = 12.sp,
+            fontFamily = PaperlogyFontFamily,
+            fontWeight = FontWeight.Medium
         )
 
     }
