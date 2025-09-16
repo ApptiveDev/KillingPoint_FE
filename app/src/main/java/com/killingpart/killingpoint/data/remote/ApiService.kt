@@ -6,9 +6,9 @@ import retrofit2.http.Query
 
 interface ApiService {
 
-    @GET("youtube")
-    suspend fun getYoutube(
-        @Query("title") title: String,
-        @Query("artist") artist: String
+    @GET("youtube/search")
+    suspend fun searchVideos(
+        @Query("artist") artist: String,
+        @Query("title") title: String
     ): List<YouTubeVideo>
 }
