@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.ui.screen.HomeScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,7 +67,8 @@ fun HelloScreen() {
             color = textGray1,
             fontSize = 12.sp,
             fontFamily = PaperlogyFontFamily,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.clickable{}
         )
 
     }
