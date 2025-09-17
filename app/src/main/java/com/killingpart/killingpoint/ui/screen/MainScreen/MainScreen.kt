@@ -17,29 +17,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 
 @Composable
 fun MainScreen() {
-    Box (
-        modifier = Modifier.fillMaxSize()
-            .background(Color(0xFF1D1E20)),
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                color = Color(0xFF060606),
-                radius = size.minDimension * 0.8f,
-                center = Offset(size.width * 0.1f, size.height * 0.37f)
-            )
-
-            drawCircle(
-                color = Color(0xFF060606),
-                radius = size.minDimension * 1.5f,
-                center = Offset(size.width * 1.1f, size.height * 1.2f)
-            )
-        }
-
+    AppBackground {
         Column (
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -63,7 +47,6 @@ fun MainScreen() {
 
             )
         }
-
     }
 }
 
