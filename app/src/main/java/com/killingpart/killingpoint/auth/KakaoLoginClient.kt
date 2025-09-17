@@ -7,6 +7,7 @@ import com.kakao.sdk.common.model.ClientError
 import com.kakao.sdk.common.model.ClientErrorCause
 import com.kakao.sdk.user.UserApiClient
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 object KakaoLoginClient {
@@ -25,7 +26,7 @@ object KakaoLoginClient {
                 cont.resumeWithException(IllegalStateException("No Activity context"))
                 return@suspendCancellableCoroutine
             }
-            val callback = { token: com.kakao.sdk.auth.model.OAuthToken?, err: Throwable? ->
+            val callback: (com.kakao.sdk.auth.model.OAuthToken?, Throwable?) -> Unit = { token, err ->
                 when {
                     err != null -> {
                         if (err is ClientError && err.reason == ClientErrorCause.Cancelled) cont.cancel()
