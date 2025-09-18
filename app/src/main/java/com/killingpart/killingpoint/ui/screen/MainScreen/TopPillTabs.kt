@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 
 @Composable
 fun TopPillTabs(
@@ -97,7 +98,8 @@ fun TopPillTabs(
                     Text(
                         text = label,
                         color = if (isSelected) selectedTextColor else unselectedTextColor,
-                        fontWeight = FontWeight.Bold,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.Medium,
                         fontSize = 14.sp
                     )
                 }

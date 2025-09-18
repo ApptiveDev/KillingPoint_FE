@@ -3,6 +3,7 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -74,6 +75,31 @@ fun RunMusicBox() {
             MusicTimeBar("사랑한단 말의 뜻을 알아가자", 102, 28, 180)
 
             Spacer(modifier = Modifier.height(12.dp))
+
+            MusicCueBtn()
+            
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row (
+                modifier = Modifier.fillMaxWidth().height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(13.dp)
+            ){
+                Text(
+                    text = "다음곡 : ",
+                    fontSize = 14.sp,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Light,
+                    color = mainGreen
+                )
+
+                Text(
+                    text = "다음곡은 뭘까요",
+                    fontSize = 14.sp,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Light,
+                    color = Color.White
+                )
+            }
         }
     }
 }
