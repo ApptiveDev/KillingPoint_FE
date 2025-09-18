@@ -18,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.killingpart.killingpoint.ui.component.AppBackground
+import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 
@@ -44,8 +45,12 @@ fun MainScreen() {
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
-
             )
+            Spacer(modifier = Modifier.height(26.dp))
+
+
+            Spacer(modifier = Modifier.weight(1f))
+            BottomBar()
         }
     }
 }
