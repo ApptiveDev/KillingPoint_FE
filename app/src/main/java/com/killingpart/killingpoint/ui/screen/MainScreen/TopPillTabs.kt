@@ -44,7 +44,6 @@ fun TopPillTabs(
     var containerSize by remember { mutableStateOf(IntSize.Zero) }
     val density = LocalDensity.current
 
-    // 세그먼트 폭 = (전체 폭 - 양쪽 패딩*2) / 옵션 개수
     val segmentWidth: Dp by remember(containerSize, options.size) {
         mutableStateOf(
             if (containerSize.width == 0) 0.dp
@@ -55,7 +54,6 @@ fun TopPillTabs(
         )
     }
 
-    // 인디케이터 X 오프셋 = padding + (segmentWidth * selectedIndex)
     val targetOffsetX: Dp = segmentWidth * selectedIndex
     val animatedOffsetX by animateDpAsState(
         targetValue = targetOffsetX,

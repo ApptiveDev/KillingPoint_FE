@@ -78,6 +78,10 @@ fun MainScreen() {
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp)
             )
 
+            Spacer(modifier = Modifier.height(25.dp))
+
+            RunMusicBox()
+
             Spacer(modifier = Modifier.weight(1f))
             BottomBar()
         }
