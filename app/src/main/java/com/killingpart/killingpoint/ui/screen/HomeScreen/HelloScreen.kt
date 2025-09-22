@@ -116,7 +116,7 @@ fun HelloScreen(navController: NavController) {
                 contentDescription = "GoogleLogin",
                 modifier = Modifier.size(14.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(14.dp))
             Text(
                 text = "구글 로그인",
                 fontFamily = PaperlogyFontFamily,

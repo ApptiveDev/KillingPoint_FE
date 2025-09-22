@@ -5,6 +5,7 @@ import com.killingpart.killingpoint.data.local.TokenStore
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
 import com.killingpart.killingpoint.data.model.UserInfo
+import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
@@ -72,7 +73,21 @@ class AuthRepository(
                     throw IllegalStateException("토큰 갱신 실패 ($code): $msg")
                 } else {
                     throw e
-                }
+            }
+        }
+    }
+
+    /**
+     * YouTube 비디오 검색
+     */
+    suspend fun searchVideos(artist: String, title: String): List<YouTubeVideo> =
+        withContext(Dispatchers.IO) {
+            try {
+                api.searchVideos(artist, title)
+            } catch (e: HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("비디오 검색 실패 ($code): $msg")
             }
         }
 }

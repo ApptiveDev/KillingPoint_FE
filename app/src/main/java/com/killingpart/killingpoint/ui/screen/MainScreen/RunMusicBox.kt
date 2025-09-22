@@ -10,12 +10,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,59 +97,22 @@ fun RunMusicBox() {
                     .padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                Image(
-                    painter = painterResource(id = R.drawable.example_video),
-                    contentDescription = "유튜브 영상 들어가는 곳",
-                    modifier = Modifier.fillMaxWidth().height(207.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "제목",
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "아티스트 이름",
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
-                    color = Color.White
+                YoutubeBox(
+                    artist = "nct dream",
+                    title = "미니카"
                 )
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                MusicTimeBar("사랑한단 말의 뜻을 알아가자", 102, 28, 180)
+                MusicTimeBar("재생중인 곡", 102, 28, 180)
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                NextSongList("다음 재생할 곡")
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 MusicCueBtn()
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row (
-                    modifier = Modifier.fillMaxWidth().height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(13.dp)
-                ){
-                    Text(
-                        text = "다음곡 : ",
-                        fontSize = 14.sp,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        color = mainGreen
-                    )
-
-                    Text(
-                        text = "다음곡은 뭘까요",
-                        fontSize = 14.sp,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        color = Color.White
-                    )
-                }
             }
         }
 
