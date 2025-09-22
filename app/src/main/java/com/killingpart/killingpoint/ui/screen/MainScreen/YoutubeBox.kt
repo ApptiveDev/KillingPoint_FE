@@ -3,16 +3,20 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
+import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,137 +29,138 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
-import com.killingpart.killingpoint.ui.viewmodel.YouTubeViewModel
-import com.killingpart.killingpoint.ui.viewmodel.YouTubeUiState
+import com.killingpart.killingpoint.data.model.Diary
+import coil.compose.AsyncImage
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 
 /**
  * YouTube embed URL을 자동재생이 가능한 URL로 변환
  */
 private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
     return try {
-        val baseUrl = if (embedUrl.contains("?")) {
-            embedUrl.substringBefore("?")
+        // YouTube embed URL에서 video ID 추출
+        val videoId = if (embedUrl.contains("/embed/")) {
+            embedUrl.substringAfter("/embed/").substringBefore("?")
         } else {
-            embedUrl
+            "ki08IcGubwQ" // 기본값
         }
-        "$baseUrl?autoplay=1&mute=0&controls=1&playsinline=1&enablejsapi=1"
+        
+        // 에뮬레이터 호환성을 위한 URL 생성
+        "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=1&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&origin=http://localhost"
     } catch (e: Exception) {
         embedUrl
     }
 }
 
 @Composable
-fun YoutubeBox(
-    artist: String,
-    title: String
-) {
-    val context = LocalContext.current
-    val youTubeViewModel: YouTubeViewModel = viewModel()
-    val youTubeState by youTubeViewModel.state.collectAsState()
-
-    LaunchedEffect(artist, title) {
-        youTubeViewModel.searchVideos(context, artist, title)
-    }
-
+fun YoutubeBox(diary: Diary?) {
     Column (
         horizontalAlignment = Alignment.CenterHorizontally
     ){
-        when (val currentState = youTubeState) {
-            is YouTubeUiState.Success -> {
-                val autoPlayUrl = getYouTubeAutoPlayUrl(currentState.video.url)
-                AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
-                            webViewClient = WebViewClient()
-                            webChromeClient = WebChromeClient()
-                            
-                            settings.apply {
-                                javaScriptEnabled = true
-                                domStorageEnabled = true
-                                mediaPlaybackRequiresUserGesture = false
-                                allowFileAccess = true
-                                allowContentAccess = true
-                                mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                                useWideViewPort = true
-                                loadWithOverviewMode = true
+        if (diary != null) {
+            val autoPlayUrl = getYouTubeAutoPlayUrl(diary.videoUrl)
+            Log.d("YoutubeBox", "Loading URL: $autoPlayUrl")
+
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                Log.d("YoutubeBox", "Page finished loading: $url")
                             }
-                            
-                            // 하드웨어 가속 비활성화 (에뮬레이터 호환성)
-                            setLayerType(WebView.LAYER_TYPE_SOFTWARE, null)
-                            
-                            loadUrl(autoPlayUrl)
+
+                            override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+                                super.onReceivedError(view, errorCode, description, failingUrl)
+                                Log.e("YoutubeBox", "WebView error: $errorCode - $description")
+                            }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(207.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
 
-                Text(
-                    text = title,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = artist,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
-                    color = Color.White
-                )
-            }
-            is YouTubeUiState.Loading -> {
-                Image(
-                    painter = painterResource(id = R.drawable.basic_youtube),
-                    contentDescription = "유튜브 영상 로딩 중",
-                    modifier = Modifier.fillMaxWidth().height(207.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                                super.onProgressChanged(view, newProgress)
+                                Log.d("YoutubeBox", "Loading progress: $newProgress%")
+                            }
+                        }
 
-                Text(
-                    text = "로딩 중...",
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "로딩 중...",
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
-                    color = Color.White
-                )
-            }
-            is YouTubeUiState.Error -> {
-                Image(
-                    painter = painterResource(id = R.drawable.basic_youtube),
-                    contentDescription = "유튜브 영상 에러",
-                    modifier = Modifier.fillMaxWidth().height(207.dp)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            allowFileAccess = true
+                            allowContentAccess = true
+                            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            useWideViewPort = true
+                            loadWithOverviewMode = true
+                            cacheMode = WebSettings.LOAD_DEFAULT
+                            databaseEnabled = true
 
-                Text(
-                    text = title,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = artist,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Light,
-                    color = Color.White
-                )
-            }
+                            // 에뮬레이터 호환성을 위한 추가 설정
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                                mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                            }
+
+                            // User Agent 설정 (에뮬레이터에서 YouTube 호환성 개선)
+                            userAgentString = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
+                        }
+
+                        // 하드웨어 가속 설정 (에뮬레이터에 따라 다름)
+                        if (Build.FINGERPRINT.contains("generic") || Build.FINGERPRINT.contains("unknown")) {
+                            // 에뮬레이터인 경우
+                            setLayerType(WebView.LAYER_TYPE_SOFTWARE, null)
+                        } else {
+                            // 실제 기기인 경우
+                            setLayerType(WebView.LAYER_TYPE_HARDWARE, null)
+                        }
+
+                        loadUrl(autoPlayUrl)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(207.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = diary.musicTitle,
+                fontFamily = PaperlogyFontFamily,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = diary.artist,
+                fontFamily = PaperlogyFontFamily,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Light,
+                color = Color.White
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.basic_youtube),
+                contentDescription = "유튜브 영상 로딩 중",
+                modifier = Modifier.fillMaxWidth().height(207.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "로딩 중...",
+                fontFamily = PaperlogyFontFamily,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "로딩 중...",
+                fontFamily = PaperlogyFontFamily,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Light,
+                color = Color.White
+            )
         }
     }
 }

@@ -42,16 +42,21 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
+import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
+import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
 import com.killingpart.killingpoint.R
 
 @Composable
 fun RunMusicBox() {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
+    val diaryViewModel: DiaryViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
+    val diaryState by diaryViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+        diaryViewModel.loadDiaries(context)
     }
 
     Box(
@@ -66,7 +71,7 @@ fun RunMusicBox() {
 
             Row (
                 modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
-            ){
+            ) {
                 Text(
                     text = when (val currentState = userState) {
                         is UserUiState.Success -> "@ ${currentState.userInfo.username}"
@@ -97,18 +102,31 @@ fun RunMusicBox() {
                     .padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ){
-                YoutubeBox(
-                    artist = "nct dream",
-                    title = "미니카"
-                )
+                val currentDiaryState = diaryState
+                val currentDiary = when (currentDiaryState) {
+                    is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
+                    else -> null
+                }
+                
+                val nextDiary = when (currentDiaryState) {
+                    is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
+                    else -> null
+                }
+                
+                YoutubeBox(currentDiary)
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                MusicTimeBar("재생중인 곡", 102, 28, 180)
+                MusicTimeBar(
+                    title = currentDiary?.musicTitle,
+                    start = 102,
+                    during = 28,
+                    total = 180
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                NextSongList("다음 재생할 곡")
+                NextSongList(nextDiary?.musicTitle)
 
                 Spacer(modifier = Modifier.height(12.dp))
 

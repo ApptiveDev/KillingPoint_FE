@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.data.remote
 
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
+import com.killingpart.killingpoint.data.model.MyDiaries
 import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
 import retrofit2.http.Body
@@ -27,4 +28,10 @@ interface ApiService {
     @POST("jwt/exchange")
     suspend fun refreshAccessToken(@Header("X-Refresh-Token") refreshToken: String): KakaoAuthResponse
 
+    @GET("diaries/my")
+    suspend fun getMyDiaries(
+        @Header("Authorization") accessToken: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 5
+    ): MyDiaries
 }

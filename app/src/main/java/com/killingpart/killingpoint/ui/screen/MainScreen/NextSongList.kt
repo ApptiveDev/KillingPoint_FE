@@ -23,7 +23,7 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 
 @Composable
-fun NextSongList(title : String) {
+fun NextSongList(title: String? = null) {
     Row (
         modifier = Modifier.fillMaxWidth().height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -39,7 +39,7 @@ fun NextSongList(title : String) {
         Spacer(modifier = Modifier.width(13.dp))
 
         Text(
-            text = title,
+            text = title ?: "로딩 중...",
             fontSize = 14.sp,
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Light,
