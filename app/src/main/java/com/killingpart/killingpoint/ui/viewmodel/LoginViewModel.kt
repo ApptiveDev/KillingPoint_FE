@@ -20,10 +20,7 @@ sealed interface LoginUiState {
 
 class LoginViewModel(
     private val repoFactory: (Context) -> AuthRepository = { ctx ->
-        AuthRepository(
-            api = RetrofitClient.api,
-            tokenStore = TokenStore(ctx.applicationContext)
-        )
+        AuthRepository(ctx)
     }
 ) : ViewModel() {
 
