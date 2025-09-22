@@ -33,11 +33,12 @@ import com.killingpart.killingpoint.ui.viewmodel.YouTubeUiState
  */
 private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
     return try {
-        if (embedUrl.contains("?")) {
-            "$embedUrl&autoplay=1&mute=1"
+        val baseUrl = if (embedUrl.contains("?")) {
+            embedUrl.substringBefore("?")
         } else {
-            "$embedUrl?autoplay=1&mute=1"
+            embedUrl
         }
+        "$baseUrl?autoplay=1&mute=0&controls=1&playsinline=1&enablejsapi=1"
     } catch (e: Exception) {
         embedUrl
     }
@@ -67,9 +68,21 @@ fun YoutubeBox(
                         WebView(context).apply {
                             webViewClient = WebViewClient()
                             webChromeClient = WebChromeClient()
-                            settings.javaScriptEnabled = true
-                            settings.mediaPlaybackRequiresUserGesture = false
-                            settings.domStorageEnabled = true
+                            
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                mediaPlaybackRequiresUserGesture = false
+                                allowFileAccess = true
+                                allowContentAccess = true
+                                mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                useWideViewPort = true
+                                loadWithOverviewMode = true
+                            }
+                            
+                            // 하드웨어 가속 비활성화 (에뮬레이터 호환성)
+                            setLayerType(WebView.LAYER_TYPE_SOFTWARE, null)
+                            
                             loadUrl(autoPlayUrl)
                         }
                     },
@@ -80,7 +93,7 @@ fun YoutubeBox(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = currentState.video.title,
+                    text = title,
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
@@ -97,7 +110,7 @@ fun YoutubeBox(
             }
             is YouTubeUiState.Loading -> {
                 Image(
-                    painter = painterResource(id = R.drawable.example_video),
+                    painter = painterResource(id = R.drawable.basic_youtube),
                     contentDescription = "유튜브 영상 로딩 중",
                     modifier = Modifier.fillMaxWidth().height(207.dp)
                 )
@@ -112,7 +125,7 @@ fun YoutubeBox(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = artist,
+                    text = "로딩 중...",
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Light,
@@ -121,7 +134,7 @@ fun YoutubeBox(
             }
             is YouTubeUiState.Error -> {
                 Image(
-                    painter = painterResource(id = R.drawable.example_video),
+                    painter = painterResource(id = R.drawable.basic_youtube),
                     contentDescription = "유튜브 영상 에러",
                     modifier = Modifier.fillMaxWidth().height(207.dp)
                 )
