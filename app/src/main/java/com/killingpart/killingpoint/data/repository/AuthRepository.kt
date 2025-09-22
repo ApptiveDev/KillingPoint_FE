@@ -4,7 +4,9 @@ import android.content.Context
 import com.killingpart.killingpoint.data.local.TokenStore
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
+import com.killingpart.killingpoint.data.model.MyDiaries
 import com.killingpart.killingpoint.data.model.UserInfo
+import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
@@ -69,10 +71,37 @@ class AuthRepository(
                 if (e is HttpException) {
                     val code = e.code()
                     val msg = e.response()?.errorBody()?.string().orEmpty()
+                    // 토큰 갱신 실패 시 토큰 삭제
+                    clearTokens()
                     throw IllegalStateException("토큰 갱신 실패 ($code): $msg")
                 } else {
                     throw e
                 }
+            }
+        }
+
+    suspend fun searchVideos(artist: String, title: String): List<YouTubeVideo> =
+        withContext(Dispatchers.IO) {
+            try {
+                api.searchVideos(artist, title)
+            } catch (e: HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("비디오 검색 실패 ($code): $msg")
+            }
+        }
+
+
+    suspend fun getMyDiaries(page: Int = 0, size: Int = 5): MyDiaries =
+        withContext(Dispatchers.IO) {
+            try {
+                val accessToken = getAccessToken() 
+                    ?: throw IllegalStateException("액세스 토큰이 없습니다")
+                api.getMyDiaries("Bearer $accessToken", page, size)
+            } catch (e: HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("다이어리 조회 실패 ($code): $msg")
             }
         }
 }

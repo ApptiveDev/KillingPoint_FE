@@ -37,4 +37,5 @@ class TokenStore(private val _context: Context) {
 
     fun getAccessTokenSync(): String? = runBlocking { getAccessToken() }
     fun getRefreshTokenSync(): String? = runBlocking { getRefreshToken() }
+    fun clearSync() = runBlocking { clear() }
 }

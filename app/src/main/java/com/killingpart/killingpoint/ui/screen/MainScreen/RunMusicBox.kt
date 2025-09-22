@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,31 +41,36 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
+import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
+import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
 import com.killingpart.killingpoint.R
 
 @Composable
 fun RunMusicBox() {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
+    val diaryViewModel: DiaryViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
+    val diaryState by diaryViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+        diaryViewModel.loadDiaries(context)
     }
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(horizontal = 35.dp)
     ) {
-        Column (
+        Column(
             modifier = Modifier.fillMaxWidth()
                 .background(Color.Black, RoundedCornerShape(8.dp))
-        ){
+        ) {
 
-            Row (
+            Row(
                 modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
-            ){
+            ) {
                 Text(
                     text = when (val currentState = userState) {
                         is UserUiState.Success -> "@ ${currentState.userInfo.username}"
@@ -89,47 +95,40 @@ fun RunMusicBox() {
                     )
                 }
             }
-
-            Column (
+            Column(
                 modifier = Modifier.fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
-            ){
-                Image(
-                    painter = painterResource(id = R.drawable.example_video),
-                    contentDescription = "유튜브 영상 들어가는 곳",
-                    modifier = Modifier.fillMaxWidth().height(207.dp)
+            ) {
+                val currentDiaryState = diaryState
+                val currentDiary = when (currentDiaryState) {
+                    is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
+                    else -> null
+                }
+
+                val nextDiary = when (currentDiaryState) {
+                    is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
+                    else -> null
+                }
+
+                YoutubeBox(currentDiary)
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                MusicTimeBar(
+                    title = currentDiary?.musicTitle,
+                    start = 102,
+                    during = 28,
+                    total = 180
                 )
+
                 Spacer(modifier = Modifier.height(12.dp))
 
-                MusicTimeBar("사랑한단 말의 뜻을 알아가자", 102, 28, 180)
+                NextSongList(nextDiary?.musicTitle)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 MusicCueBtn()
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row (
-                    modifier = Modifier.fillMaxWidth().height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(13.dp)
-                ){
-                    Text(
-                        text = "다음곡 : ",
-                        fontSize = 14.sp,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        color = mainGreen
-                    )
-
-                    Text(
-                        text = "다음곡은 뭘까요",
-                        fontSize = 14.sp,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        color = Color.White
-                    )
-                }
             }
         }
 
@@ -151,6 +150,7 @@ fun RunMusicBox() {
                     error = painterResource(id = R.drawable.default_profile)
                 )
             }
+
             else -> {
                 Image(
                     painter = painterResource(id = R.drawable.default_profile),

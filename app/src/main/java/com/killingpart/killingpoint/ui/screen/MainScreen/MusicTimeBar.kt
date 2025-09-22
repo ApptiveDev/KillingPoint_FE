@@ -21,10 +21,10 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 
 @Composable
 fun MusicTimeBar(
-    title: String,
-    start: Int,
-    during: Int,
-    total: Int,
+    title: String? = null,
+    start: Int = 0,
+    during: Int = 0,
+    total: Int = 180,
 ) {
     val density = LocalDensity.current
     var barSize by remember { mutableStateOf(IntSize.Zero) }
@@ -36,7 +36,7 @@ fun MusicTimeBar(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = title,
+                text = title ?: "로딩 중...",
                 fontSize = 14.sp,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Thin,

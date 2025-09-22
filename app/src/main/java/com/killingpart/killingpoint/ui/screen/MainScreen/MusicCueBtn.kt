@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.killingpart.killingpoint.R
@@ -35,8 +36,15 @@ fun MusicCueBtn() {
 
         Box(
             modifier = Modifier.size(44.dp)
-                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-        )
+                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id= R.drawable.skip_back),
+                contentDescription = "이전 음악 듣기",
+                modifier = Modifier.size(28.dp)
+            )
+        }
 
         Box(
             modifier = Modifier.size(70.dp)
@@ -52,8 +60,15 @@ fun MusicCueBtn() {
 
         Box(
             modifier = Modifier.size(44.dp)
-                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-        )
+                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
+            contentAlignment = Alignment.Center
+        ){
+            Image(
+                painter = painterResource(id= R.drawable.skip_fwd),
+                contentDescription = "다음 음악 듣기",
+                modifier = Modifier.size(28.dp)
+            )
+        }
 
         Image(
             painter = painterResource(id = R.drawable.repeat),
