@@ -80,7 +80,10 @@ fun MainScreen() {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            RunMusicBox()
+            if (selected == MainTab.PLAY) {
+                RunMusicBox()
+            }
+
 
             Spacer(modifier = Modifier.weight(1f))
             BottomBar()

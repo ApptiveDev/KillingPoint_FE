@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -29,11 +30,16 @@ fun MusicTimeBar(
     val density = LocalDensity.current
     var barSize by remember { mutableStateOf(IntSize.Zero) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(color = Color.Black.copy(alpha = 0.8f))
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title ?: "로딩 중...",
@@ -105,6 +111,7 @@ fun MusicTimeBar(
                 // total
                 TimeLabelCentered(formatTime(total), xTotal, barWidthDp)
             }
+        }
         }
     }
 }
