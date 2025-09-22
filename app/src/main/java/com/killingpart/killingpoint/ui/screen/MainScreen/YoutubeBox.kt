@@ -11,27 +11,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.data.model.Diary
-import coil.compose.AsyncImage
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
 /**
@@ -39,15 +30,8 @@ import androidx.compose.runtime.Composable
  */
 private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
     return try {
-        // YouTube embed URL에서 video ID 추출
-        val videoId = if (embedUrl.contains("/embed/")) {
-            embedUrl.substringAfter("/embed/").substringBefore("?")
-        } else {
-            "ki08IcGubwQ" // 기본값
-        }
-        
-        // 에뮬레이터 호환성을 위한 URL 생성
-        "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=1&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&origin=http://localhost"
+        val videoId = embedUrl.substringAfter("/embed/").substringBefore("?")
+        "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=0&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1"
     } catch (e: Exception) {
         embedUrl
     }
@@ -96,7 +80,6 @@ fun YoutubeBox(diary: Diary?) {
                             cacheMode = WebSettings.LOAD_DEFAULT
                             databaseEnabled = true
 
-                            // 에뮬레이터 호환성을 위한 추가 설정
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                                 mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
                             }
@@ -105,7 +88,6 @@ fun YoutubeBox(diary: Diary?) {
                             userAgentString = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36"
                         }
 
-                        // 하드웨어 가속 설정 (에뮬레이터에 따라 다름)
                         if (Build.FINGERPRINT.contains("generic") || Build.FINGERPRINT.contains("unknown")) {
                             // 에뮬레이터인 경우
                             setLayerType(WebView.LAYER_TYPE_SOFTWARE, null)

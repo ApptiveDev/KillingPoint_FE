@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -61,15 +60,15 @@ fun RunMusicBox() {
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .padding(horizontal = 35.dp)
     ) {
-        Column (
+        Column(
             modifier = Modifier.fillMaxWidth()
                 .background(Color.Black, RoundedCornerShape(8.dp))
-        ){
+        ) {
 
-            Row (
+            Row(
                 modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
@@ -96,23 +95,22 @@ fun RunMusicBox() {
                     )
                 }
             }
-
-            Column (
+            Column(
                 modifier = Modifier.fillMaxWidth()
                     .padding(horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
-            ){
+            ) {
                 val currentDiaryState = diaryState
                 val currentDiary = when (currentDiaryState) {
                     is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
                     else -> null
                 }
-                
+
                 val nextDiary = when (currentDiaryState) {
                     is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
                     else -> null
                 }
-                
+
                 YoutubeBox(currentDiary)
 
                 Spacer(modifier = Modifier.height(40.dp))
@@ -152,6 +150,7 @@ fun RunMusicBox() {
                     error = painterResource(id = R.drawable.default_profile)
                 )
             }
+
             else -> {
                 Image(
                     painter = painterResource(id = R.drawable.default_profile),

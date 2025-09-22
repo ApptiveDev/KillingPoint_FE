@@ -71,12 +71,14 @@ class AuthRepository(
                 if (e is HttpException) {
                     val code = e.code()
                     val msg = e.response()?.errorBody()?.string().orEmpty()
+                    // 토큰 갱신 실패 시 토큰 삭제
+                    clearTokens()
                     throw IllegalStateException("토큰 갱신 실패 ($code): $msg")
                 } else {
                     throw e
+                }
             }
         }
-    }
 
     suspend fun searchVideos(artist: String, title: String): List<YouTubeVideo> =
         withContext(Dispatchers.IO) {

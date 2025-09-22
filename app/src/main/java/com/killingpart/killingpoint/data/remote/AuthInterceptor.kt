@@ -28,34 +28,12 @@ class AuthInterceptor(
         if (response.code == 401 && accessToken != null) {
             response.close()
             
-            val refreshToken = tokenStore.getRefreshTokenSync()
-            if (refreshToken != null) {
-                try {
-                    val newAccessToken = refreshAccessToken(refreshToken)
-                    if (newAccessToken != null) {
-                        // 새로운 토큰으로 재요청
-                        val newRequest = originalRequest.newBuilder()
-                            .addHeader("Authorization", "Bearer $newAccessToken")
-                            .build()
-                        return chain.proceed(newRequest)
-                    }
-                } catch (e: Exception) {
-                }
-            }
+            // 토큰이 만료된 경우 즉시 토큰 삭제 (무한 루프 방지)
+            android.util.Log.w("AuthInterceptor", "401 오류 발생 - 토큰 삭제")
+            tokenStore.clearSync()
         }
 
         return response
     }
 
-    private fun refreshAccessToken(refreshToken: String): String? {
-        return try {
-            runBlocking {
-                val response = RetrofitClient.getApi(tokenStore.context).refreshAccessToken(refreshToken)
-                tokenStore.save(response.accessToken, response.refreshToken)
-                response.accessToken
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
 }
