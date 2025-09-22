@@ -30,12 +30,16 @@ fun MusicTimeBar(
     val density = LocalDensity.current
     var barSize by remember { mutableStateOf(IntSize.Zero) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
             .background(color = Color.Black.copy(alpha = 0.8f))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
+
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title ?: "로딩 중...",
@@ -107,6 +111,7 @@ fun MusicTimeBar(
                 // total
                 TimeLabelCentered(formatTime(total), xTotal, barWidthDp)
             }
+        }
         }
     }
 }

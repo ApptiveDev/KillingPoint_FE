@@ -1,35 +1,24 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
+import android.os.Build
 
-import android.view.RoundedCorner
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import android.graphics.Shader
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,13 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
-import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
-import com.killingpart.killingpoint.ui.viewmodel.UserUiState
-import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
 import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
-import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
+import com.killingpart.killingpoint.ui.viewmodel.UserUiState
+import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 
 @Composable
 fun RunMusicBox() {
@@ -55,20 +44,12 @@ fun RunMusicBox() {
     val userState by userViewModel.state.collectAsState()
     val diaryState by diaryViewModel.state.collectAsState()
 
+    val currentDiary = (diaryState as? DiaryUiState.Success)?.diaries?.firstOrNull()
+    val nextDiary = (diaryState as? DiaryUiState.Success)?.diaries?.getOrNull(1)
+
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
         diaryViewModel.loadDiaries(context)
-    }
-
-    val currentDiaryState = diaryState
-    val currentDiary = when (currentDiaryState) {
-        is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
-        else -> null
-    }
-
-    val nextDiary = when (currentDiaryState) {
-        is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
-        else -> null
     }
 
     Box(
@@ -77,16 +58,16 @@ fun RunMusicBox() {
             .padding(horizontal = 35.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .background(Color.Black, RoundedCornerShape(8.dp))
         ) {
-
             Row(
                 modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
             ) {
                 Text(
-                    text = when (val currentState = userState) {
-                        is UserUiState.Success -> "@ ${currentState.userInfo.username}"
+                    text = when (val s = userState) {
+                        is UserUiState.Success -> "@ ${s.userInfo.username}"
                         is UserUiState.Loading -> "LOADING..."
                         is UserUiState.Error -> "KILLINGPART"
                     },
@@ -97,7 +78,8 @@ fun RunMusicBox() {
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Box(
-                    modifier = Modifier.size(41.dp, 16.dp)
+                    modifier = Modifier
+                        .size(41.dp, 16.dp)
                         .background(color = Color(0xFF212123), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -109,31 +91,57 @@ fun RunMusicBox() {
                 }
             }
 
-
-            // 스크롤 가능한 영역 (YoutubeBox + AlbumCdBox)
-            val scrollState = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                YoutubeBox(currentDiary)
-                Spacer(modifier = Modifier.height(24.dp))
-                AlbumDiaryBox(currentDiary)
+            val listState = rememberLazyListState()
+            LaunchedEffect(currentDiary) {
+                if (currentDiary != null) listState.animateScrollToItem(1)
             }
 
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp),
+                contentPadding = PaddingValues(bottom = 160.dp)
+            ) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) { YoutubeBox(currentDiary) }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) { AlbumDiaryBox(currentDiary) }
+                }
+            }
         }
 
-        // 고정 영역 오버레이 (MusicTimeBar + NextSongList + MusicCueBtn)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset(y = 371.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        compositingStrategy = CompositingStrategy.Offscreen
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            renderEffect = android.graphics.RenderEffect
+                                .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
+                                .asComposeRenderEffect()
+                        }
+                    }
+                    .background(Color.Black.copy(alpha = 0.2f))
+            )
+
             Column(
-                modifier = Modifier.padding(horizontal =12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 MusicTimeBar(
@@ -142,23 +150,17 @@ fun RunMusicBox() {
                     during = 28,
                     total = 180
                 )
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 NextSongList(nextDiary?.musicTitle)
-
                 Spacer(modifier = Modifier.height(12.dp))
-
                 MusicCueBtn()
             }
         }
 
-        // 여기부터 프로필 사진 (오버레이)
-        val currentUserState = userState
-        when (currentUserState) {
+        when (val s = userState) {
             is UserUiState.Success -> {
                 AsyncImage(
-                    model = currentUserState.userInfo.profileImageUrl,
+                    model = s.userInfo.profileImageUrl,
                     contentDescription = "프로필 사진",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -171,7 +173,6 @@ fun RunMusicBox() {
                     error = painterResource(id = R.drawable.default_profile)
                 )
             }
-
             else -> {
                 Image(
                     painter = painterResource(id = R.drawable.default_profile),

@@ -27,7 +27,6 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 fun NextSongList(title: String? = null) {
     Row (
         modifier = Modifier.fillMaxWidth()
-            .background(color = Color.Black)
             .height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ){
