@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.auth.KakaoLoginClient
 import com.killingpart.killingpoint.ui.theme.darkGray
@@ -39,10 +41,18 @@ import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import com.killingpart.killingpoint.ui.viewmodel.LoginUiState
 
 @Composable
-fun HelloScreen() {
+fun HelloScreen(navController: NavController) {
     val context = LocalContext.current
     val loginViewModel: LoginViewModel = viewModel()
     val loginState by loginViewModel.state.collectAsState()
+
+    LaunchedEffect(loginState) {
+        if (loginState is LoginUiState.Success) {
+            navController.navigate("main") {
+                popUpTo("home") { inclusive = true }
+            }
+        }
+    }
 
     Column (
         modifier = Modifier.fillMaxSize()
@@ -100,10 +110,4 @@ private fun onSnsLoginClick(context: Context, loginViewModel: LoginViewModel) {
     loginViewModel.loginWithKakao(context) { kakaoAccessToken ->
         loginViewModel.loginWithServer(context, kakaoAccessToken)
     }
-}
-
-@Preview
-@Composable
-fun HelloScreenPreview() {
-    HelloScreen()
 }

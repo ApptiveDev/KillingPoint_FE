@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
+import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.screen.HomeScreen.HelloScreen
+import com.killingpart.killingpoint.ui.screen.MainScreen.MainScreen
 
 @Composable
 fun NavGraph(
@@ -14,6 +16,10 @@ fun NavGraph(
         navController = navController,
         startDestination = "home"
     ) {
-        composable("home") { HelloScreen() }
+        composable("home") { HelloScreen(navController) }
+
+        composable("main") {
+            MainScreen()
+        }
     }
 }
