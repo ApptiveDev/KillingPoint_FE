@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +32,9 @@ import androidx.compose.runtime.Composable
 private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
     return try {
         val videoId = embedUrl.substringAfter("/embed/").substringBefore("?")
-        "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=0&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1"
+        "https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&mute=0&controls=1&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&loop=0&fs=1&cc_load_policy=0&iv_load_policy=3&start=0&end=0"
     } catch (e: Exception) {
+        Log.e("YoutubeBox", "Failed to parse YouTube URL: $embedUrl", e)
         embedUrl
     }
 }
@@ -40,6 +42,7 @@ private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
 @Composable
 fun YoutubeBox(diary: Diary?) {
     Column (
+        modifier = Modifier.padding(horizontal = 30.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         if (diary != null) {
@@ -77,8 +80,13 @@ fun YoutubeBox(diary: Diary?) {
                             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                             useWideViewPort = true
                             loadWithOverviewMode = true
-                            cacheMode = WebSettings.LOAD_DEFAULT
+                            cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                             databaseEnabled = true
+                            
+                            // 자동재생을 위한 추가 설정
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                                setMediaPlaybackRequiresUserGesture(false)
+                            }
 
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                                 mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE

@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -33,6 +34,7 @@ fun MusicTimeBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
+            .background(color = Color.Black.copy(alpha = 0.8f))
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

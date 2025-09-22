@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,6 +60,17 @@ fun RunMusicBox() {
         diaryViewModel.loadDiaries(context)
     }
 
+    val currentDiaryState = diaryState
+    val currentDiary = when (currentDiaryState) {
+        is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
+        else -> null
+    }
+
+    val nextDiary = when (currentDiaryState) {
+        is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
+        else -> null
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -95,26 +108,34 @@ fun RunMusicBox() {
                     )
                 }
             }
+
+
+            // 스크롤 가능한 영역 (YoutubeBox + AlbumCdBox)
+            val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier.fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(400.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val currentDiaryState = diaryState
-                val currentDiary = when (currentDiaryState) {
-                    is DiaryUiState.Success -> currentDiaryState.diaries.firstOrNull()
-                    else -> null
-                }
-
-                val nextDiary = when (currentDiaryState) {
-                    is DiaryUiState.Success -> currentDiaryState.diaries.getOrNull(1)
-                    else -> null
-                }
-
                 YoutubeBox(currentDiary)
+                Spacer(modifier = Modifier.height(24.dp))
+                AlbumDiaryBox(currentDiary)
+            }
 
-                Spacer(modifier = Modifier.height(40.dp))
+        }
 
+        // 고정 영역 오버레이 (MusicTimeBar + NextSongList + MusicCueBtn)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset(y = 371.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal =12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 MusicTimeBar(
                     title = currentDiary?.musicTitle,
                     start = 102,
