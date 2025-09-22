@@ -19,22 +19,39 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
+import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
+import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.R
 
 @Composable
 fun RunMusicBox() {
+    val context = LocalContext.current
+    val userViewModel: UserViewModel = viewModel()
+    val userState by userViewModel.state.collectAsState()
+
+    LaunchedEffect(Unit) {
+        userViewModel.loadUserInfo(context)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -49,7 +66,11 @@ fun RunMusicBox() {
                 modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
             ){
                 Text(
-                    text = "@KILLINGPART",
+                    text = when (val currentState = userState) {
+                        is UserUiState.Success -> "@ ${currentState.userInfo.username}"
+                        is UserUiState.Loading -> "LOADING..."
+                        is UserUiState.Error -> "KILLINGPART"
+                    },
                     fontFamily = PaperlogyFontFamily,
                     fontWeight = FontWeight.Thin,
                     fontSize = 14.sp,
@@ -113,17 +134,37 @@ fun RunMusicBox() {
         }
 
         // 여기부터 프로필 사진 (오버레이)
-        Image(
-            painter = painterResource(id = R.drawable.example_video),
-            contentDescription = "프로필 사진",
-            modifier = Modifier
-                .size(60.dp)
-                .align (Alignment.TopStart)
-                .offset(x = (-10).dp, y = (-10).dp)
-                .clip(RoundedCornerShape(50))
-                .border(3.dp, mainGreen, RoundedCornerShape(50))
-
-        )
+        val currentUserState = userState
+        when (currentUserState) {
+            is UserUiState.Success -> {
+                AsyncImage(
+                    model = currentUserState.userInfo.profileImageUrl,
+                    contentDescription = "프로필 사진",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .align(Alignment.TopStart)
+                        .offset(x = (-10).dp, y = (-10).dp)
+                        .clip(RoundedCornerShape(50))
+                        .border(3.dp, mainGreen, RoundedCornerShape(50)),
+                    placeholder = painterResource(id = R.drawable.default_profile),
+                    error = painterResource(id = R.drawable.default_profile)
+                )
+            }
+            else -> {
+                Image(
+                    painter = painterResource(id = R.drawable.default_profile),
+                    contentDescription = "프로필 사진",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .align(Alignment.TopStart)
+                        .offset(x = (-10).dp, y = (-10).dp)
+                        .clip(RoundedCornerShape(50))
+                        .border(3.dp, mainGreen, RoundedCornerShape(50))
+                )
+            }
+        }
     }
 }
 
