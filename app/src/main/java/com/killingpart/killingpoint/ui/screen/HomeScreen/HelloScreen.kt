@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.auth.KakaoLoginClient
 import com.killingpart.killingpoint.ui.theme.darkGray
@@ -66,24 +69,7 @@ fun HelloScreen(navController: NavController) {
             modifier = Modifier.size(width = 300.dp, height = 78.dp)
         )
 
-        Spacer(modifier = Modifier.height(278.dp))
-
-        Row (
-            modifier = Modifier.size(240.dp, 54.dp)
-                .background(color = darkGray, RoundedCornerShape(100.dp)),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ){
-            Text(
-                text = if (loginState is LoginUiState.Loading) "로그인 중..." else "LOGIN",
-                color = Color.White,
-                fontFamily = UnboundedFontFamily,
-                fontWeight = FontWeight.Black,
-                fontSize = 12.sp
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(182.dp))
 
         Text(
             text = "SNS로 간편 로그인",
@@ -92,16 +78,53 @@ fun HelloScreen(navController: NavController) {
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Medium,
         )
-        Spacer(modifier = Modifier.height(10.dp))
-        Image(
-            painter = painterResource(id = R.drawable.kakao_login_medium_narrow),
-            contentDescription = "KakaoLoginBtn",
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                onSnsLoginClick(context, loginViewModel)
-            }
-        )
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Row(
+            modifier = Modifier.size(240.dp, 54.dp)
+                .background(color = Color(0xFF1D1E20), RoundedCornerShape(100))
+                .clickable {onSnsLoginClick(context, loginViewModel)},
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.kakao),
+                contentDescription = "KakaoLogin",
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "카카오 로그인",
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                color = Color(0xFFFEE500)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(7.dp))
+
+        Row(
+            modifier = Modifier.size(240.dp, 54.dp)
+                .background(color = Color(0xFF1D1E20), RoundedCornerShape(100))
+                .clickable {onSnsLoginClick(context, loginViewModel)},
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.google),
+                contentDescription = "GoogleLogin",
+                modifier = Modifier.size(14.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "구글 로그인",
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp,
+                color = Color.White
+            )
+        }
 
     }
 }
@@ -110,4 +133,10 @@ private fun onSnsLoginClick(context: Context, loginViewModel: LoginViewModel) {
     loginViewModel.loginWithKakao(context) { kakaoAccessToken ->
         loginViewModel.loginWithServer(context, kakaoAccessToken)
     }
+}
+
+@Preview
+@Composable
+fun loginPreview() {
+    HelloScreen(navController = rememberNavController())
 }

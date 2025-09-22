@@ -21,6 +21,7 @@ val PaperlogyFontFamily = FontFamily(
     Font(R.font.paperlogy_bold, FontWeight.Bold),
     Font(R.font.paperlogy_medium, FontWeight.Medium),
     Font(R.font.paperlogy_thin, FontWeight.Thin),
+    Font(R.font.paperlogy_regular, FontWeight.Normal)
 )
 
 val Typography = Typography(

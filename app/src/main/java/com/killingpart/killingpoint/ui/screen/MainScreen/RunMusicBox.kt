@@ -100,7 +100,25 @@ fun RunMusicBox() {
                     contentDescription = "유튜브 영상 들어가는 곳",
                     modifier = Modifier.fillMaxWidth().height(207.dp)
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Text(
+                    text = "제목",
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "아티스트 이름",
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Light,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
 
                 MusicTimeBar("사랑한단 말의 뜻을 알아가자", 102, 28, 180)
 
