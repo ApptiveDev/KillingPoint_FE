@@ -1,8 +1,10 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
+import android.view.RoundedCorner
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +35,7 @@ fun MusicTimeBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Color.Black.copy(alpha = 0.8f))
+            .background(color = Color.Black.copy(alpha = 0.8f), shape = RoundedCornerShape(16.dp))
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
 
