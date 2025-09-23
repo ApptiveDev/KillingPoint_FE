@@ -70,7 +70,6 @@ fun SearchField(
         colors = TextFieldDefaults.colors(
             focusedContainerColor = Color(0xFF101010),
             unfocusedContainerColor = Color(0xFF101010),
-            disabledContainerColor = Color(0xFF101010),
             cursorColor = Color.White,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent
