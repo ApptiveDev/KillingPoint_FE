@@ -40,8 +40,8 @@ fun AddMusicScreen(navController: NavController) {
                 contentDescription = "앱 배경 로고",
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = (-120).dp)
-                    .size(260.dp)
+                    .offset(y = (-140).dp)
+                    .size(280.dp)
             )
 
             Column(
