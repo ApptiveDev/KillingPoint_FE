@@ -114,42 +114,61 @@ fun RunMusicBox() {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
-                    ) { AlbumDiaryBox(currentDiary) }
+                    ) {
+                        AlbumDiaryBox(currentDiary)
+                    }
+                }
+            }
+
+            if (listState.firstVisibleItemIndex == 1) {
+                Box(
+                    modifier = Modifier
+                        .size(316.dp, 67.dp)
+                        .offset(y = (-40).dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .graphicsLayer {
+                                compositingStrategy = CompositingStrategy.Offscreen
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    renderEffect = android.graphics.RenderEffect
+                                        .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
+                                        .asComposeRenderEffect()
+                                }
+                            }
+                            .background(Color.Black.copy(alpha = 0.2f))
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        MusicTimeBar(
+                            title = currentDiary?.musicTitle,
+                            start = 102,
+                            during = 28,
+                            total = 180
+                        )
+                    }
                 }
             }
         }
 
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .offset(y = 371.dp)
+                .offset(y = 450.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        compositingStrategy = CompositingStrategy.Offscreen
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            renderEffect = android.graphics.RenderEffect
-                                .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
-                                .asComposeRenderEffect()
-                        }
-                    }
-                    .background(Color.Black.copy(alpha = 0.2f))
-            )
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                MusicTimeBar(
-                    title = currentDiary?.musicTitle,
-                    start = 102,
-                    during = 28,
-                    total = 180
-                )
                 Spacer(modifier = Modifier.height(12.dp))
                 NextSongList(nextDiary?.musicTitle)
                 Spacer(modifier = Modifier.height(12.dp))

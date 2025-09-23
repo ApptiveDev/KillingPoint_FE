@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
@@ -34,7 +36,7 @@ enum class MainTab {
     STORAGE, PLAY, CALENDAR
 }
 @Composable
-fun MainScreen() {
+fun MainScreen(navController: NavController) {
     var selected by remember { mutableStateOf(MainTab.PLAY) }
 
     AppBackground {
@@ -86,13 +88,13 @@ fun MainScreen() {
 
 
             Spacer(modifier = Modifier.weight(1f))
-            BottomBar()
+            BottomBar(navController = navController)
         }
     }
 }
 
 @Preview
 @Composable
-fun MainScreenPreivew() {
-    MainScreen()
+fun MainPreivew() {
+    MainScreen(navController = rememberNavController())
 }

@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,11 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 
 @Composable
-fun BottomBar() {
+fun BottomBar(navController: NavController) {
     Row (
         modifier = Modifier.fillMaxWidth()
             .height(94.dp)
@@ -35,7 +38,8 @@ fun BottomBar() {
     ){
         Column (
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable { navController.navigate("main")}
         ){
             Image(
                 painter = painterResource(id = R.drawable.navi_home),
@@ -103,10 +107,4 @@ fun BottomBar() {
             )
         }
     }
-}
-
-@Preview
-@Composable
-fun BottomBarPreview() {
-    BottomBar()
 }

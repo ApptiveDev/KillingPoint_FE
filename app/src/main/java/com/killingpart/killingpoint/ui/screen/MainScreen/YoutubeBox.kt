@@ -1,5 +1,6 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
+import android.graphics.Shader
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -7,10 +8,13 @@ import android.webkit.WebSettings
 import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +28,10 @@ import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.data.model.Diary
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * YouTube embed URL을 자동재생이 가능한 URL로 변환
@@ -120,6 +128,23 @@ fun YoutubeBox(diary: Diary?) {
                 fontWeight = FontWeight.Light,
                 color = Color.White
             )
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MusicTimeBar(
+                    title = diary.musicTitle,
+                    start = 0,
+                    during = 20,
+                    total = 180
+                )
+            }
         } else {
             Image(
                 painter = painterResource(id = R.drawable.basic_youtube),
@@ -143,6 +168,28 @@ fun YoutubeBox(diary: Diary?) {
                 fontWeight = FontWeight.Light,
                 color = Color.White
             )
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MusicTimeBar(
+                    title = "로딩 중...",
+                    start = 0,
+                    during = 20,
+                    total = 180
+                )
+            }
+
         }
     }
+}
+
+@Preview
+@Composable
+fun YoutubeBoxPreview() {
+    YoutubeBox(diary = null)
 }
