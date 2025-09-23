@@ -23,10 +23,11 @@ import coil.compose.AsyncImage
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 
 @Composable
-fun MusicListOne(imageUrl: String, musicTitle: String, artist: String) {
+fun MusicListOne(imageUrl: String, musicTitle: String, artist: String, isNow: Color) {
     Row (
         modifier = Modifier.fillMaxWidth()
-            .padding(10.dp),
+            .padding(10.dp)
+            .background(color = isNow, shape = RoundedCornerShape(8.dp)),
         verticalAlignment = Alignment.CenterVertically
     ){
         AsyncImage(
@@ -55,10 +56,4 @@ fun MusicListOne(imageUrl: String, musicTitle: String, artist: String) {
             )
         }
     }
-}
-
-@Preview
-@Composable
-fun MusicListOnePreview() {
-    MusicListOne("asdf", "Death Sonnet von Dat", "Davinci Leo")
 }

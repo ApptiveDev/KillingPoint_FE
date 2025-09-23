@@ -24,10 +24,10 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 
 @Composable
-fun NextSongList(title: String? = null) {
+fun NextSongList(title: String?) {
     Row (
         modifier = Modifier.fillMaxWidth()
-            .height(41.dp).padding(horizontal = 18.dp, vertical = 8.dp),
+            .height(41.dp).padding(horizontal = 21.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ){
         Text(
