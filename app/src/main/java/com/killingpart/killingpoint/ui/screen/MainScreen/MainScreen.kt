@@ -93,6 +93,17 @@ fun MainScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         diaryViewModel.loadDiaries(context)
         userViewModel.loadUserInfo(context)
+        
+        // WebView 캐시 초기화
+        try {
+            val webView = android.webkit.WebView(context)
+            webView.clearCache(true)
+            webView.clearHistory()
+            webView.destroy()
+            android.util.Log.d("MainScreen", "WebView cache cleared on startup")
+        } catch (e: Exception) {
+            android.util.Log.e("MainScreen", "Failed to clear WebView cache: ${e.message}")
+        }
     }
 
     LaunchedEffect(listExpanded) {
