@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -22,7 +23,11 @@ import androidx.compose.ui.unit.dp
 import com.killingpart.killingpoint.R
 
 @Composable
-fun MusicCueBtn(modifier : Modifier = Modifier) {
+fun MusicCueBtn(
+    modifier: Modifier = Modifier,
+    onPrevious: () -> Unit = {},
+    onNext: () -> Unit = {}
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -39,8 +44,10 @@ fun MusicCueBtn(modifier : Modifier = Modifier) {
             )
 
             Box(
-                modifier = Modifier.size(44.dp)
-                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+                    .clickable { onPrevious() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -63,8 +70,10 @@ fun MusicCueBtn(modifier : Modifier = Modifier) {
             }
 
             Box(
-                modifier = Modifier.size(44.dp)
-                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+                    .clickable { onNext() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(

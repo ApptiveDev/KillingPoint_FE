@@ -30,27 +30,24 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
-import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
-import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 
 @Composable
-fun RunMusicBox() {
+fun RunMusicBox(
+    currentIndex: Int,
+    currentDiary: Diary?
+) {
+    android.util.Log.d("RunMusicBox", "RunMusicBox called with index: $currentIndex, diary: ${currentDiary?.musicTitle}")
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
-    val diaryViewModel: DiaryViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
-    val diaryState by diaryViewModel.state.collectAsState()
-    val diaries = (diaryState as? DiaryUiState.Success)?.diaries ?: emptyList()
-    val currentIndex = 0
-    val currentDiary = diaries.getOrNull(currentIndex)
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
-        diaryViewModel.loadDiaries(context)
     }
 
     Box(
@@ -160,8 +157,3 @@ fun RunMusicBox() {
     }
 }
 
-@Preview
-@Composable
-fun RunBoxPreview() {
-    RunMusicBox()
-}

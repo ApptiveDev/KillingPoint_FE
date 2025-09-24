@@ -65,7 +65,7 @@ enum class MainTab {
 @Composable
 fun MainScreen(navController: NavController) {
     var selected by remember { mutableStateOf(MainTab.PLAY) }
-    val currentIndex = 0
+    var currentIndex by remember { mutableStateOf(0) }
     val mainListState = rememberLazyListState()
     
     // DiaryViewModel을 MainScreen에서 관리
@@ -164,7 +164,10 @@ fun MainScreen(navController: NavController) {
                                     .padding(horizontal = 16.dp)
                                     .background(color = Color.Black, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
                             ) {
-                                RunMusicBox()
+                                RunMusicBox(
+                                    currentIndex = currentIndex,
+                                    currentDiary = diaries.getOrNull(currentIndex)
+                                )
                             }
                         }
 
@@ -194,7 +197,19 @@ fun MainScreen(navController: NavController) {
             MusicCueBtn(
                 modifier = Modifier
                     .align (Alignment.BottomCenter)
-                    .padding(bottom = BottomBarHeight + MusicCueBtnGap)
+                    .padding(bottom = BottomBarHeight + MusicCueBtnGap),
+                onPrevious = {
+                    if (currentIndex > 0) {
+                        currentIndex--
+                        android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
+                    }
+                },
+                onNext = {
+                    if (currentIndex < diaries.size - 1) {
+                        currentIndex++
+                        android.util.Log.d("MainScreen", "Next clicked, new index: $currentIndex")
+                    }
+                }
             )
 
             if (!listExpanded && selected == MainTab.PLAY) {

@@ -92,7 +92,7 @@ class AuthRepository(
         }
 
 
-    suspend fun getMyDiaries(page: Int = 0, size: Int = 5): MyDiaries =
+    suspend fun getMyDiaries(page: Int = 0, size: Int = 10): MyDiaries =
         withContext(Dispatchers.IO) {
             try {
                 val accessToken = getAccessToken() 
