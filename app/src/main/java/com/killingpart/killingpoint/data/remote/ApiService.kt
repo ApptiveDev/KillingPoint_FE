@@ -5,6 +5,8 @@ import com.killingpart.killingpoint.data.model.KakaoAuthResponse
 import com.killingpart.killingpoint.data.model.MyDiaries
 import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
+import com.killingpart.killingpoint.data.model.CreateDiaryRequest
+import com.killingpart.killingpoint.data.model.Diary
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -34,4 +36,10 @@ interface ApiService {
         @Query("page") page: Int = 0,
         @Query("size") size: Int = 5
     ): MyDiaries
+
+    @POST("diaries")
+    suspend fun createDiary(
+        @Header("Authorization") accessToken: String,
+        @Body body: CreateDiaryRequest
+    ): retrofit2.Response<Unit>
 }

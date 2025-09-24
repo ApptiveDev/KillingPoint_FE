@@ -47,6 +47,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalInspectionMode
 
 @Composable
@@ -101,7 +102,12 @@ fun AddMusicScreen(navController: NavController) {
                             contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
                             items(tracks) { track ->
-                                TrackRow(track)
+                                TrackRow(track, onClick = {
+                                    val encodedTitle = java.net.URLEncoder.encode(track.title, "UTF-8")
+                                    val encodedArtist = java.net.URLEncoder.encode(track.artist, "UTF-8")
+                                    val encodedImage = java.net.URLEncoder.encode(track.albumImageUrl ?: "", "UTF-8")
+                                    navController.navigate("write_diary?title=$encodedTitle&artist=$encodedArtist&image=$encodedImage")
+                                })
                                 Spacer(modifier = Modifier.height(10.dp))
                             }
                         }
@@ -119,10 +125,10 @@ fun AddMusicScreen(navController: NavController) {
 }
 
 @Composable
-private fun TrackRow(track: SimpleTrack) {
+private fun TrackRow(track: SimpleTrack, onClick: () -> Unit = {}) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF232427)),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             if (LocalInspectionMode.current) {
