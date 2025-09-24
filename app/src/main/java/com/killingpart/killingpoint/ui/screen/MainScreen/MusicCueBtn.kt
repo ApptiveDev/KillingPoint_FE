@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -22,59 +23,72 @@ import androidx.compose.ui.unit.dp
 import com.killingpart.killingpoint.R
 
 @Composable
-fun MusicCueBtn() {
-    Row (
-        modifier = Modifier.fillMaxWidth().height(70.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
-    ){
-        Image(
-            painter = painterResource(id = R.drawable.shuffle),
-            contentDescription = "셔플",
-            modifier = Modifier.size(24.dp)
-        )
-
-        Box(
-            modifier = Modifier.size(44.dp)
-                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
-            contentAlignment = Alignment.Center
+fun MusicCueBtn(
+    modifier: Modifier = Modifier,
+    onPrevious: () -> Unit = {},
+    onNext: () -> Unit = {}
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(70.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Image(
-                painter = painterResource(id= R.drawable.skip_back),
-                contentDescription = "이전 음악 듣기",
-                modifier = Modifier.size(28.dp)
+                painter = painterResource(id = R.drawable.shuffle),
+                contentDescription = "셔플",
+                modifier = Modifier.size(24.dp)
             )
-        }
 
-        Box(
-            modifier = Modifier.size(70.dp)
-                .background(color = Color.White, RoundedCornerShape(50.dp)),
-            contentAlignment = Alignment.Center
-        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+                    .clickable { onPrevious() },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.skip_back),
+                    contentDescription = "이전 음악 듣기",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
+            Box(
+                modifier = Modifier.size(70.dp)
+                    .background(color = Color.White, RoundedCornerShape(50.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.pause),
+                    contentDescription = "일시정지",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+                    .clickable { onNext() },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.skip_fwd),
+                    contentDescription = "다음 음악 듣기",
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+
             Image(
-                painter = painterResource(id = R.drawable.pause),
-                contentDescription = "일시정지",
+                painter = painterResource(id = R.drawable.repeat),
+                contentDescription = "반복재생",
                 modifier = Modifier.size(24.dp)
             )
         }
-
-        Box(
-            modifier = Modifier.size(44.dp)
-                .background(color = Color(0xFF161616), RoundedCornerShape(30.dp)),
-            contentAlignment = Alignment.Center
-        ){
-            Image(
-                painter = painterResource(id= R.drawable.skip_fwd),
-                contentDescription = "다음 음악 듣기",
-                modifier = Modifier.size(28.dp)
-            )
-        }
-
-        Image(
-            painter = painterResource(id = R.drawable.repeat),
-            contentDescription = "반복재생",
-            modifier = Modifier.size(24.dp)
-        )
     }
 }
 

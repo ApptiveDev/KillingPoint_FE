@@ -28,6 +28,7 @@ import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.data.model.Diary
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,12 +48,17 @@ private fun getYouTubeAutoPlayUrl(embedUrl: String): String {
 
 @Composable
 fun YoutubeBox(diary: Diary?) {
+    Log.d("YoutubeBox", "YoutubeBox called with diary: ${diary?.musicTitle}")
+    
     Column (
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         if (diary != null) {
             val autoPlayUrl = getYouTubeAutoPlayUrl(diary.videoUrl)
             Log.d("YoutubeBox", "Loading URL: $autoPlayUrl")
+            
+            // diary.videoUrl을 key로 사용하여 diary가 변경될 때마다 AndroidView 재생성
+            key(diary.videoUrl) {
 
             AndroidView(
                 factory = { context ->
@@ -111,6 +117,7 @@ fun YoutubeBox(diary: Diary?) {
                     .fillMaxWidth()
                     .height(207.dp)
             )
+            }
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
@@ -131,20 +138,6 @@ fun YoutubeBox(diary: Diary?) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                MusicTimeBar(
-                    title = diary.musicTitle,
-                    start = 0,
-                    during = 20,
-                    total = 180
-                )
-            }
         } else {
             Image(
                 painter = painterResource(id = R.drawable.basic_youtube),
@@ -170,19 +163,6 @@ fun YoutubeBox(diary: Diary?) {
             )
             Spacer(modifier = Modifier.height(40.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                MusicTimeBar(
-                    title = "로딩 중...",
-                    start = 0,
-                    during = 20,
-                    total = 180
-                )
-            }
 
         }
     }

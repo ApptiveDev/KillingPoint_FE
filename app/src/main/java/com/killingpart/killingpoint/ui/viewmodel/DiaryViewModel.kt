@@ -29,7 +29,7 @@ class DiaryViewModel(
         val repo = repoFactory(context)
         viewModelScope.launch {
             try {
-                val diaries = repo.getMyDiaries(page = 0, size = 5)
+                val diaries = repo.getMyDiaries(page = 0, size = 10)
                 if (diaries.content.isNotEmpty()) {
                     _state.value = DiaryUiState.Success(diaries.content)
                 } else {

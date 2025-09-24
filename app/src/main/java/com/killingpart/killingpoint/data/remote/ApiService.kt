@@ -32,6 +32,6 @@ interface ApiService {
     suspend fun getMyDiaries(
         @Header("Authorization") accessToken: String,
         @Query("page") page: Int = 0,
-        @Query("size") size: Int = 5
+        @Query("size") size: Int = 10
     ): MyDiaries
 }

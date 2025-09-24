@@ -31,6 +31,7 @@ import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 fun BottomBar(navController: NavController) {
     Row (
         modifier = Modifier.fillMaxWidth()
+            .background(color = Color.Black)
             .height(94.dp)
             .padding(horizontal = 42.dp,),
         horizontalArrangement = Arrangement.spacedBy(38.dp),

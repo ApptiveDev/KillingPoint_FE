@@ -11,11 +11,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import android.graphics.Shader
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -29,41 +31,37 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
-import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
-import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 
 @Composable
-fun RunMusicBox() {
+fun RunMusicBox(
+    currentIndex: Int,
+    currentDiary: Diary?
+) {
+    android.util.Log.d("RunMusicBox", "RunMusicBox called with index: $currentIndex, diary: ${currentDiary?.musicTitle}")
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
-    val diaryViewModel: DiaryViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
-    val diaryState by diaryViewModel.state.collectAsState()
-
-    val currentDiary = (diaryState as? DiaryUiState.Success)?.diaries?.firstOrNull()
-    val nextDiary = (diaryState as? DiaryUiState.Success)?.diaries?.getOrNull(1)
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
-        diaryViewModel.loadDiaries(context)
     }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 35.dp)
+            .padding(horizontal = 24.dp )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(8.dp))
         ) {
             Row(
-                modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 20.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = when (val s = userState) {
@@ -96,121 +94,74 @@ fun RunMusicBox() {
                 if (currentDiary != null) listState.animateScrollToItem(1)
             }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp),
-                contentPadding = PaddingValues(bottom = 160.dp)
-            ) {
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) { YoutubeBox(currentDiary) }
-                    Spacer(modifier = Modifier.height(24.dp))
-                }
-                item {
-                    Box(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        AlbumDiaryBox(currentDiary)
-                    }
-                }
-            }
-
-            if (listState.firstVisibleItemIndex == 1) {
-                Box(
+            // currentDiary가 변경될 때마다 LazyColumn 전체 재생성
+            key(currentDiary?.videoUrl) {
+                LazyColumn(
+                    state = listState,
                     modifier = Modifier
-                        .size(316.dp, 67.dp)
-                        .offset(y = (-40).dp),
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .graphicsLayer {
-                                compositingStrategy = CompositingStrategy.Offscreen
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    renderEffect = android.graphics.RenderEffect
-                                        .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
-                                        .asComposeRenderEffect()
-                                }
-                            }
-                            .background(Color.Black.copy(alpha = 0.2f))
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        MusicTimeBar(
-                            title = currentDiary?.musicTitle,
-                            start = 102,
-                            during = 28,
-                            total = 180
-                        )
+                    item {
+                        android.util.Log.d("RunMusicBox", "LazyColumn item 0 - calling YoutubeBox")
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) { 
+                            android.util.Log.d("RunMusicBox", "About to call YoutubeBox with: ${currentDiary?.musicTitle}")
+                            YoutubeBox(currentDiary) 
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                    item {
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AlbumDiaryBox(currentDiary)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
                 }
             }
         }
-
 
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = 450.dp)
+                .size(316.dp, 80.dp)
+                .offset(y = 370.dp)
+                .background(color = Color.Transparent, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        compositingStrategy = CompositingStrategy.Offscreen
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            renderEffect = android.graphics.RenderEffect
+                                .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
+                                .asComposeRenderEffect()
+                        }
+                    }
+                    .background(Color.Black.copy(alpha = 0.2f))
+            )
+
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(12.dp))
-                NextSongList(nextDiary?.musicTitle)
-                Spacer(modifier = Modifier.height(12.dp))
-                MusicCueBtn()
+                MusicTimeBar(
+                    title = currentDiary?.musicTitle,
+                    start = 102,
+                    during = 28,
+                    total = 180
+                )
             }
         }
 
-        when (val s = userState) {
-            is UserUiState.Success -> {
-                AsyncImage(
-                    model = s.userInfo.profileImageUrl,
-                    contentDescription = "프로필 사진",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = (-10).dp, y = (-10).dp)
-                        .clip(RoundedCornerShape(50))
-                        .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                    placeholder = painterResource(id = R.drawable.default_profile),
-                    error = painterResource(id = R.drawable.default_profile)
-                )
-            }
-            else -> {
-                Image(
-                    painter = painterResource(id = R.drawable.default_profile),
-                    contentDescription = "프로필 사진",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = (-10).dp, y = (-10).dp)
-                        .clip(RoundedCornerShape(50))
-                        .border(3.dp, mainGreen, RoundedCornerShape(50))
-                )
-            }
-        }
     }
 }
 
-@Preview
-@Composable
-fun RunBoxPreview() {
-    RunMusicBox()
-}
