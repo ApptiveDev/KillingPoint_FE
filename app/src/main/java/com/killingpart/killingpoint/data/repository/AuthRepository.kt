@@ -7,6 +7,8 @@ import com.killingpart.killingpoint.data.model.KakaoAuthResponse
 import com.killingpart.killingpoint.data.model.MyDiaries
 import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
+import com.killingpart.killingpoint.data.model.CreateDiaryRequest
+import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
@@ -104,4 +106,18 @@ class AuthRepository(
                 throw IllegalStateException("다이어리 조회 실패 ($code): $msg")
             }
         }
+
+    suspend fun createDiary(body: CreateDiaryRequest) = withContext(Dispatchers.IO) {
+        try {
+            val accessToken = getAccessToken() ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.createDiary("Bearer $accessToken", body)
+            if (!response.isSuccessful) {
+                throw IllegalStateException("일기 작성 실패 (${response.code()}): ${response.message()}")
+            }
+        } catch (e: HttpException) {
+            val code = e.code()
+            val msg = e.response()?.errorBody()?.string().orEmpty()
+            throw IllegalStateException("일기 작성 실패 ($code): $msg")
+        }
+    }
 }

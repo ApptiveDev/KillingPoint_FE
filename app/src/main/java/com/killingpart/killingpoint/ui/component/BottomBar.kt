@@ -28,7 +28,7 @@ import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 
 @Composable
-fun BottomBar(navController: NavController) {
+fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
     Row (
         modifier = Modifier.fillMaxWidth()
             .background(color = Color.Black)
