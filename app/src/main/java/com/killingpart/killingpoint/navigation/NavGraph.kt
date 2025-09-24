@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.screen.HomeScreen.HelloScreen
 import com.killingpart.killingpoint.ui.screen.MainScreen.MainScreen
+import com.killingpart.killingpoint.ui.screen.AddMusicScreen.AddMusicScreen
 
 @Composable
 fun NavGraph(
@@ -20,6 +21,10 @@ fun NavGraph(
 
         composable("main") {
             MainScreen(navController)
+        }
+
+        composable("add_music") {
+            AddMusicScreen(navController)
         }
     }
 }

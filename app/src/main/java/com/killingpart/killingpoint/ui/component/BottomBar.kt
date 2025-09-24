@@ -96,7 +96,7 @@ fun BottomBar(navController: NavController) {
             Image(
                 painter = painterResource(id = R.drawable.navi_add),
                 contentDescription = "추가 네비게이션 바",
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp).clickable { navController.navigate("add_music") }
             )
             Text(
                 text = "추가",
