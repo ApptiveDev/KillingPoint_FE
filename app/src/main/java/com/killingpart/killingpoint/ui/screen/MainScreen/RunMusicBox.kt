@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import android.graphics.Shader
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -43,9 +44,9 @@ fun RunMusicBox() {
     val diaryViewModel: DiaryViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
     val diaryState by diaryViewModel.state.collectAsState()
-
-    val currentDiary = (diaryState as? DiaryUiState.Success)?.diaries?.firstOrNull()
-    val nextDiary = (diaryState as? DiaryUiState.Success)?.diaries?.getOrNull(1)
+    val diaries = (diaryState as? DiaryUiState.Success)?.diaries ?: emptyList()
+    val currentIndex = 0
+    val currentDiary = diaries.getOrNull(currentIndex)
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
@@ -55,15 +56,14 @@ fun RunMusicBox() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 35.dp)
+            .padding(horizontal = 24.dp )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(8.dp))
         ) {
             Row(
-                modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 8.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 20.dp, bottom = 8.dp)
             ) {
                 Text(
                     text = when (val s = userState) {
@@ -101,7 +101,7 @@ fun RunMusicBox() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(400.dp),
-                contentPadding = PaddingValues(bottom = 160.dp)
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 item {
                     Box(
@@ -117,95 +117,46 @@ fun RunMusicBox() {
                     ) {
                         AlbumDiaryBox(currentDiary)
                     }
-                }
-            }
-
-            if (listState.firstVisibleItemIndex == 1) {
-                Box(
-                    modifier = Modifier
-                        .size(316.dp, 67.dp)
-                        .offset(y = (-40).dp),
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .matchParentSize()
-                            .graphicsLayer {
-                                compositingStrategy = CompositingStrategy.Offscreen
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    renderEffect = android.graphics.RenderEffect
-                                        .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
-                                        .asComposeRenderEffect()
-                                }
-                            }
-                            .background(Color.Black.copy(alpha = 0.2f))
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        MusicTimeBar(
-                            title = currentDiary?.musicTitle,
-                            start = 102,
-                            during = 28,
-                            total = 180
-                        )
-                    }
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }
-
 
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = 450.dp)
+                .size(316.dp, 80.dp)
+                .offset(y = 370.dp)
+                .background(color = Color.Transparent, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        compositingStrategy = CompositingStrategy.Offscreen
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            renderEffect = android.graphics.RenderEffect
+                                .createBlurEffect(16f, 16f, Shader.TileMode.CLAMP)
+                                .asComposeRenderEffect()
+                        }
+                    }
+                    .background(Color.Black.copy(alpha = 0.2f))
+            )
+
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(12.dp))
-                NextSongList(nextDiary?.musicTitle)
-                Spacer(modifier = Modifier.height(12.dp))
-                MusicCueBtn()
+                MusicTimeBar(
+                    title = currentDiary?.musicTitle,
+                    start = 102,
+                    during = 28,
+                    total = 180
+                )
             }
         }
 
-        when (val s = userState) {
-            is UserUiState.Success -> {
-                AsyncImage(
-                    model = s.userInfo.profileImageUrl,
-                    contentDescription = "프로필 사진",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = (-10).dp, y = (-10).dp)
-                        .clip(RoundedCornerShape(50))
-                        .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                    placeholder = painterResource(id = R.drawable.default_profile),
-                    error = painterResource(id = R.drawable.default_profile)
-                )
-            }
-            else -> {
-                Image(
-                    painter = painterResource(id = R.drawable.default_profile),
-                    contentDescription = "프로필 사진",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .align(Alignment.TopStart)
-                        .offset(x = (-10).dp, y = (-10).dp)
-                        .clip(RoundedCornerShape(50))
-                        .border(3.dp, mainGreen, RoundedCornerShape(50))
-                )
-            }
-        }
     }
 }
 

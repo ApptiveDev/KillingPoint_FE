@@ -18,7 +18,7 @@ fun AppBackground(content: @Composable () -> Unit) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
                 color = Color(0xFF060606),
-                radius = size.minDimension * 0.8f,
+                radius = size.minDimension * 0.85f,
                 center = Offset(size.width * 0.1f, size.height * 0.37f)
             )
 

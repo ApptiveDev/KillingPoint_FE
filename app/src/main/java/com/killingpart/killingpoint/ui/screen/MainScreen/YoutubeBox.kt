@@ -131,20 +131,6 @@ fun YoutubeBox(diary: Diary?) {
 
             Spacer(modifier = Modifier.height(40.dp))
 
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                MusicTimeBar(
-                    title = diary.musicTitle,
-                    start = 0,
-                    during = 20,
-                    total = 180
-                )
-            }
         } else {
             Image(
                 painter = painterResource(id = R.drawable.basic_youtube),
@@ -170,19 +156,6 @@ fun YoutubeBox(diary: Diary?) {
             )
             Spacer(modifier = Modifier.height(40.dp))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                MusicTimeBar(
-                    title = "로딩 중...",
-                    start = 0,
-                    during = 20,
-                    total = 180
-                )
-            }
 
         }
     }

@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,7 +25,7 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 
 @Composable
-fun NextSongList(title: String?) {
+fun NextSongList(title: String?, onToggle: ()-> Unit,) {
     Row (
         modifier = Modifier.fillMaxWidth()
             .height(41.dp).padding(horizontal = 21.dp, vertical = 8.dp),
@@ -54,6 +55,7 @@ fun NextSongList(title: String?) {
             painter = painterResource(id = R.drawable.music_list),
             contentDescription = "음악 리스트",
             modifier = Modifier.size(24.dp)
+                .clickable { onToggle() }
         )
     }
 }
