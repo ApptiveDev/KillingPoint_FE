@@ -9,7 +9,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
@@ -81,74 +83,34 @@ fun YouTubePlayerBox(diary: Diary?) {
                     .height(200.dp)
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // 컨트롤 버튼들
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button(
-                    onClick = {
-                        // 재생/일시정지 토글
-                        Log.d("YouTubePlayerBox", "Toggle play/pause")
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isPlaying) Color(0xFFFF6B6B) else Color(0xFFCCFF33),
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Text(
-                        text = if (isPlaying) "⏸ 일시정지" else "▶ 재생",
-                        fontFamily = PaperlogyFontFamily
-                    )
-                }
-                
-                Button(
-                    onClick = {
-                        // 정지
-                        Log.d("YouTubePlayerBox", "Stop")
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF666666),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("⏹ 정지", fontFamily = PaperlogyFontFamily)
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // 제목 + 우측 고정 버튼 Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 제목: 우측 버튼과 겹치지 않게 가변 폭 + 말줄임
+            // 제목 (AlbumDiaryBox와 동일한 스타일)
+            diary.musicTitle?.let { title ->
                 Text(
-                    text = diary.musicTitle,
+                    text = title,
                     fontFamily = PaperlogyFontFamily,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    color = Color.White
                 )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // 우측 뮤직 리스트 버튼(고정)
-                Button(
-                    onClick = { Log.d("YouTubePlayerBox", "Open music list") },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF232427),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "리스트", fontFamily = PaperlogyFontFamily)
-                }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 가수 (AlbumDiaryBox와 동일한 스타일)
+            diary.artist?.let { artist ->
+                Text(
+                    text = artist,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Light,
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
         }
     }
 }
