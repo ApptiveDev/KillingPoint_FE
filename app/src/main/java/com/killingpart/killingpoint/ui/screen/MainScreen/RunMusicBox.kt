@@ -104,13 +104,12 @@ fun RunMusicBox(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     item {
-                        android.util.Log.d("RunMusicBox", "LazyColumn item 0 - calling YoutubeBox")
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
                         ) { 
-                            android.util.Log.d("RunMusicBox", "About to call YoutubeBox with: ${currentDiary?.musicTitle}")
-                            YoutubeBox(currentDiary) 
+                            android.util.Log.d("RunMusicBox", "About to call YouTubePlayerBox with: ${currentDiary?.musicTitle}")
+                            YouTubePlayerBox(currentDiary) 
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                     }
