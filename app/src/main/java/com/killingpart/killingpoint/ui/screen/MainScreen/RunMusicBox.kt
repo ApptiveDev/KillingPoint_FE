@@ -107,7 +107,7 @@ fun RunMusicBox() {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.Center
-                    ) { YoutubeBox(currentDiary) }
+                    ) { YouTubePlayerBox(currentDiary) }
                     Spacer(modifier = Modifier.height(24.dp))
                 }
                 item {
