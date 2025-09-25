@@ -112,14 +112,14 @@ fun AlbumDiaryBox(diary: Diary?) {
             )
         }
 
-        Spacer(modifier = Modifier.height(31.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
             text = "킬링파트 일기",
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Medium,
             fontSize = 14.sp,
-            color = Color.White
+            color = Color(0xFFA4A4A6)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
