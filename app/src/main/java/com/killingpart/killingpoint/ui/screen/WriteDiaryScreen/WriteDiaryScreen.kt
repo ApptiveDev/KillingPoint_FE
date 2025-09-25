@@ -41,8 +41,9 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.component.BottomBar
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 val kor_font_medium = FontFamily(Font(R.font.paperlogy_medium))
 val eng_font_extrabold = FontFamily(Font(R.font.unbounded_extrabold))
@@ -54,6 +55,7 @@ fun WriteDiaryScreen(
     artist: String,
     imageUrl: String
 ) {
+    val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
     var scope by remember { mutableStateOf("PUBLIC") }
     var isDropdownExpanded by remember { mutableStateOf(false) }
@@ -130,7 +132,7 @@ fun WriteDiaryScreen(
                             color = Color(0xFFA4A4A6)
                         )
                     },
-                    textStyle = TextStyle(fontSize = 16.sp),
+                    textStyle = TextStyle(fontSize = 16.sp, fontFamily = korean_font_medium),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color(0xFF232427),
                         unfocusedContainerColor = Color(0xFF232427),
@@ -217,7 +219,7 @@ fun WriteDiaryScreen(
         ) {
             Button(
                 onClick = {
-                    GlobalScope.launch {
+                    coroutineScope.launch {
                         runCatching {
                             val videos = repo.searchVideos(artist = artist, title = title)
                             val videoUrl = videos.firstOrNull()?.url ?: ""
