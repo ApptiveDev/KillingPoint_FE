@@ -1,12 +1,15 @@
 package com.killingpart.killingpoint.ui.screen.MainScreen
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -44,11 +47,23 @@ fun YouTubePlayerBox(diary: Diary?) {
                 )
             }
             
-            // YouTube Player
-            AndroidView(
-                factory = { context ->
-                    YouTubePlayerView(context).apply {
-                        addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+            // YouTube Player with custom background
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(
+                        color = Color.Transparent,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+            ) {
+                AndroidView(
+                    factory = { context ->
+                        YouTubePlayerView(context).apply {
+                            // YouTube Player 자체에 corner radius 적용
+                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                            
+                            addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
                             override fun onReady(youTubePlayer: YouTubePlayer) {
                                 Log.d("YouTubePlayerBox", "Player ready")
                                 // 자동재생 시작 (백그라운드 재생 가능)
@@ -77,11 +92,12 @@ fun YouTubePlayerBox(diary: Diary?) {
                             }
                         })
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-            )
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(16.dp))
+                )
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
 
