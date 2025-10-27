@@ -26,7 +26,7 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
  * YouTube Player API를 사용한 백그라운드 재생 가능한 플레이어
  */
 @Composable
-fun YouTubePlayerBox(diary: Diary?) {
+fun YouTubePlayerBox(diary: Diary?, startSeconds: Float) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
     
@@ -67,7 +67,7 @@ fun YouTubePlayerBox(diary: Diary?) {
                             override fun onReady(youTubePlayer: YouTubePlayer) {
                                 Log.d("YouTubePlayerBox", "Player ready")
                                 // 자동재생 시작 (백그라운드 재생 가능)
-                                youTubePlayer.loadVideo(videoId, 0f)
+                                youTubePlayer.loadVideo(videoId, startSeconds)
                                 youTubePlayer.play()
                                 isPlaying = true
                             }

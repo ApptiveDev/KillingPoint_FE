@@ -53,7 +53,10 @@ fun WriteDiaryScreen(
     navController: NavController,
     title: String,
     artist: String,
-    imageUrl: String
+    imageUrl: String,
+    duration: String,
+    start: String,
+    end: String
 ) {
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
@@ -229,7 +232,10 @@ fun WriteDiaryScreen(
                                 albumImageUrl = imageUrl,
                                 videoUrl = videoUrl,
                                 scope = scope,
-                                content = content
+                                content = content,
+                                duration = duration,
+                                start = start,
+                                end = end,
                             )
                             repo.createDiary(body)
                         }.onSuccess {
@@ -277,7 +283,10 @@ fun WriteDiaryScreenPreview() {
         navController = rememberNavController(),
         title = "Death Sonnet von Dat",
         artist = "Davinci Leo",
-        imageUrl = "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0"
+        imageUrl = "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0",
+        duration = "10",
+        start = "2",
+        end = "12"
     )
 }
 

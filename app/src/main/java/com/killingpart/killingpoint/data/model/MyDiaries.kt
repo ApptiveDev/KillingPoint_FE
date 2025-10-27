@@ -7,11 +7,12 @@ data class Diary(
     val content: String,
     val videoUrl: String,
     val scope: String,
-    var duration :String,
-    var start : String,
+    var duration: String,
+    var start: String,
     var end: String,
-    val createDate :String,
-    val updateDate: String
+    val createDate: String,
+    val updateDate: String,
+
 )
 
 data class DiaryPage(
