@@ -76,15 +76,12 @@ fun RunMusicBox(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Box(
-                    modifier = Modifier
-                        .size(41.dp, 16.dp)
-                        .background(color = Color(0xFF212123), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.add),
                         contentDescription = "킬링파트 추가 버튼",
-                        modifier = Modifier.size(12.dp, 8.dp)
+                        modifier = Modifier.size(41.dp, 16.dp)
                     )
                 }
             }
