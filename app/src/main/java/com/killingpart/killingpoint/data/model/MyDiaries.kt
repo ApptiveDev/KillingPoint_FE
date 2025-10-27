@@ -12,6 +12,7 @@ data class Diary(
     var end: String,
     val createDate: String,
     val updateDate: String,
+
 )
 
 data class DiaryPage(
