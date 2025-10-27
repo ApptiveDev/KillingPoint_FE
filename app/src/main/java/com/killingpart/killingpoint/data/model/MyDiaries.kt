@@ -5,7 +5,13 @@ data class Diary(
     val musicTitle: String,
     val albumImageUrl: String,
     val content: String,
-    val videoUrl: String
+    val videoUrl: String,
+    val scope: String,
+    var duration :String,
+    var start : String,
+    var end: String,
+    val createDate :String,
+    val updateDate: String
 )
 
 data class DiaryPage(
