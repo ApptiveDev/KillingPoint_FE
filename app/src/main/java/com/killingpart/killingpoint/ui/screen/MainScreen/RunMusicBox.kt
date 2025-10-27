@@ -109,7 +109,7 @@ fun RunMusicBox(
                             contentAlignment = Alignment.Center
                         ) { 
                             android.util.Log.d("RunMusicBox", "About to call YouTubePlayerBox with: ${currentDiary?.musicTitle}")
-                            YouTubePlayerBox(currentDiary) 
+                            YouTubePlayerBox(currentDiary, currentDiary?.start?.toFloatOrNull() ?: 0f)
                         }
                         Spacer(modifier = Modifier.height(24.dp))
                     }

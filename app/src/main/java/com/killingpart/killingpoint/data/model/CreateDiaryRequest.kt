@@ -6,7 +6,10 @@ data class CreateDiaryRequest(
     val albumImageUrl: String,
     val videoUrl: String,
     val scope: String,
-    val content: String
+    val content: String,
+    val duration: String,
+    val start: String,
+    val end: String,
 )
 
 
