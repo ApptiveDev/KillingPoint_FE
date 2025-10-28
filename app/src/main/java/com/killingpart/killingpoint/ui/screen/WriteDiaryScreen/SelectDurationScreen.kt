@@ -158,12 +158,20 @@ fun SelectDurationScreen(
                             )
                         }
                     } else if (videoUrl != null) {
-                        YouTubePlayerBox(
-                            title = title,
+                        val tempDiary = Diary(
                             artist = artist,
-                            videoUrl = videoUrl,
-                            startSeconds = 0f
+                            musicTitle = title,
+                            albumImageUrl = imageUrl,
+                            videoUrl = videoUrl!!,
+                            content = "",
+                            scope = "PUBLIC",
+                            duration = "0",
+                            start = "0",
+                            end = "0",
+                            createDate = "",
+                            updateDate = ""
                         )
+                        YouTubePlayerBox(tempDiary, 0f)
                     } else {
                         Box(
                             modifier = Modifier
