@@ -7,6 +7,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
@@ -39,15 +41,12 @@ import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.ui.screen.MainScreen.AlbumDiaryBox
+import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
+import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.AlbumDiaryBoxWithoutContent
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
 
 @Composable
 fun SelectDurationScreen(
@@ -56,13 +55,41 @@ fun SelectDurationScreen(
     artist: String,
     imageUrl: String
 ) {
-
-    // Todo : 자동 스크롤 및 유튜브 플레이어 추가
-
-
     var duration by remember { mutableStateOf("10") }
     var start by remember { mutableStateOf("0") }
     var end = start + duration
+
+    var videoUrl by remember { mutableStateOf<String?>(null) }
+    var isLoadingVideo by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val repo = remember { AuthRepository(context) }
+
+    LaunchedEffect(title, artist) {
+        isLoadingVideo = true
+        try {
+            val videos = repo.searchVideos(artist, title)
+            val firstVideo = videos.firstOrNull()
+            videoUrl = firstVideo?.url
+            android.util.Log.d("SelectDurationScreen", "Search query: $artist - $title")
+            android.util.Log.d("SelectDurationScreen", "Found ${videos.size} videos")
+            android.util.Log.d("SelectDurationScreen", "First video URL: $videoUrl")
+            android.util.Log.d("SelectDurationScreen", "First video title: ${firstVideo?.title}")
+        } catch (e: Exception) {
+            android.util.Log.e("SelectDurationScreen", "YouTube search failed: ${e.message}")
+            videoUrl = null
+        }
+        isLoadingVideo = false
+    }
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(videoUrl) {
+        if (videoUrl != null) {
+            kotlinx.coroutines.delay(500)
+            listState.animateScrollToItem(1)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -72,7 +99,7 @@ fun SelectDurationScreen(
 
         Column(
             modifier = Modifier
-                .weight(1f) // ← 여기!
+                .weight(1f)
                 .fillMaxWidth()
                 .padding(horizontal = 15.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,42 +135,94 @@ fun SelectDurationScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            AlbumDiaryBoxWithoutContent(
-                track = SimpleTrack(
-                    title = title,
-                    artist = artist,
-                    albumImageUrl = imageUrl
-                )
-            )
-
-            Spacer(modifier = Modifier.height(38.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
-                Text(
-                    text = "킬링파트 자르기",
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Light,
-                    fontSize = 14.sp,
-                    color = Color(0xFFEBEBEB)
-                )
-                Spacer(Modifier.height(18.dp))
+                item {
+                    if (isLoadingVideo) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .background(Color(0xFF1A1A1A), RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "YouTube 비디오 검색 중...",
+                                fontFamily = PaperlogyFontFamily,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else if (videoUrl != null) {
+                        YouTubePlayerBox(
+                            title = title,
+                            artist = artist,
+                            videoUrl = videoUrl,
+                            startSeconds = 0f
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .background(Color(0xFF1A1A1A), RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "YouTube 비디오를 찾을 수 없습니다",
+                                fontFamily = PaperlogyFontFamily,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+                
+                item {
+                    AlbumDiaryBoxWithoutContent(
+                        track = SimpleTrack(
+                            title = title,
+                            artist = artist,
+                            albumImageUrl = imageUrl
+                        )
+                    )
+                    
+                    Spacer(modifier = Modifier.height(38.dp))
 
-                // Todo : 구간 슬라이드 구현
-                Spacer(Modifier.height(80.dp))
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "킬링파트 자르기",
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.Light,
+                            fontSize = 14.sp,
+                            color = Color(0xFFEBEBEB)
+                        )
+                        Spacer(Modifier.height(18.dp))
 
-                Spacer(Modifier.height(38.dp))
+                        // Todo : 구간 슬라이드 구현
+                        Spacer(Modifier.height(80.dp))
 
-                // Todo : 구간 설정 슬라이드
-                Text(
-                    text = "킬링파트 길이 설정",
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Light,
-                    fontSize = 14.sp,
-                    color = Color(0xFFEBEBEB)
-                )
+                        Spacer(Modifier.height(38.dp))
+
+                        // Todo : 구간 설정 슬라이드
+                        Text(
+                            text = "킬링파트 길이 설정",
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.Light,
+                            fontSize = 14.sp,
+                            color = Color(0xFFEBEBEB)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
             }
         }
 
@@ -153,6 +232,7 @@ fun SelectDurationScreen(
                 val encodedDuration = Uri.encode(duration)
                 val encodedStart = Uri.encode(start)
                 val encodedEnd = Uri.encode(end)
+                val encodedVideoUrl = Uri.encode(videoUrl ?: "")
                 navController.navigate(
                     "write_diary" +
                             "?title=${Uri.encode(title)}" +
@@ -160,7 +240,8 @@ fun SelectDurationScreen(
                             "&image=${Uri.encode(imageUrl)}" +
                             "&duration=$encodedDuration" +
                             "&start=$encodedStart" +
-                            "&end=$encodedEnd"
+                            "&end=$encodedEnd" +
+                            "&videoUrl=$encodedVideoUrl"
                 )
             },
             modifier = Modifier
@@ -173,7 +254,7 @@ fun SelectDurationScreen(
         ) {
             Text(
                 fontFamily = korean_font_medium,
-                text = "일기작성 →"
+                text = "다음으로 →"
             )
         }
 

@@ -56,7 +56,8 @@ fun WriteDiaryScreen(
     imageUrl: String,
     duration: String,
     start: String,
-    end: String
+    end: String,
+    videoUrl: String
 ) {
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
@@ -224,8 +225,6 @@ fun WriteDiaryScreen(
                 onClick = {
                     coroutineScope.launch {
                         runCatching {
-                            val videos = repo.searchVideos(artist = artist, title = title)
-                            val videoUrl = videos.firstOrNull()?.url ?: ""
                             val body = CreateDiaryRequest(
                                 artist = artist,
                                 musicTitle = title,
@@ -286,7 +285,8 @@ fun WriteDiaryScreenPreview() {
         imageUrl = "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0",
         duration = "10",
         start = "2",
-        end = "12"
+        end = "12",
+        videoUrl = "https://www.youtube.com/embed/example"
     )
 }
 

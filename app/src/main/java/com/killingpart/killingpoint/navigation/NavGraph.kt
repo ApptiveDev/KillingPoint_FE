@@ -57,14 +57,16 @@ fun NavGraph(
                     "&image={image}" +
                     "&duration={duration}" +
                     "&start={start}" +
-                    "&end={end}",
+                    "&end={end}" +
+                    "&videoUrl={videoUrl}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("image") { type = NavType.StringType; defaultValue = "" },
                 navArgument("duration") { type = NavType.StringType; defaultValue = "" },
                 navArgument("start") { type = NavType.StringType; defaultValue = "" },
-                navArgument("end") { type = NavType.StringType; defaultValue = "" }
+                navArgument("end") { type = NavType.StringType; defaultValue = "" },
+                navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val title = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("title").orEmpty(), "UTF-8")
@@ -73,8 +75,9 @@ fun NavGraph(
             val duration = URLDecoder.decode(backStackEntry.arguments?.getString("duration").orEmpty(), "UTF-8")
             val start = URLDecoder.decode(backStackEntry.arguments?.getString("start").orEmpty(), "UTF-8")
             val end = URLDecoder.decode(backStackEntry.arguments?.getString("end").orEmpty(), "UTF-8")
+            val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
 
-            WriteDiaryScreen(navController, title, artist, image, duration, start, end)
+            WriteDiaryScreen(navController, title, artist, image, duration, start, end, videoUrl)
         }
     }
 }
