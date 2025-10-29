@@ -64,7 +64,7 @@ fun MusicListBox(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 20.dp)
+            .padding(horizontal = 24.dp)
             .animateContentSize()
     ) {
             val nextDiary = diaries.getOrNull(currentIndex + 1)

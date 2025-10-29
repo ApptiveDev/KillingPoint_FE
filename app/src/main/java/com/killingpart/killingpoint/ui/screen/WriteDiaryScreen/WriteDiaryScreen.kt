@@ -59,6 +59,15 @@ fun WriteDiaryScreen(
     end: String,
     videoUrl: String
 ) {
+    // 파라미터 확인 로그
+    LaunchedEffect(Unit) {
+        android.util.Log.d("WriteDiaryScreen", "WriteDiaryScreen received parameters:")
+        android.util.Log.d("WriteDiaryScreen", "  - duration: $duration")
+        android.util.Log.d("WriteDiaryScreen", "  - start: $start")
+        android.util.Log.d("WriteDiaryScreen", "  - end: $end")
+        android.util.Log.d("WriteDiaryScreen", "  - videoUrl: $videoUrl")
+    }
+    
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
     var scope by remember { mutableStateOf("PUBLIC") }
@@ -236,9 +245,16 @@ fun WriteDiaryScreen(
                                 start = start,
                                 end = end,
                             )
+                            android.util.Log.d("WriteDiaryScreen", "Creating diary with:")
+                            android.util.Log.d("WriteDiaryScreen", "  - duration: ${body.duration}")
+                            android.util.Log.d("WriteDiaryScreen", "  - start: ${body.start}")
+                            android.util.Log.d("WriteDiaryScreen", "  - end: ${body.end}")
                             repo.createDiary(body)
                         }.onSuccess {
-                            navController.popBackStack()
+                            android.util.Log.d("WriteDiaryScreen", "Diary created successfully")
+                            navController.navigate("main")
+                        }.onFailure { e ->
+                            android.util.Log.e("WriteDiaryScreen", "Failed to create diary: ${e.message}")
                         }
                     }
                 },

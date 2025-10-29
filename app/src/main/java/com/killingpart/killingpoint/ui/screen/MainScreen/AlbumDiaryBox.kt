@@ -133,6 +133,8 @@ fun AlbumDiaryBox(diary: Diary?) {
                 color = Color.White
             )
         }
+
+        Spacer(modifier = Modifier.height(150.dp))
     }
 }
 

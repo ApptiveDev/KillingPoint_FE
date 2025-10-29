@@ -25,9 +25,9 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 @Composable
 fun MusicTimeBar(
     title: String? = null,
-    start: Int = 0,
-    during: Int = 0,
-    total: Int = 180,
+    start: Int,
+    during: Int,
+    total: Int,
 ) {
     val density = LocalDensity.current
     var barSize by remember { mutableStateOf(IntSize.Zero) }
@@ -78,6 +78,13 @@ fun MusicTimeBar(
 
                 val startX = (start.toFloat() / total) * w
                 val endX = ((start + during).toFloat() / total) * w
+                
+                android.util.Log.d("MusicTimeBar", "Canvas drawing values:")
+                android.util.Log.d("MusicTimeBar", "  - start: $start, during: $during, total: $total")
+                android.util.Log.d("MusicTimeBar", "  - width: $w, height: $h")
+                android.util.Log.d("MusicTimeBar", "  - startX: $startX, endX: $endX")
+                android.util.Log.d("MusicTimeBar", "  - start ratio: ${start.toFloat() / total}, end ratio: ${(start + during).toFloat() / total}")
+                
                 drawLine(
                     color = mainGreen,
                     start = Offset(startX, h / 2f),
@@ -122,7 +129,7 @@ fun MusicTimeBar(
 private fun BoxScope.TimeLabel(text: String, x: Float) {
     Text(
         text = text,
-        fontSize = 10.sp,
+        fontSize = 7.sp,
         color = Color.White,
         fontFamily = PaperlogyFontFamily,
         fontWeight = FontWeight.Thin,
