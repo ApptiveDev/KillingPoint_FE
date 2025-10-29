@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.ui.graphics)
     implementation(libs.androidx.compose.material.core)
+    implementation(libs.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -71,6 +72,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.material:material-icons-extended:1.6.7")
-//    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
+    //    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender:0.32")
 }

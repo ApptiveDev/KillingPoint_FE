@@ -106,7 +106,7 @@ fun AddMusicScreen(navController: NavController) {
                                     val encodedTitle = java.net.URLEncoder.encode(track.title, "UTF-8")
                                     val encodedArtist = java.net.URLEncoder.encode(track.artist, "UTF-8")
                                     val encodedImage = java.net.URLEncoder.encode(track.albumImageUrl ?: "", "UTF-8")
-                                    navController.navigate("write_diary?title=$encodedTitle&artist=$encodedArtist&image=$encodedImage")
+                                    navController.navigate("select_duration?title=$encodedTitle&artist=$encodedArtist&image=$encodedImage")
                                 })
                                 Spacer(modifier = Modifier.height(10.dp))
                             }

@@ -213,12 +213,14 @@ fun MainScreen(navController: NavController) {
                     if (currentIndex > 0) {
                         currentIndex--
                         android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
+                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
                     }
                 },
                 onNext = {
                     if (currentIndex < diaries.size - 1) {
                         currentIndex++
                         android.util.Log.d("MainScreen", "Next clicked, new index: $currentIndex")
+                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
                     }
                 }
             )
