@@ -1,6 +1,12 @@
 package com.killingpart.killingpoint.ui.screen.WriteDiaryScreen
 import android.graphics.Shader
 import android.os.Build
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -15,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +41,17 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 
 @Composable
 fun AlbumDiaryBoxWithoutContent(track: SimpleTrack?) {
+    val infiniteTransition = rememberInfiniteTransition(label = "cd_rotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "cd_rotation"
+    )
+
     Column (
         modifier = Modifier
             .padding(horizontal = 50.dp),
@@ -49,7 +67,10 @@ fun AlbumDiaryBoxWithoutContent(track: SimpleTrack?) {
                 modifier = Modifier
                     .size(198.dp)
                     .background(color = Color.Transparent, shape = RoundedCornerShape(8.dp))
-                    .offset(x = 33.dp, y = 0.dp),
+                    .offset(x = 33.dp, y = 0.dp)
+                    .graphicsLayer {
+                        rotationZ = rotation
+                    },
                 contentScale = ContentScale.Fit
             )
 

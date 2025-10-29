@@ -30,6 +30,8 @@ fun YouTubePlayerBox(diary: Diary?, startSeconds: Float) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
     
+    Log.d("YouTubePlayerBox", "YouTubePlayerBox called with diary: ${diary?.musicTitle}, videoUrl: ${diary?.videoUrl}")
+    
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -57,46 +59,51 @@ fun YouTubePlayerBox(diary: Diary?, startSeconds: Float) {
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {
-                AndroidView(
-                    factory = { context ->
-                        YouTubePlayerView(context).apply {
-                            // YouTube Player 자체에 corner radius 적용
-                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                            
-                            addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
-                            override fun onReady(youTubePlayer: YouTubePlayer) {
-                                Log.d("YouTubePlayerBox", "Player ready")
-                                // 자동재생 시작 (백그라운드 재생 가능)
-                                youTubePlayer.loadVideo(videoId, startSeconds)
-                                youTubePlayer.play()
-                                isPlaying = true
-                            }
-                            
-                            override fun onStateChange(youTubePlayer: YouTubePlayer, state: com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState) {
-                                super.onStateChange(youTubePlayer, state)
-                                when (state) {
-                                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PLAYING -> {
-                                        isPlaying = true
-                                        Log.d("YouTubePlayerBox", "Playing")
-                                    }
-                                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PAUSED -> {
-                                        isPlaying = false
-                                        Log.d("YouTubePlayerBox", "Paused")
-                                    }
-                                    com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.ENDED -> {
-                                        isPlaying = false
-                                        Log.d("YouTubePlayerBox", "Ended")
-                                    }
-                                    else -> {}
+                // diary가 변경될 때마다 AndroidView 재생성
+                key(diary) {
+                    Log.d("YouTubePlayerBox", "AndroidView 재생성 - diary: ${diary.musicTitle}, videoUrl: ${diary.videoUrl}")
+                    AndroidView(
+                        factory = { context ->
+                            Log.d("YouTubePlayerBox", "YouTubePlayerView factory 호출 - videoId: $videoId")
+                            YouTubePlayerView(context).apply {
+                                // YouTube Player 자체에 corner radius 적용
+                                setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                
+                                addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
+                                override fun onReady(youTubePlayer: YouTubePlayer) {
+                                    Log.d("YouTubePlayerBox", "Player ready for video: $videoId")
+                                    // 자동재생 시작 (백그라운드 재생 가능)
+                                    youTubePlayer.loadVideo(videoId, startSeconds)
+                                    youTubePlayer.play()
+                                    isPlaying = true
                                 }
-                            }
-                        })
-                    }
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp))
-                )
+                                
+                                override fun onStateChange(youTubePlayer: YouTubePlayer, state: com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState) {
+                                    super.onStateChange(youTubePlayer, state)
+                                    when (state) {
+                                        com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PLAYING -> {
+                                            isPlaying = true
+                                            Log.d("YouTubePlayerBox", "Playing")
+                                        }
+                                        com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PAUSED -> {
+                                            isPlaying = false
+                                            Log.d("YouTubePlayerBox", "Paused")
+                                        }
+                                        com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.ENDED -> {
+                                            isPlaying = false
+                                            Log.d("YouTubePlayerBox", "Ended")
+                                        }
+                                        else -> {}
+                                    }
+                                }
+                            })
+                        }
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp))
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(24.dp))

@@ -88,19 +88,24 @@ fun RunMusicBox(
 
             val listState = rememberLazyListState()
             LaunchedEffect(currentDiary) {
-                if (currentDiary != null) listState.animateScrollToItem(1)
+                if (currentDiary != null) {
+                    kotlinx.coroutines.delay(100)
+                    android.util.Log.d("RunMusicBox", "Scrolling to item 1 for diary: ${currentDiary.musicTitle}")
+                    listState.animateScrollToItem(1)
+                }
             }
 
-            // currentDiary가 변경될 때마다 LazyColumn 전체 재생성
             key(currentDiary?.videoUrl) {
+                android.util.Log.d("RunMusicBox", "LazyColumn 재생성 - videoUrl: ${currentDiary?.videoUrl}")
                 LazyColumn(
                     state = listState,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(400.dp),
+                        .height(420.dp),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     item {
+                        android.util.Log.d("RunMusicBox", "LazyColumn item 0 (YouTubePlayerBox) 실행")
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
@@ -111,6 +116,7 @@ fun RunMusicBox(
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                     item {
+                        android.util.Log.d("RunMusicBox", "LazyColumn item 1 (AlbumDiaryBox) 실행")
                         Box(
                             modifier = Modifier.fillMaxWidth(),
                             contentAlignment = Alignment.Center
