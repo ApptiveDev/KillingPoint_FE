@@ -220,7 +220,6 @@ fun SelectDurationScreen(
 
                         Spacer(Modifier.height(38.dp))
 
-                        // Todo : 구간 설정 슬라이드
                         Text(
                             text = "킬링파트 길이 설정",
                             fontFamily = PaperlogyFontFamily,
@@ -228,8 +227,11 @@ fun SelectDurationScreen(
                             fontSize = 14.sp,
                             color = Color(0xFFEBEBEB)
                         )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        DurationScrollSelector(duration.toInt(), {duration = it.toString()})
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }
