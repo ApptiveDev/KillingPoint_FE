@@ -215,8 +215,11 @@ fun SelectDurationScreen(
                         )
                         Spacer(Modifier.height(18.dp))
 
-                        // Todo : 구간 슬라이드 구현
-                        Spacer(Modifier.height(80.dp))
+
+                        //Todo : 파라미터 수정하기
+                        KillingPartSelector(
+                            duration.toInt(), duration.toInt(), {start = it.toString()}
+                        )
 
                         Spacer(Modifier.height(38.dp))
 
