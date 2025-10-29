@@ -3,6 +3,7 @@ package com.killingpart.killingpoint.ui.screen.MainScreen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,14 +27,17 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 
 @Composable
-fun NextSongList(title: String?, onToggle: ()-> Unit,) {
+fun NextSongList(title: String?, label: String, onToggle: ()-> Unit,) {
     Row (
-        modifier = Modifier.fillMaxWidth()
-            .height(41.dp).padding(horizontal = 21.dp, vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(41.dp)
+            .background(Color.Black, RoundedCornerShape(12.dp))
+            .padding(horizontal = 21.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ){
         Text(
-            text = "다음곡 : ",
+            text = label,
             fontSize = 14.sp,
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Light,

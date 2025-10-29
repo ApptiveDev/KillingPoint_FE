@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,9 +23,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +45,7 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import kotlinx.serialization.json.Json.Default.configuration
 import androidx.compose.ui.platform.LocalConfiguration
+import com.killingpart.killingpoint.ui.theme.mainGreen
 
 
 @Composable
@@ -54,7 +53,8 @@ fun MusicListBox(
     currentIndex: Int,
     expanded: Boolean,
     onToggle: (Boolean) -> Unit,
-    diaries: List<Diary>
+    diaries: List<Diary>,
+    showCurrentHeader: Boolean = false
 )
 {
 
@@ -67,10 +67,14 @@ fun MusicListBox(
             .padding(horizontal = 24.dp)
             .animateContentSize()
     ) {
+            val currentDiary = diaries.getOrNull(currentIndex)
             val nextDiary = diaries.getOrNull(currentIndex + 1)
+            val headerLabel = if (showCurrentHeader) "재생 중 : " else "다음곡 : "
+            val headerTitle = if (showCurrentHeader) currentDiary?.musicTitle else nextDiary?.musicTitle
 
             NextSongList(
-                title = nextDiary?.musicTitle,
+                title = headerTitle,
+                label = headerLabel,
                 onToggle = { onToggle(!expanded) }
             )
 
@@ -79,27 +83,24 @@ fun MusicListBox(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 400.dp)
-                        .background(color = Color.Black, shape = RoundedCornerShape(12.dp))
+                        .background(color = Color.Black.copy(alpha = 0.8f), shape = RoundedCornerShape(12.dp))
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (diaries.isEmpty()) {
-                        item {
-                            Text(
-                                text = "플레이리스트를 불러오는 중...",
-                                fontFamily = PaperlogyFontFamily,
-                                fontWeight = FontWeight.Light,
-                                fontSize = 12.sp,
-                                color = Color.White
-                            )
-                        }
+                        Text(
+                            text = "플레이리스트를 불러오는 중...",
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.Light,
+                            fontSize = 12.sp,
+                            color = Color.White
+                        )
                     } else {
-                        items(diaries.size) { index ->
-                            val d = diaries[index]
+                        diaries.forEachIndexed { index, d ->
                             MusicListOne(
                                 imageUrl = d.albumImageUrl,
                                 musicTitle = d.musicTitle,
