@@ -47,6 +47,43 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import java.time.LocalDate
+import java.util.regex.Pattern
+
+/**
+ * ISO 8601 duration 형식(예: "PT2M28S")을 초 단위로 변환
+ * @param duration ISO 8601 duration 문자열 (예: "PT2M28S", "PT1H2M30S", "PT30S")
+ * @return 초 단위로 변환된 값 (예: 148, 3750, 30)
+ */
+fun parseDurationToSeconds(duration: String): Int {
+    // PT 제거
+    val durationStr = duration.removePrefix("PT")
+    if (durationStr.isEmpty()) return 0
+    
+    var totalSeconds = 0
+    
+    // 시간(H) 파싱
+    val hourPattern = Pattern.compile("(\\d+)H")
+    val hourMatcher = hourPattern.matcher(durationStr)
+    if (hourMatcher.find()) {
+        totalSeconds += hourMatcher.group(1).toInt() * 3600
+    }
+    
+    // 분(M) 파싱
+    val minutePattern = Pattern.compile("(\\d+)M")
+    val minuteMatcher = minutePattern.matcher(durationStr)
+    if (minuteMatcher.find()) {
+        totalSeconds += minuteMatcher.group(1).toInt() * 60
+    }
+    
+    // 초(S) 파싱
+    val secondPattern = Pattern.compile("(\\d+)S")
+    val secondMatcher = secondPattern.matcher(durationStr)
+    if (secondMatcher.find()) {
+        totalSeconds += secondMatcher.group(1).toInt()
+    }
+    
+    return totalSeconds
+}
 
 @Composable
 fun SelectDurationScreen(
@@ -60,6 +97,7 @@ fun SelectDurationScreen(
     var end = start + duration
 
     var videoUrl by remember { mutableStateOf<String?>(null) }
+    var totalDuration by remember { mutableStateOf(10) } // YouTube 비디오의 전체 길이 (초 단위)
     var isLoadingVideo by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -71,6 +109,14 @@ fun SelectDurationScreen(
             val videos = repo.searchVideos(artist, title)
             val firstVideo = videos.firstOrNull()
             videoUrl = firstVideo?.url
+            // duration 파싱하여 초 단위로 변환
+            firstVideo?.duration?.let { durationStr ->
+                val seconds = parseDurationToSeconds(durationStr)
+                totalDuration = seconds
+                android.util.Log.d("SelectDurationScreen", "Video duration: $durationStr -> $seconds seconds")
+            } ?: run {
+                totalDuration = 10 // 기본값
+            }
             android.util.Log.d("SelectDurationScreen", "Search query: $artist - $title")
             android.util.Log.d("SelectDurationScreen", "Found ${videos.size} videos")
             android.util.Log.d("SelectDurationScreen", "First video URL: $videoUrl")
@@ -78,6 +124,7 @@ fun SelectDurationScreen(
         } catch (e: Exception) {
             android.util.Log.e("SelectDurationScreen", "YouTube search failed: ${e.message}")
             videoUrl = null
+            totalDuration = 10 // 기본값
         }
         isLoadingVideo = false
     }
@@ -215,10 +262,8 @@ fun SelectDurationScreen(
                         )
                         Spacer(Modifier.height(18.dp))
 
-
-                        //Todo : 파라미터 수정하기
                         KillingPartSelector(
-                            duration.toInt(), duration.toInt(), {start = it.toString()}
+                            totalDuration, duration.toInt(), {start = it.toString()}
                         )
 
                         Spacer(Modifier.height(38.dp))
