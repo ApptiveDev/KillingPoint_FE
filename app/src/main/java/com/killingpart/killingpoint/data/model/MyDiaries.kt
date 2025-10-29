@@ -1,12 +1,18 @@
 package com.killingpart.killingpoint.data.model
 
+enum class Scope {
+    PUBLIC,
+    PRIVATE,
+    KILLING_PART
+}
+
 data class Diary(
     val artist: String,
     val musicTitle: String,
     val albumImageUrl: String,
     val content: String,
     val videoUrl: String,
-    val scope: String,
+    val scope: Scope,
     var duration: String,
     var start: String,
     var end: String,

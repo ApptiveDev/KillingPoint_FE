@@ -67,7 +67,7 @@ fun RunMusicBox(
                     text = when (val s = userState) {
                         is UserUiState.Success -> "@ ${s.userInfo.username}"
                         is UserUiState.Loading -> "LOADING..."
-                        is UserUiState.Error -> "KILLINGPART"
+                        is UserUiState.Error -> "KILLING_PART"
                     },
                     fontFamily = PaperlogyFontFamily,
                     fontWeight = FontWeight.Thin,

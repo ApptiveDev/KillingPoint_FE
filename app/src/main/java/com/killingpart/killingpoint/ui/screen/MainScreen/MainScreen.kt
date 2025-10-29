@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -57,6 +59,8 @@ import com.killingpart.killingpoint.ui.viewmodel.DiaryUiState
 import com.killingpart.killingpoint.ui.viewmodel.DiaryViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
+import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
+import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
 import kotlinx.coroutines.launch
 
 enum class MainTab {
@@ -77,7 +81,7 @@ fun MainScreen(navController: NavController) {
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
 
-    val MusicCueBtnHeight = 70.dp
+    val MusicCueBtnHeight = 60.dp
     val BottomBarHeight = 94.dp
     val MusicCueBtnGap = 12.dp
 
@@ -158,46 +162,132 @@ fun MainScreen(navController: NavController) {
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp)
                 )
 
-                Spacer(modifier = Modifier.height(25.dp))
+                Spacer(modifier = Modifier.height(15.dp))
 
-                if (selected == MainTab.PLAY) {
-                    LazyColumn(
-                        state = mainListState,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentPadding = PaddingValues(bottom = BottomBarHeight + MusicCueBtnHeight + MusicCueBtnGap)
-                    ) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp)
-                                    .background(color = Color.Black, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                            ) {
-                                RunMusicBox(
-                                    currentIndex = currentIndex,
-                                    currentDiary = diaries.getOrNull(currentIndex)
-                                )
+                when (selected) {
+                    MainTab.STORAGE -> {
+                        when (val state = diaryState) {
+                            is DiaryUiState.Loading -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(color = mainGreen)
+                                }
+                            }
+
+                            is DiaryUiState.Success -> {
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .padding(horizontal = 16.dp)
+                                ) {
+                                    // 다이어리만 스크롤
+                                    val musicListHeight = if (listExpanded) 260.dp else 80.dp
+                                    LazyColumn(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentPadding = PaddingValues(bottom = musicListHeight + MusicCueBtnHeight + MusicCueBtnGap + 16.dp)
+                                    ) {
+                                        item {
+                                            OuterBox(diaries = state.diaries)
+                                        }
+                                    }
+                                    // Overlay MusicListBox
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .fillMaxWidth()
+                                    ) {
+                                        MusicListBox(
+                                            currentIndex = currentIndex,
+                                            expanded = listExpanded,
+                                            onToggle = { willOpen -> listExpanded = willOpen },
+                                            diaries = state.diaries,
+                                            showCurrentHeader = true
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(MusicCueBtnHeight + MusicCueBtnGap))
+                            }
+
+                            is DiaryUiState.Error -> {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = state.message,
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontFamily = PaperlogyFontFamily
+                                    )
+                                }
                             }
                         }
+                    }
 
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(horizontal = 16.dp)
-                                    .background(color = Color.Black, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
-                            ) {
-                                MusicListBox(
-                                    currentIndex = currentIndex,
-                                    expanded = listExpanded,
-                                    onToggle = { willOpen ->
-                                        listExpanded = willOpen
-                                    },
-                                    diaries = diaries
-                                )
+                    MainTab.PLAY -> {
+                        LazyColumn(
+                            state = mainListState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+//                            contentPadding = PaddingValues(bottom = BottomBarHeight + MusicCueBtnHeight + MusicCueBtnGap)
+                            contentPadding = PaddingValues(bottom = BottomBarHeight)
+                        ) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp)
+                                        .background(color = Color.Black, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                                ) {
+                                    RunMusicBox(
+                                        currentIndex = currentIndex,
+                                        currentDiary = diaries.getOrNull(currentIndex)
+                                    )
+                                }
                             }
+
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(horizontal = 16.dp)
+                                        .background(color = Color.Black, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
+                                ) {
+                                    MusicListBox(
+                                        currentIndex = currentIndex,
+                                        expanded = listExpanded,
+                                        onToggle = { willOpen ->
+                                            listExpanded = willOpen
+                                        },
+                                        diaries = diaries
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    MainTab.CALENDAR -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "뮤직캘린더",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontFamily = PaperlogyFontFamily
+                            )
                         }
                     }
                 }
@@ -222,6 +312,8 @@ fun MainScreen(navController: NavController) {
                     }
                 }
             )
+
+            // STORAGE 탭: 하단 고정 배치는 제거(리스트 내부로 복구)
 
             if (!listExpanded && selected == MainTab.PLAY) {
                 when (val s = userState) {
