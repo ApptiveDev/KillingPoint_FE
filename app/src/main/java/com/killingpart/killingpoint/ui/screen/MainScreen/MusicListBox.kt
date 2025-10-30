@@ -87,7 +87,7 @@ fun MusicListBox(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 400.dp)
-                        .background(color = Color.Black.copy(alpha = 0.8f), shape = RoundedCornerShape(12.dp))
+                        .background(color = Color.Black, shape = RoundedCornerShape(12.dp))
                         .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
