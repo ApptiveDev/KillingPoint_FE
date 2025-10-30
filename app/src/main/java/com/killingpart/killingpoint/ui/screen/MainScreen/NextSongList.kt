@@ -32,7 +32,7 @@ fun NextSongList(title: String?, label: String, onToggle: ()-> Unit,) {
         modifier = Modifier
             .fillMaxWidth()
             .height(41.dp)
-            .background(Color.Black, RoundedCornerShape(12.dp))
+            .background(Color.Black, RoundedCornerShape(20.dp))
             .padding(horizontal = 21.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ){

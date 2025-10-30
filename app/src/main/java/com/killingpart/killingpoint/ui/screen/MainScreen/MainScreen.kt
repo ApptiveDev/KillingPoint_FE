@@ -212,7 +212,7 @@ fun MainScreen(navController: NavController) {
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(MusicCueBtnHeight + MusicCueBtnGap))
+                                Spacer(modifier = Modifier.height(MusicCueBtnHeight + MusicCueBtnGap + 10.dp))
                             }
 
                             is DiaryUiState.Error -> {
