@@ -45,6 +45,7 @@ import com.killingpart.killingpoint.ui.screen.MainScreen.AlbumDiaryBox
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
 import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.AlbumDiaryBoxWithoutContent
 import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import java.time.LocalDate
@@ -247,7 +248,7 @@ fun SelectDurationScreen(
                         albumImageUrl = imageUrl,
                         videoUrl = videoUrl!!,
                         content = "",
-                        scope = "PUBLIC",
+                        scope = Scope.PUBLIC,
                         duration = "0",
                         start = "0",
                         end = "0",
