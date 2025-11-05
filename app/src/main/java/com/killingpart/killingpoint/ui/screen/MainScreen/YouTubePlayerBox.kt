@@ -37,7 +37,6 @@ fun YouTubePlayerBox(
     var isPlaying by remember { mutableStateOf(false) }
     var player by remember { mutableStateOf<YouTubePlayer?>(null) }
     var currentTime by remember { mutableStateOf(0f) }
-    var hasSeekedToStart by remember { mutableStateOf(false) }
     
     // 콜백을 remember로 저장하여 리스너에서 사용
     val videoReadyCallback = remember(onVideoReady) { onVideoReady }
@@ -46,14 +45,6 @@ fun YouTubePlayerBox(
         startSeconds + durationSeconds
     } else {
         null
-    }
-    
-    // startSeconds가 변경되면 플래그 리셋 및 캐시 초기화 준비
-    LaunchedEffect(startSeconds) {
-        hasSeekedToStart = false
-        // startSeconds 변경 시 플레이어를 null로 설정하여 재생성 유도
-        player = null
-        Log.d("YouTubePlayerBox", "startSeconds changed to $startSeconds - resetting player for cache clear")
     }
     
     Log.d("YouTubePlayerBox", "YouTubePlayerBox called with diary: ${diary?.musicTitle}, videoUrl: ${diary?.videoUrl}, startSeconds: $startSeconds, durationSeconds: $durationSeconds, endSeconds: $endSeconds")
@@ -65,12 +56,13 @@ fun YouTubePlayerBox(
             val videoId = diary.videoUrl.substringAfter("/embed/").substringBefore("?")
             Log.d("YouTubePlayerBox", "Video ID: $videoId")
             
-            // startSeconds나 durationSeconds가 변경될 때 재생 위치 업데이트 (플레이어가 이미 준비된 경우)
-            LaunchedEffect(startSeconds, durationSeconds) {
-                if (player != null && isPlaying) {
-                    kotlinx.coroutines.delay(200) // 플레이어가 준비될 때까지 약간의 지연
+            // startSeconds가 변경될 때 seekTo로 위치 이동 (디바운싱 적용)
+            LaunchedEffect(startSeconds) {
+                if (player != null) {
+                    // 500ms 디바운싱: 사용자가 슬라이더를 계속 움직이면 마지막 값만 적용
+                    kotlinx.coroutines.delay(500)
                     player?.seekTo(startSeconds)
-                    Log.d("YouTubePlayerBox", "LaunchedEffect: Seeking to new startSeconds: $startSeconds (player ready)")
+                    Log.d("YouTubePlayerBox", "seekTo called: $startSeconds (debounced)")
                 }
             }
             
@@ -102,31 +94,14 @@ fun YouTubePlayerBox(
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {
-                // diary의 videoUrl 또는 startSeconds가 변경될 때마다 AndroidView 재생성
-                // startSeconds를 key에 포함하여 변경 시 플레이어 재생성 및 캐시 초기화
-                key(diary?.videoUrl, startSeconds) {
-                    Log.d("YouTubePlayerBox", "AndroidView 재생성 - diary: ${diary.musicTitle}, videoUrl: ${diary.videoUrl}, startSeconds: $startSeconds")
+                // videoUrl이 변경될 때만 AndroidView 재생성 (startSeconds는 seekTo로 처리)
+                key(diary?.videoUrl) {
+                    Log.d("YouTubePlayerBox", "AndroidView 재생성 - diary: ${diary.musicTitle}, videoUrl: ${diary.videoUrl}")
                     
-                    // startSeconds 변경 시 WebView 캐시 초기화
-                    DisposableEffect(startSeconds) {
-                        Log.d("YouTubePlayerBox", "DisposableEffect: Clearing WebView cache for startSeconds: $startSeconds")
-                        try {
-                            // Context를 통한 WebView 캐시 전체 초기화
-                            val webStorage = android.webkit.WebStorage.getInstance()
-                            webStorage.deleteAllData()
-                            
-                            val cookieManager = android.webkit.CookieManager.getInstance()
-                            cookieManager.removeAllCookies(null)
-                            cookieManager.flush()
-                            
-                            Log.d("YouTubePlayerBox", "WebView cache and cookies cleared")
-                        } catch (e: Exception) {
-                            Log.e("YouTubePlayerBox", "Failed to clear WebView cache: ${e.message}")
-                        }
-                        
+                    // videoUrl 변경 시에만 정리 작업
+                    DisposableEffect(diary?.videoUrl) {
                         onDispose {
-                            Log.d("YouTubePlayerBox", "DisposableEffect onDispose - cleaning up for startSeconds: $startSeconds")
-                            // 정리 작업
+                            Log.d("YouTubePlayerBox", "DisposableEffect onDispose - cleaning up player")
                             try {
                                 player = null
                             } catch (e: Exception) {
@@ -149,7 +124,6 @@ fun YouTubePlayerBox(
                                 override fun onReady(youTubePlayer: YouTubePlayer) {
                                     Log.d("YouTubePlayerBox", "Player ready for video: $videoId, startSeconds: $startSeconds")
                                     player = youTubePlayer
-                                    hasSeekedToStart = false // 플래그 리셋
                                     hasCalledReady = false // 비디오 준비 콜백 플래그 리셋
                                     // 비디오 로드 (startSeconds 위치에서 시작)
                                     youTubePlayer.loadVideo(videoId, startSeconds)
@@ -194,13 +168,6 @@ fun YouTubePlayerBox(
                                 override fun onCurrentSecond(youTubePlayer: YouTubePlayer, second: Float) {
                                     super.onCurrentSecond(youTubePlayer, second)
                                     currentTime = second
-                                    
-                                    // 처음 재생 시작 시 startSeconds 위치 확인 (0초에서 시작하는 경우 보정)
-                                    if (!hasSeekedToStart && isPlaying && second < 1f && startSeconds > 1f) {
-                                        Log.d("YouTubePlayerBox", "onCurrentSecond: Detected playing from 0s ($second), seeking to startSeconds: $startSeconds")
-                                        youTubePlayer.seekTo(startSeconds)
-                                        hasSeekedToStart = true
-                                    }
                                 }
                             })
                         }

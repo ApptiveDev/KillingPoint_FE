@@ -163,19 +163,6 @@ fun SelectDurationScreen(
             scrollState.animateScrollTo(scrollOffset)
         }
     }
-    
-    // startSeconds 변경 시 위로 조금 스크롤하여 비디오 재렌더링 유도
-    LaunchedEffect(startSeconds) {
-        if (videoUrl != null && startSeconds > 0f) {
-            kotlinx.coroutines.delay(100)
-            android.util.Log.d("SelectDurationScreen", "startSeconds changed - scrolling up slightly: $startSeconds")
-            // 위로 조금 스크롤 (비디오가 뷰포트를 벗어났다가 다시 들어오도록)
-            val currentScroll = scrollState.value
-            val scrollUpOffset = with(density) { 50.dp.toPx().toInt() }
-            val targetScroll = (currentScroll - scrollUpOffset).coerceAtLeast(0)
-            scrollState.animateScrollTo(targetScroll)
-        }
-    }
 
     Column(
         modifier = Modifier
