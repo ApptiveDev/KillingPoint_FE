@@ -1,5 +1,6 @@
 package com.killingpart.killingpoint.ui.screen.MusicCalendarScreen
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
@@ -59,55 +61,56 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.DayOfWeek
 
+/**
+ * MusicCalendarScreen
+ * - 음악 일기를 달력 형태로 보여주는 메인 화면
+ * - 월 선택, 날짜 선택, 선택된 일기 표시 기능 포함
+ */
 @Composable
 fun MusicCalendarScreen(
     diaries: List<Diary>
 ) {
+    // 현재 선택된 날짜 (null이면 아무것도 선택되지 않은 상태)
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    val now = YearMonth.now()
-    var currentMonth by remember { mutableStateOf(now) }
+
+    // 현재 표시 중인 달 (기본값: 현재 달)
+    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+
+    // 월 선택기(MonthPicker) 표시 여부
     var showMonthPicker by remember { mutableStateOf(false) }
-    
-    // 최근 3년치의 달 목록 생성 (현재 달부터 역순으로)
+
+    // 최근 3년간의 Month 목록 (현재 ~ 36개월 전까지)
     val availableMonths = remember {
         val months = mutableListOf<YearMonth>()
-        var month = now
-        // 현재 달부터 3년 전까지 (총 37개월: 현재 + 36개월)
-        for (i in 0..36) {
-            months.add(month)
-            month = month.minusMonths(1)
+        var m = YearMonth.now()
+        repeat(37) {  // 현재 달 포함 37개월
+            months.add(m)
+            m = m.minusMonths(1)
         }
         months
     }
-    
-    // 일기를 날짜별로 그룹화
+
+    // 일기 리스트를 날짜별로 그룹화
     val diariesByDate = remember(diaries) {
-        diaries.groupBy { diary ->
-            try {
-                val datePart = diary.createDate.split("T")[0]
-                LocalDate.parse(datePart)
-            } catch (e: Exception) {
-                null
-            }
+        diaries.groupBy {
+            runCatching {
+                LocalDate.parse(it.createDate.split("T")[0])
+            }.getOrNull()
         }.filterKeys { it != null }.mapKeys { it.key!! }
     }
-    
+
     // 선택된 날짜의 일기
-    val selectedDiary = selectedDate?.let { date ->
-        diariesByDate[date]?.firstOrNull()
-    }
-    
-    val scrollState = rememberScrollState()
-    
+    val selectedDiary = selectedDate?.let { diariesByDate[it]?.firstOrNull() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
+            .verticalScroll(rememberScrollState()) // 스크롤 가능
             .padding(horizontal = 30.dp)
     ) {
-        Spacer(modifier = Modifier.height(20.dp))
-        
-        // 년도 표시
+        Spacer(Modifier.height(20.dp))
+
+        // 현재 연도 표시
         Text(
             text = "${currentMonth.year}년",
             color = Color.White,
@@ -115,10 +118,10 @@ fun MusicCalendarScreen(
             fontWeight = FontWeight.Medium,
             fontSize = 14.sp
         )
-        
-        Spacer(modifier = Modifier.height(4.dp))
-        
-        // 월 표시 (드롭다운 아이콘 포함, 클릭 가능)
+
+        Spacer(Modifier.height(4.dp))
+
+        // 현재 월 표시 + 클릭 시 MonthPicker 열기
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.clickable { showMonthPicker = !showMonthPicker }
@@ -137,50 +140,44 @@ fun MusicCalendarScreen(
                 modifier = Modifier.size(20.dp)
             )
         }
-        
+
+        // 월 선택기 표시 (토글)
         // 월 선택 토글
         if (showMonthPicker) {
             Spacer(modifier = Modifier.height(16.dp))
-            var dismissHandler by remember { mutableStateOf<(() -> Unit)?>(null) }
-            
+
+            // 외부 전체를 clickable로 덮지 말고, 그냥 MonthPicker만 표시
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { 
-                        // 외부 클릭 시 현재 선택된 값으로 확정하고 닫기
-                        dismissHandler?.invoke()
-                    }
+                modifier = Modifier.fillMaxWidth()
             ) {
                 MonthPicker(
                     availableMonths = availableMonths,
                     selectedMonth = currentMonth,
-                    onMonthSelected = { month ->
-                        currentMonth = month
+                    onMonthSelected = { newMonth ->
+                        currentMonth = newMonth
                         selectedDate = null // 달 변경 시 선택된 날짜 초기화
                     },
                     onDismiss = {
+                        // 그냥 닫기만 담당
                         showMonthPicker = false
                     },
-                    onDismissHandlerReady = { handler ->
-                        dismissHandler = handler
-                    },
-                    modifier = Modifier.clickable(enabled = false) { } // 내부 클릭은 전파 방지
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // 요일 헤더
+
+
+        Spacer(Modifier.height(16.dp))
+
+        // 🔹 요일 헤더 (SUN~SAT)
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            val weekdays = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
-            weekdays.forEach { day ->
+            val days = listOf("SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT")
+            days.forEach {
                 Text(
-                    text = day,
-                    color = when (day) {
+                    text = it,
+                    color = when (it) {
                         "SUN" -> Color(0xFFFF3B30)
                         "SAT" -> Color(0xFF007AFF)
                         else -> Color.White
@@ -192,32 +189,31 @@ fun MusicCalendarScreen(
                 )
             }
         }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        // 달력 그리드
+
+        Spacer(Modifier.height(8.dp))
+
+        // 🔹 달력 그리드 표시
         CalendarGrid(
             yearMonth = currentMonth,
             diariesByDate = diariesByDate,
             selectedDate = selectedDate,
             onDateClick = { date ->
+                // 같은 날짜를 다시 클릭하면 선택 해제
                 selectedDate = if (selectedDate == date) null else date
             }
         )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // 선택된 날짜 구분선 및 표시
+
+        Spacer(Modifier.height(16.dp))
+
+        // 🔹 선택된 날짜 구분선 + 날짜 표시
         if (selectedDate != null) {
             Box(
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
                     .height(1.dp)
                     .background(mainGreen)
             )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = "${selectedDate!!.dayOfMonth}일",
                 color = Color.White,
@@ -225,13 +221,12 @@ fun MusicCalendarScreen(
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
             )
-            
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
         }
-        
-        // 선택된 날짜의 일기 표시
+
+        // 🔹 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
-            DiaryEntryCard(diary = selectedDiary)
+            DiaryEntryCard(selectedDiary)
         } else if (selectedDate != null) {
             Text(
                 text = "이 날짜에 등록된 킬링파트가 없습니다.",
@@ -243,95 +238,124 @@ fun MusicCalendarScreen(
     }
 }
 
+/**
+ * MonthPicker
+ * - 년/월 선택 휠
+ * - 닫을 때만 onMonthSelected 호출 (중간 변경은 즉시 반영 X)
+ */
 @Composable
 fun MonthPicker(
     availableMonths: List<YearMonth>,
     selectedMonth: YearMonth,
     onMonthSelected: (YearMonth) -> Unit,
     onDismiss: () -> Unit,
-    onDismissHandlerReady: ((() -> Unit) -> Unit)? = null,
+    onDismissHandlerReady: ((() -> Unit) -> Unit)? = null, // 사용 안 해도 시그니처는 유지
+    onSelectionChanged: ((Int, Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // 년도와 월을 분리
     val years = availableMonths.map { it.year }.distinct().sortedDescending()
     val months = (1..12).toList()
-    
+
     var selectedYear by remember { mutableStateOf(selectedMonth.year) }
     var selectedMonthValue by remember { mutableStateOf(selectedMonth.monthValue) }
-    var previousSelectedMonth by remember { mutableStateOf(selectedMonth) }
-    
-    // 토글을 닫을 때 호출되는 함수
-    val handleDismiss: () -> Unit = {
-        // 현재 선택된 값으로 확정
-        val finalMonth = YearMonth.of(selectedYear, selectedMonthValue)
-        if (availableMonths.contains(finalMonth) && finalMonth != selectedMonth) {
-            onMonthSelected(finalMonth)
-        }
-        onDismiss()
-    }
-    
-    // 외부에서 handleDismiss를 호출할 수 있도록 전달
-    LaunchedEffect(handleDismiss) {
-        onDismissHandlerReady?.invoke(handleDismiss)
-    }
-    
-    // selectedMonth가 외부에서 변경되면 내부 상태도 업데이트
-    LaunchedEffect(selectedMonth) {
-        if (selectedMonth != previousSelectedMonth) {
-            selectedYear = selectedMonth.year
-            selectedMonthValue = selectedMonth.monthValue
-            previousSelectedMonth = selectedMonth
+
+    // onDismissHandlerReady 안 쓰더라도, 기존 구조 깨기 싫으면 빈 핸들러 넘겨줘도 됨
+    LaunchedEffect(Unit) {
+        onDismissHandlerReady?.invoke {
+            // 필요하면 여기에 "외부에서 닫을 때" 로직 넣을 수 있음
+            onDismiss()
         }
     }
-    
-    // 선택이 실제로 변경되었을 때만 onMonthSelected 호출 (스크롤 완료 후에만)
-    LaunchedEffect(selectedYear, selectedMonthValue) {
-        kotlinx.coroutines.delay(300) // 스크롤 완료 대기
-        val newMonth = YearMonth.of(selectedYear, selectedMonthValue)
-        if (newMonth != previousSelectedMonth && availableMonths.contains(newMonth)) {
-            previousSelectedMonth = newMonth
-            onMonthSelected(newMonth)
-        }
-    }
-    
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(220.dp)
             .background(Color.Black, RoundedCornerShape(12.dp))
             .padding(16.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            // 년도 휠
-            WheelPicker(
-                items = years.map { "${it}년" },
-                selectedIndex = years.indexOf(selectedYear).coerceAtLeast(0),
-                onSelected = { index ->
-                    selectedYear = years[index]
-                },
-                modifier = Modifier.weight(1f)
-            )
-            
-            // 월 휠
-            WheelPicker(
-                items = months.map { "${it}월" },
-                selectedIndex = selectedMonthValue - 1,
-                onSelected = { index ->
-                    selectedMonthValue = months[index]
-                },
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // 년도 휠
+                WheelPicker(
+                    items = years.map { "${it}년" },
+                    selectedIndex = years.indexOf(selectedYear).coerceAtLeast(0),
+                    onSelected = { index ->
+                        selectedYear = years[index]
+                        onSelectionChanged?.invoke(selectedYear, selectedMonthValue)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // 월 휠
+                WheelPicker(
+                    items = months.map { "${it}월" },
+                    selectedIndex = selectedMonthValue - 1,
+                    onSelected = { index ->
+                        selectedMonthValue = months[index]
+                        onSelectionChanged?.invoke(selectedYear, selectedMonthValue)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 하단에 "취소 / 확인" 버튼 영역 추가
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Text(
+                    text = "취소",
+                    color = Color(0xFFAAAAAA),
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .clickable {
+                            // 선택 반영 없이 그냥 닫기
+                            onDismiss()
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text(
+                    text = "확인",
+                    color = mainGreen,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .pointerInput(Unit) {} // 스크롤 소비 방지
+                        .clickable {
+                            // 현재 선택된 년/월로 확정
+                            val newMonth = YearMonth.of(selectedYear, selectedMonthValue)
+                            Log.d("MonthPicker", "확인 클릭됨: $newMonth") // ✅ 로그 찍기
+                            if (availableMonths.contains(newMonth)) {
+                                onMonthSelected(newMonth)
+                            }
+                        }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
         }
-        
-        // 중앙 선택 영역 표시선
+
+        // 중앙 선택 영역 표시선 (기존 그대로 유지)
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .padding(horizontal = 16.dp)
+                .matchParentSize()
+                .padding(horizontal = 16.dp, vertical = 32.dp) // 위/아래 살짝 여유
         ) {
             Column(
                 modifier = Modifier.fillMaxHeight(),
@@ -354,6 +378,11 @@ fun MonthPicker(
     }
 }
 
+
+/**
+ * WheelPicker
+ * - 년도/월 리스트를 휠 형태로 스크롤 선택
+ */
 @Composable
 fun WheelPicker(
     items: List<String>,
@@ -362,44 +391,34 @@ fun WheelPicker(
     modifier: Modifier = Modifier
 ) {
     val itemHeight = 40.dp
-    val visibleItems = 3 // 보이는 항목 수
-    val centerOffset = visibleItems / 2 // 중앙 위치 (1)
+    val visibleItems = 3
+    val centerOffset = visibleItems / 2
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedIndex - centerOffset).coerceAtLeast(0))
     val density = LocalDensity.current
     var wasScrolling by remember { mutableStateOf(false) }
-    
-    // 초기 스크롤 위치 설정
-    LaunchedEffect(selectedIndex) {
-        if (!listState.isScrollInProgress) {
-            val targetIndex = (selectedIndex - centerOffset).coerceIn(0, (items.size - 1).coerceAtLeast(0))
-            listState.animateScrollToItem(targetIndex)
-        }
-    }
-    
-    // 스크롤 상태 감지 및 스냅
+
+    // 🔹 스크롤 끝난 후 중앙 항목 계산
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
             wasScrolling = true
         } else if (wasScrolling) {
-            // 스크롤이 끝났을 때 중앙에 가장 가까운 항목으로 스냅
             wasScrolling = false
-            val firstVisible = listState.firstVisibleItemIndex
-            val centerIndex = if (firstVisible == 0) {
-                0 // 첫 번째 항목이 보이면 첫 번째 항목 선택
-            } else {
-                firstVisible + centerOffset
-            }
-            val targetIndex = centerIndex.coerceIn(0, items.size - 1)
-            val scrollToIndex = if (targetIndex == 0) {
-                0 // 첫 번째 항목은 스크롤 위치 0
-            } else {
-                (targetIndex - centerOffset).coerceIn(0, (items.size - 1).coerceAtLeast(0))
-            }
-            listState.animateScrollToItem(scrollToIndex)
-            onSelected(targetIndex)
+            // ✅ 중앙 항목 인덱스를 실제 offset 포함해서 계산
+            val itemHeightPx = with(density) { itemHeight.toPx() }
+            val scrollOffset = listState.firstVisibleItemScrollOffset.toFloat()
+            val offsetRatio = scrollOffset / itemHeightPx
+
+            // 중앙 항목은 현재 보이는 첫 번째 항목 + offset 보정
+            val centerIndex = (listState.firstVisibleItemIndex + offsetRatio + centerOffset)
+                .toInt()
+                .coerceIn(0, items.size - 1)
+
+            onSelected(centerIndex)
+            // 중앙 맞추기 위해 살짝 보정 스크롤
+            listState.animateScrollToItem((centerIndex - centerOffset).coerceAtLeast(0))
         }
     }
-    
+
     Box(
         modifier = modifier
             .height(itemHeight * visibleItems)
@@ -411,33 +430,20 @@ fun WheelPicker(
             contentPadding = PaddingValues(
                 top = itemHeight * centerOffset,
                 bottom = itemHeight * centerOffset
-            ),
-            verticalArrangement = Arrangement.spacedBy(0.dp)
+            )
         ) {
             itemsIndexed(items) { index, item ->
                 val firstVisibleIndex = listState.firstVisibleItemIndex
-                val firstVisibleScrollOffset = listState.firstVisibleItemScrollOffset
-                val itemHeightPx = with(density) { itemHeight.toPx() }
-                
-                // 중앙 인덱스 계산: 첫 번째 보이는 항목 + 중앙 오프셋
-                // 단, 첫 번째 항목(인덱스 0)이 보이고 스크롤 오프셋이 작으면 첫 번째 항목이 중앙
-                val centerIndex = if (firstVisibleIndex == 0 && firstVisibleScrollOffset < itemHeightPx / 2) {
-                    0
-                } else {
-                    firstVisibleIndex + centerOffset
-                }.coerceIn(0, items.size - 1)
-                
+                val centerIndex = firstVisibleIndex + centerOffset
                 val isSelected = index == centerIndex
-                val distanceFromCenter = kotlin.math.abs(index - centerIndex)
-                
-                val alpha = when {
-                    distanceFromCenter == 0 -> 1f
-                    distanceFromCenter == 1 -> 0.6f
+                val alpha = when (kotlin.math.abs(index - centerIndex)) {
+                    0 -> 1f
+                    1 -> 0.6f
                     else -> 0.3f
                 }
-                
+
                 Box(
-                    modifier = Modifier
+                    Modifier
                         .fillMaxWidth()
                         .height(itemHeight),
                     contentAlignment = Alignment.Center
@@ -455,6 +461,7 @@ fun WheelPicker(
         }
     }
 }
+
 
 @Composable
 fun CalendarGrid(
