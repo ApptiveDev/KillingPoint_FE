@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,17 +24,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -221,7 +216,6 @@ fun MusicCalendarScreen(
                 fontWeight = FontWeight.Medium,
                 fontSize = 14.sp
             )
-            Spacer(Modifier.height(16.dp))
         }
 
         // 선택된 날짜의 일기 표시
@@ -542,50 +536,44 @@ fun CalendarDayCell(
 ) {
     Box(
         modifier = Modifier
-            .size(40.dp)
-            .clip(RoundedCornerShape(8.dp))
+            .size(42.dp)
             .background(
-                if (hasDiary && isSelected) mainGreen
+                if (isSelected) mainGreen // 선택된 날짜는 노란 배경
                 else Color.Transparent
             )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
+            .clickable { onClick() }
     ) {
-        if (hasDiary && isSelected) {
-            // 선택된 날짜에 일기가 있는 경우: 녹색 배경 + 음악 아이콘
-            Icon(
-                imageVector = Icons.Default.MusicNote,
+        // 날짜는 좌상단에 표시
+        Text(
+            text = day.toString(),
+            color = when {
+                isSelected -> Color.Black // 선택된 날짜는 검은색
+                isSunday -> Color(0xFFFF3B30)
+                isSaturday -> Color(0xFF007AFF)
+                else -> Color.White
+            },
+            fontFamily = PaperlogyFontFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 11.sp,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 4.dp, top = 4.dp)
+        )
+        
+        // 일기가 있는 경우 음표 아이콘 표시
+        if (hasDiary) {
+            Image(
+                painter = painterResource(
+                    id = if (isSelected) R.drawable.music_note_black2
+                    else R.drawable.music_note_yellow2
+                ),
                 contentDescription = "음악",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .size(22.dp)
+                    .offset(y = (-5).dp) // 아이콘을 위로 2dp 올림
+
             )
-        } else {
-            // 일기가 있거나 없는 경우: 날짜 표시
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = day.toString(),
-                    color = when {
-                        isSunday -> Color(0xFFFF3B30)
-                        isSaturday -> Color(0xFF007AFF)
-                        else -> Color.White
-                    },
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Medium,
-                    fontSize = 14.sp
-                )
-                if (hasDiary) {
-                    // 일기가 있는 경우 작은 음악 아이콘 표시
-                    Icon(
-                        imageVector = Icons.Default.MusicNote,
-                        contentDescription = "음악",
-                        tint = mainGreen,
-                        modifier = Modifier.size(10.dp)
-                    )
-                }
-            }
         }
     }
 }
@@ -593,29 +581,31 @@ fun CalendarDayCell(
 @Composable
 fun DiaryEntryCard(diary: Diary) {
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
     ) {
         // 앨범 아트 및 정보 카드
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 4.dp)
                 .background(Color.Black, RoundedCornerShape(12.dp))
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                ,verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
                 model = diary.albumImageUrl,
                 contentDescription = "앨범 아트",
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(65.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop,
                 placeholder = painterResource(id = R.drawable.example_video),
                 error = painterResource(id = R.drawable.example_video)
             )
-            
+
             Spacer(modifier = Modifier.width(16.dp))
-            
+
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -627,9 +617,9 @@ fun DiaryEntryCard(diary: Diary) {
                     fontSize = 16.sp,
                     maxLines = 1
                 )
-                
+
                 Spacer(modifier = Modifier.height(4.dp))
-                
+
                 Text(
                     text = diary.artist,
                     color = Color.White,
@@ -639,122 +629,30 @@ fun DiaryEntryCard(diary: Diary) {
                     maxLines = 1
                 )
             }
-            
+
             // 코멘트 읽기 버튼
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+            Column(
+                horizontalAlignment = Alignment.End,
                 modifier = Modifier.clickable { /* TODO: 코멘트 읽기 기능 */ }
             ) {
                 Text(
                     text = "코멘트읽기",
-                    color = Color.White,
+                    color = mainGreen,
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 12.sp
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Image(
-                    painter = painterResource(id = R.drawable.move),
+                    painter = painterResource(id = R.drawable.yellow_right_arrow),
                     contentDescription = "이동",
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier
+                        .size(12.dp)
+                        .align(Alignment.CenterHorizontally)
                 )
             }
         }
-        
+
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // 재생 중 표시
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Text(
-//                text = "재생 중",
-//                color = mainGreen,
-//                fontFamily = PaperlogyFontFamily,
-//                fontWeight = FontWeight.Medium,
-//                fontSize = 14.sp
-//            )
-//
-//            Spacer(modifier = Modifier.width(8.dp))
-//
-//            Text(
-//                text = diary.musicTitle,
-//                color = Color.White,
-//                fontFamily = PaperlogyFontFamily,
-//                fontWeight = FontWeight.Medium,
-//                fontSize = 14.sp,
-//                modifier = Modifier.weight(1f)
-//            )
-//
-//            Icon(
-//                imageVector = Icons.Default.MusicNote,
-//                contentDescription = "음악",
-//                tint = mainGreen,
-//                modifier = Modifier.size(20.dp)
-//            )
-//        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        // 재생 컨트롤 버튼
-//        Row(
-//            modifier = Modifier.fillMaxWidth(),
-//            horizontalArrangement = Arrangement.SpaceEvenly,
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Image(
-//                painter = painterResource(id = R.drawable.shuffle),
-//                contentDescription = "셔플",
-//                modifier = Modifier.size(24.dp)
-//            )
-//
-//            Box(
-//                modifier = Modifier
-//                    .size(44.dp)
-//                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-//                    .clickable { /* TODO: 이전 곡 */ },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Image(
-//                    painter = painterResource(id = R.drawable.skip_back),
-//                    contentDescription = "이전 곡",
-//                    modifier = Modifier.size(28.dp)
-//                )
-//            }
-//
-//            Box(
-//                modifier = Modifier
-//                    .size(70.dp)
-//                    .background(color = Color.White, RoundedCornerShape(50.dp))
-//                    .clickable { /* TODO: 재생/일시정지 */ },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Image(
-//                    painter = painterResource(id = R.drawable.pause),
-//                    contentDescription = "일시정지",
-//                    modifier = Modifier.size(24.dp)
-//                )
-//            }
-//
-//            Box(
-//                modifier = Modifier
-//                    .size(44.dp)
-//                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-//                    .clickable { /* TODO: 다음 곡 */ },
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Image(
-//                    painter = painterResource(id = R.drawable.skip_fwd),
-//                    contentDescription = "다음 곡",
-//                    modifier = Modifier.size(28.dp)
-//                )
-//            }
-//
-//            Image(
-//                painter = painterResource(id = R.drawable.repeat),
-//                contentDescription = "반복",
-//                modifier = Modifier.size(24.dp)
-//            )
-//        }
+
     }
 }
