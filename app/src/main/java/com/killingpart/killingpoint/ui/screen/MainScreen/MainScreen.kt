@@ -61,6 +61,7 @@ import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
+import com.killingpart.killingpoint.ui.screen.MusicCalendarScreen.MusicCalendarScreen
 import kotlinx.coroutines.launch
 
 enum class MainTab {
@@ -279,15 +280,9 @@ fun MainScreen(navController: NavController) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
+                                .weight(1f)
                         ) {
-                            Text(
-                                text = "뮤직캘린더",
-                                color = Color.White,
-                                fontSize = 16.sp,
-                                fontFamily = PaperlogyFontFamily
-                            )
+                            MusicCalendarScreen(diaries = diaries)
                         }
                     }
                 }
