@@ -168,7 +168,7 @@ fun MusicCalendarScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 🔹 요일 헤더 (SUN~SAT)
+        // 요일 헤더 (SUN~SAT)
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -192,7 +192,7 @@ fun MusicCalendarScreen(
 
         Spacer(Modifier.height(8.dp))
 
-        // 🔹 달력 그리드 표시
+        // 달력 그리드 표시
         CalendarGrid(
             yearMonth = currentMonth,
             diariesByDate = diariesByDate,
@@ -205,7 +205,7 @@ fun MusicCalendarScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // 🔹 선택된 날짜 구분선 + 날짜 표시
+        // 선택된 날짜 구분선 + 날짜 표시
         if (selectedDate != null) {
             Box(
                 Modifier
@@ -224,7 +224,7 @@ fun MusicCalendarScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        // 🔹 선택된 날짜의 일기 표시
+        // 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
             DiaryEntryCard(selectedDiary)
         } else if (selectedDate != null) {
@@ -254,7 +254,7 @@ fun MonthPicker(
     modifier: Modifier = Modifier
 ) {
     // 년도와 월을 분리
-    val years = availableMonths.map { it.year }.distinct().sortedDescending()
+    val years = availableMonths.map { it.year }.distinct().sorted()
     val months = (1..12).toList()
 
     var selectedYear by remember { mutableStateOf(selectedMonth.year) }
@@ -341,10 +341,12 @@ fun MonthPicker(
                         .clickable {
                             // 현재 선택된 년/월로 확정
                             val newMonth = YearMonth.of(selectedYear, selectedMonthValue)
-                            Log.d("MonthPicker", "확인 클릭됨: $newMonth") // ✅ 로그 찍기
+                            Log.d("MonthPicker", "확인 클릭됨: $newMonth") // 로그 찍기
                             if (availableMonths.contains(newMonth)) {
                                 onMonthSelected(newMonth)
                             }
+                            onDismiss()
+
                         }
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
@@ -397,13 +399,13 @@ fun WheelPicker(
     val density = LocalDensity.current
     var wasScrolling by remember { mutableStateOf(false) }
 
-    // 🔹 스크롤 끝난 후 중앙 항목 계산
+    // 스크롤 끝난 후 중앙 항목 계산
     LaunchedEffect(listState.isScrollInProgress) {
         if (listState.isScrollInProgress) {
             wasScrolling = true
         } else if (wasScrolling) {
             wasScrolling = false
-            // ✅ 중앙 항목 인덱스를 실제 offset 포함해서 계산
+            // 중앙 항목 인덱스를 실제 offset 포함해서 계산
             val itemHeightPx = with(density) { itemHeight.toPx() }
             val scrollOffset = listState.firstVisibleItemScrollOffset.toFloat()
             val offsetRatio = scrollOffset / itemHeightPx
@@ -661,98 +663,98 @@ fun DiaryEntryCard(diary: Diary) {
         Spacer(modifier = Modifier.height(16.dp))
         
         // 재생 중 표시
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "재생 중",
-                color = mainGreen,
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Text(
-                text = diary.musicTitle,
-                color = Color.White,
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                modifier = Modifier.weight(1f)
-            )
-            
-            Icon(
-                imageVector = Icons.Default.MusicNote,
-                contentDescription = "음악",
-                tint = mainGreen,
-                modifier = Modifier.size(20.dp)
-            )
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Text(
+//                text = "재생 중",
+//                color = mainGreen,
+//                fontFamily = PaperlogyFontFamily,
+//                fontWeight = FontWeight.Medium,
+//                fontSize = 14.sp
+//            )
+//
+//            Spacer(modifier = Modifier.width(8.dp))
+//
+//            Text(
+//                text = diary.musicTitle,
+//                color = Color.White,
+//                fontFamily = PaperlogyFontFamily,
+//                fontWeight = FontWeight.Medium,
+//                fontSize = 14.sp,
+//                modifier = Modifier.weight(1f)
+//            )
+//
+//            Icon(
+//                imageVector = Icons.Default.MusicNote,
+//                contentDescription = "음악",
+//                tint = mainGreen,
+//                modifier = Modifier.size(20.dp)
+//            )
+//        }
         
         Spacer(modifier = Modifier.height(16.dp))
         
         // 재생 컨트롤 버튼
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.shuffle),
-                contentDescription = "셔플",
-                modifier = Modifier.size(24.dp)
-            )
-            
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-                    .clickable { /* TODO: 이전 곡 */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.skip_back),
-                    contentDescription = "이전 곡",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            
-            Box(
-                modifier = Modifier
-                    .size(70.dp)
-                    .background(color = Color.White, RoundedCornerShape(50.dp))
-                    .clickable { /* TODO: 재생/일시정지 */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.pause),
-                    contentDescription = "일시정지",
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
-                    .clickable { /* TODO: 다음 곡 */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.skip_fwd),
-                    contentDescription = "다음 곡",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            
-            Image(
-                painter = painterResource(id = R.drawable.repeat),
-                contentDescription = "반복",
-                modifier = Modifier.size(24.dp)
-            )
-        }
+//        Row(
+//            modifier = Modifier.fillMaxWidth(),
+//            horizontalArrangement = Arrangement.SpaceEvenly,
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Image(
+//                painter = painterResource(id = R.drawable.shuffle),
+//                contentDescription = "셔플",
+//                modifier = Modifier.size(24.dp)
+//            )
+//
+//            Box(
+//                modifier = Modifier
+//                    .size(44.dp)
+//                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+//                    .clickable { /* TODO: 이전 곡 */ },
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.skip_back),
+//                    contentDescription = "이전 곡",
+//                    modifier = Modifier.size(28.dp)
+//                )
+//            }
+//
+//            Box(
+//                modifier = Modifier
+//                    .size(70.dp)
+//                    .background(color = Color.White, RoundedCornerShape(50.dp))
+//                    .clickable { /* TODO: 재생/일시정지 */ },
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.pause),
+//                    contentDescription = "일시정지",
+//                    modifier = Modifier.size(24.dp)
+//                )
+//            }
+//
+//            Box(
+//                modifier = Modifier
+//                    .size(44.dp)
+//                    .background(color = Color(0xFF161616), RoundedCornerShape(30.dp))
+//                    .clickable { /* TODO: 다음 곡 */ },
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Image(
+//                    painter = painterResource(id = R.drawable.skip_fwd),
+//                    contentDescription = "다음 곡",
+//                    modifier = Modifier.size(28.dp)
+//                )
+//            }
+//
+//            Image(
+//                painter = painterResource(id = R.drawable.repeat),
+//                contentDescription = "반복",
+//                modifier = Modifier.size(24.dp)
+//            )
+//        }
     }
 }
