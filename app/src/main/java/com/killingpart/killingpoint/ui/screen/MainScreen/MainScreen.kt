@@ -146,7 +146,7 @@ fun MainScreen(navController: NavController) {
                 Spacer(modifier = Modifier.height(26.dp))
 
                 TopPillTabs(
-                    options = listOf("나의 창고", "킬링파트 재생", "뮤직캘린더"),
+                    options = listOf("내 프로필", "킬링파트 재생", "뮤직캘린더"),
                     selectedIndex = when (selected) {
                         MainTab.STORAGE -> 0
                         MainTab.PLAY -> 1
