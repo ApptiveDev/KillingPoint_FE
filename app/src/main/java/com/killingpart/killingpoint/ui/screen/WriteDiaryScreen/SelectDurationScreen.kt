@@ -62,22 +62,19 @@ fun parseDurationToSeconds(duration: String): Int {
     if (durationStr.isEmpty()) return 0
     
     var totalSeconds = 0
-    
-    // 시간(H) 파싱
+
     val hourPattern = Pattern.compile("(\\d+)H")
     val hourMatcher = hourPattern.matcher(durationStr)
     if (hourMatcher.find()) {
         totalSeconds += hourMatcher.group(1).toInt() * 3600
     }
-    
-    // 분(M) 파싱
+
     val minutePattern = Pattern.compile("(\\d+)M")
     val minuteMatcher = minutePattern.matcher(durationStr)
     if (minuteMatcher.find()) {
         totalSeconds += minuteMatcher.group(1).toInt() * 60
     }
-    
-    // 초(S) 파싱
+
     val secondPattern = Pattern.compile("(\\d+)S")
     val secondMatcher = secondPattern.matcher(durationStr)
     if (secondMatcher.find()) {
@@ -96,22 +93,19 @@ fun SelectDurationScreen(
 ) {
     var duration by remember { mutableStateOf("10") }
     var start by remember { mutableStateOf("0") }
-    
-    // start 값을 Float로 변환 (KillingPartSelector에서 받은 값)
+
     val startSeconds = remember(start) {
         val seconds = start.toFloatOrNull() ?: 0f
         android.util.Log.d("SelectDurationScreen", "startSeconds updated: $seconds (from start: $start)")
         seconds
     }
-    
-    // duration 값을 Float로 변환 (DurationScrollSelector에서 받은 값)
+
     val durationSeconds = remember(duration) {
         val seconds = duration.toFloatOrNull() ?: 10f
         android.util.Log.d("SelectDurationScreen", "durationSeconds updated: $seconds (from duration: $duration)")
         seconds
     }
-    
-    // end 값 계산: startSeconds + durationSeconds
+
     val end = remember(startSeconds, durationSeconds) {
         val endValue = (startSeconds + durationSeconds).toString()
         android.util.Log.d("SelectDurationScreen", "end calculated: $endValue (startSeconds: $startSeconds + durationSeconds: $durationSeconds)")
@@ -154,7 +148,7 @@ fun SelectDurationScreen(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
 
-    // 비디오 URL이 변경되면 자동으로 아래로 스크롤 (KillingPartSelector 보이도록)
+    // Todo: 이거 없이도 렌더링 가능하도록 수정
     LaunchedEffect(videoUrl) {
         if (videoUrl != null) {
             kotlinx.coroutines.delay(500) // 비디오 렌더링 대기
@@ -282,25 +276,50 @@ fun SelectDurationScreen(
                         fontSize = 14.sp,
                         color = Color(0xFFEBEBEB)
                     )
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(30.dp))
 
                     KillingPartSelector(
                         totalDuration, duration.toInt(), {start = it.toString()}
                     )
 
-                    Spacer(Modifier.height(38.dp))
+                    Spacer(Modifier.height(18.dp))
+                    
+                    // 시간 표시 (초록색 박스 위치에 맞춰 배치 - 총 218.dp 너비)
+                    Row(
+                        modifier = Modifier.width(218.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // 왼쪽 시간 표시 (24.dp)
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = formatTime(startSeconds),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.Light
+                            )
+                        }
 
-                    Text(
-                        text = "킬링파트 길이 설정",
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        fontSize = 14.sp,
-                        color = Color(0xFFEBEBEB)
-                    )
+                        Spacer(modifier = Modifier.width(160.dp))
 
-                    Spacer(Modifier.height(12.dp))
+                        Box(
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val endSecondsValue = (startSeconds + durationSeconds).coerceAtMost(totalDuration.toFloat())
+                            Text(
+                                text = formatTime(endSecondsValue),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.Light
+                            )
+                        }
+                    }
 
-                    DurationScrollSelector(duration.toInt(), {duration = it.toString()})
+                    Spacer(Modifier.height(20.dp))
+
                 }
                 
                 // 하단 패딩 (버튼 공간 확보)
