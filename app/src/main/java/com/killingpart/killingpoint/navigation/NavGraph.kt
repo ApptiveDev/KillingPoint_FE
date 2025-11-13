@@ -25,8 +25,16 @@ fun NavGraph(
     ) {
         composable("home") { HelloScreen(navController) }
 
-        composable("main") {
-            MainScreen(navController)
+        composable(
+            route = "main?tab={tab}&selectedDate={selectedDate}",
+            arguments = listOf(
+                navArgument("tab") { type = NavType.StringType; defaultValue = "play" },
+                navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val tab = backStackEntry.arguments?.getString("tab") ?: "play"
+            val selectedDate = backStackEntry.arguments?.getString("selectedDate") ?: ""
+            MainScreen(navController, tab, selectedDate)
         }
 
         composable("add_music") {
@@ -91,7 +99,8 @@ fun NavGraph(
                     "&duration={duration}" +
                     "&start={start}" +
                     "&end={end}" +
-                    "&createDate={createDate}",
+                    "&createDate={createDate}" +
+                    "&selectedDate={selectedDate}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -101,7 +110,8 @@ fun NavGraph(
                 navArgument("duration") { type = NavType.StringType; defaultValue = "" },
                 navArgument("start") { type = NavType.StringType; defaultValue = "" },
                 navArgument("end") { type = NavType.StringType; defaultValue = "" },
-                navArgument("createDate") { type = NavType.StringType; defaultValue = "" }
+                navArgument("createDate") { type = NavType.StringType; defaultValue = "" },
+                navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -113,6 +123,7 @@ fun NavGraph(
             val start = URLDecoder.decode(backStackEntry.arguments?.getString("start").orEmpty(), "UTF-8")
             val end = URLDecoder.decode(backStackEntry.arguments?.getString("end").orEmpty(), "UTF-8")
             val createDate = URLDecoder.decode(backStackEntry.arguments?.getString("createDate").orEmpty(), "UTF-8")
+            val selectedDate = URLDecoder.decode(backStackEntry.arguments?.getString("selectedDate").orEmpty(), "UTF-8")
 
             DiaryDetailScreen(
                 navController = navController,
@@ -124,7 +135,8 @@ fun NavGraph(
                 duration = duration,
                 start = start,
                 end = end,
-                createDate = createDate
+                createDate = createDate,
+                selectedDate = selectedDate
             )
         }
     }

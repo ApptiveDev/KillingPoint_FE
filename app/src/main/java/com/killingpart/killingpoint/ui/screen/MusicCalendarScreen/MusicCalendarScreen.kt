@@ -65,13 +65,29 @@ import android.net.Uri
 @Composable
 fun MusicCalendarScreen(
     diaries: List<Diary>,
-    navController: androidx.navigation.NavController? = null
+    navController: androidx.navigation.NavController? = null,
+    initialSelectedDate: String? = null
 ) {
     // 현재 선택된 날짜 (null이면 아무것도 선택되지 않은 상태)
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedDate by remember(initialSelectedDate) { 
+        mutableStateOf<LocalDate?>(
+            initialSelectedDate?.let { 
+                runCatching { LocalDate.parse(it) }.getOrNull()
+            }
+        )
+    }
 
-    // 현재 표시 중인 달 (기본값: 현재 달)
-    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+    // 현재 표시 중인 달 (기본값: 현재 달 또는 선택된 날짜의 달)
+    var currentMonth by remember(initialSelectedDate) { 
+        mutableStateOf(
+            initialSelectedDate?.let { 
+                runCatching { 
+                    val date = LocalDate.parse(it)
+                    YearMonth.from(date)
+                }.getOrNull()
+            } ?: YearMonth.now()
+        )
+    }
 
     // 월 선택기(MonthPicker) 표시 여부
     var showMonthPicker by remember { mutableStateOf(false) }
@@ -222,7 +238,11 @@ fun MusicCalendarScreen(
 
         // 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
-            DiaryEntryCard(selectedDiary, navController)
+            DiaryEntryCard(
+                diary = selectedDiary, 
+                navController = navController,
+                selectedDate = selectedDate?.toString()
+            )
         } else if (selectedDate != null) {
             Text(
                 text = "이 날짜에 등록된 킬링파트가 없습니다.",
@@ -583,7 +603,8 @@ fun CalendarDayCell(
 @Composable
 fun DiaryEntryCard(
     diary: Diary,
-    navController: androidx.navigation.NavController? = null
+    navController: androidx.navigation.NavController? = null,
+    selectedDate: String? = null
 ) {
     Column(
         modifier = Modifier
@@ -639,6 +660,7 @@ fun DiaryEntryCard(
             Column(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.clickable {
+                    val selectedDateParam = selectedDate?.let { "&selectedDate=${Uri.encode(it)}" } ?: ""
                     navController?.navigate(
                         "diary_detail" +
                                 "?artist=${Uri.encode(diary.artist)}" +
@@ -649,7 +671,8 @@ fun DiaryEntryCard(
                                 "&duration=${Uri.encode(diary.duration)}" +
                                 "&start=${Uri.encode(diary.start)}" +
                                 "&end=${Uri.encode(diary.end)}" +
-                                "&createDate=${Uri.encode(diary.createDate)}"
+                                "&createDate=${Uri.encode(diary.createDate)}" +
+                                selectedDateParam
                     )
                 }
             ) {

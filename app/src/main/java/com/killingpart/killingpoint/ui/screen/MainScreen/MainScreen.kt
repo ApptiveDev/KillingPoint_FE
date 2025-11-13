@@ -68,8 +68,16 @@ enum class MainTab {
     STORAGE, PLAY, CALENDAR
 }
 @Composable
-fun MainScreen(navController: NavController) {
-    var selected by remember { mutableStateOf(MainTab.PLAY) }
+fun MainScreen(navController: NavController, initialTab: String = "play", initialSelectedDate: String = "") {
+    var selected by remember(initialTab) { 
+        mutableStateOf(
+            when (initialTab) {
+                "storage" -> MainTab.STORAGE
+                "calendar" -> MainTab.CALENDAR
+                else -> MainTab.PLAY
+            }
+        )
+    }
     var currentIndex by remember { mutableStateOf(0) }
     val mainListState = rememberLazyListState()
     
@@ -282,7 +290,11 @@ fun MainScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .weight(1f)
                         ) {
-                            MusicCalendarScreen(diaries = diaries, navController = navController)
+                            MusicCalendarScreen(
+                                diaries = diaries, 
+                                navController = navController,
+                                initialSelectedDate = if (initialTab == "calendar") initialSelectedDate else null
+                            )
                         }
                     }
                 }

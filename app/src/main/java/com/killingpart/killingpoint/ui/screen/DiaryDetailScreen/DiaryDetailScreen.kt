@@ -53,7 +53,8 @@ fun DiaryDetailScreen(
     duration: String,
     start: String,
     end: String,
-    createDate: String
+    createDate: String,
+    selectedDate: String = ""
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -90,8 +91,14 @@ fun DiaryDetailScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    /* TODO: 바로 이전 페이지로 돌아가도록 변경할 것 (현재는 홈으로 돌아감) */
-                    onClick = { navController.popBackStack() }
+                    onClick = { 
+                        // MusicCalendarScreen으로 돌아가기 (CALENDAR 탭 선택 + 선택된 날짜 복원)
+                        val selectedDateParam = if (selectedDate.isNotEmpty()) "&selectedDate=${android.net.Uri.encode(selectedDate)}" else ""
+                        navController.navigate("main?tab=calendar$selectedDateParam") {
+                            // 현재 diary_detail을 스택에서 제거하고 main으로 이동
+                            popUpTo("main") { inclusive = false }
+                        }
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
