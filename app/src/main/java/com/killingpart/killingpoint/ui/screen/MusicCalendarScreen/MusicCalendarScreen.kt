@@ -55,6 +55,7 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.DayOfWeek
+import android.net.Uri
 
 /**
  * MusicCalendarScreen
@@ -63,7 +64,8 @@ import java.time.DayOfWeek
  */
 @Composable
 fun MusicCalendarScreen(
-    diaries: List<Diary>
+    diaries: List<Diary>,
+    navController: androidx.navigation.NavController? = null
 ) {
     // 현재 선택된 날짜 (null이면 아무것도 선택되지 않은 상태)
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -220,7 +222,7 @@ fun MusicCalendarScreen(
 
         // 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
-            DiaryEntryCard(selectedDiary)
+            DiaryEntryCard(selectedDiary, navController)
         } else if (selectedDate != null) {
             Text(
                 text = "이 날짜에 등록된 킬링파트가 없습니다.",
@@ -579,7 +581,10 @@ fun CalendarDayCell(
 }
 
 @Composable
-fun DiaryEntryCard(diary: Diary) {
+fun DiaryEntryCard(
+    diary: Diary,
+    navController: androidx.navigation.NavController? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -633,7 +638,20 @@ fun DiaryEntryCard(diary: Diary) {
             // 코멘트 읽기 버튼
             Column(
                 horizontalAlignment = Alignment.End,
-                modifier = Modifier.clickable { /* TODO: 코멘트 읽기 기능 */ }
+                modifier = Modifier.clickable {
+                    navController?.navigate(
+                        "diary_detail" +
+                                "?artist=${Uri.encode(diary.artist)}" +
+                                "&musicTitle=${Uri.encode(diary.musicTitle)}" +
+                                "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
+                                "&content=${Uri.encode(diary.content)}" +
+                                "&videoUrl=${Uri.encode(diary.videoUrl)}" +
+                                "&duration=${Uri.encode(diary.duration)}" +
+                                "&start=${Uri.encode(diary.start)}" +
+                                "&end=${Uri.encode(diary.end)}" +
+                                "&createDate=${Uri.encode(diary.createDate)}"
+                    )
+                }
             ) {
                 Text(
                     text = "코멘트읽기",

@@ -10,6 +10,7 @@ import com.killingpart.killingpoint.ui.screen.MainScreen.MainScreen
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.AddMusicScreen
 import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.WriteDiaryScreen
 import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.SelectDurationScreen
+import com.killingpart.killingpoint.ui.screen.DiaryDetailScreen.DiaryDetailScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import java.net.URLDecoder
@@ -78,6 +79,53 @@ fun NavGraph(
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
 
             WriteDiaryScreen(navController, title, artist, image, duration, start, end, videoUrl)
+        }
+
+        composable(
+            route = "diary_detail" +
+                    "?artist={artist}" +
+                    "&musicTitle={musicTitle}" +
+                    "&albumImageUrl={albumImageUrl}" +
+                    "&content={content}" +
+                    "&videoUrl={videoUrl}" +
+                    "&duration={duration}" +
+                    "&start={start}" +
+                    "&end={end}" +
+                    "&createDate={createDate}",
+            arguments = listOf(
+                navArgument("artist") { type = NavType.StringType; defaultValue = "" },
+                navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
+                navArgument("albumImageUrl") { type = NavType.StringType; defaultValue = "" },
+                navArgument("content") { type = NavType.StringType; defaultValue = "" },
+                navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
+                navArgument("duration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("start") { type = NavType.StringType; defaultValue = "" },
+                navArgument("end") { type = NavType.StringType; defaultValue = "" },
+                navArgument("createDate") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
+            val musicTitle = URLDecoder.decode(backStackEntry.arguments?.getString("musicTitle").orEmpty(), "UTF-8")
+            val albumImageUrl = URLDecoder.decode(backStackEntry.arguments?.getString("albumImageUrl").orEmpty(), "UTF-8")
+            val content = URLDecoder.decode(backStackEntry.arguments?.getString("content").orEmpty(), "UTF-8")
+            val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
+            val duration = URLDecoder.decode(backStackEntry.arguments?.getString("duration").orEmpty(), "UTF-8")
+            val start = URLDecoder.decode(backStackEntry.arguments?.getString("start").orEmpty(), "UTF-8")
+            val end = URLDecoder.decode(backStackEntry.arguments?.getString("end").orEmpty(), "UTF-8")
+            val createDate = URLDecoder.decode(backStackEntry.arguments?.getString("createDate").orEmpty(), "UTF-8")
+
+            DiaryDetailScreen(
+                navController = navController,
+                artist = artist,
+                musicTitle = musicTitle,
+                albumImageUrl = albumImageUrl,
+                content = content,
+                videoUrl = videoUrl,
+                duration = duration,
+                start = start,
+                end = end,
+                createDate = createDate
+            )
         }
     }
 }

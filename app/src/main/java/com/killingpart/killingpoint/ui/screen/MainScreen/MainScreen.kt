@@ -282,7 +282,7 @@ fun MainScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .weight(1f)
                         ) {
-                            MusicCalendarScreen(diaries = diaries)
+                            MusicCalendarScreen(diaries = diaries, navController = navController)
                         }
                     }
                 }
