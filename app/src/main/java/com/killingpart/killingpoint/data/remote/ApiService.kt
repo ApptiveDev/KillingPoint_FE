@@ -11,6 +11,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -41,6 +43,13 @@ interface ApiService {
     @POST("diaries")
     suspend fun createDiary(
         @Header("Authorization") accessToken: String,
+        @Body body: CreateDiaryRequest
+    ): retrofit2.Response<Unit>
+
+    @PUT("diaries/{diaryId}")
+    suspend fun updateDiary(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long,
         @Body body: CreateDiaryRequest
     ): retrofit2.Response<Unit>
 }

@@ -69,7 +69,24 @@ fun MusicCalendarScreen(
     initialSelectedDate: String? = null
 ) {
     // 현재 선택된 날짜 (null이면 아무것도 선택되지 않은 상태)
-    var selectedDate by remember(initialSelectedDate) { 
+    // Diary list 로그 출력
+    LaunchedEffect(diaries) {
+        android.util.Log.d("MusicCalendarScreen", "=== Diary List 로그 ===")
+        android.util.Log.d("MusicCalendarScreen", "총 ${diaries.size}개의 다이어리")
+        diaries.forEachIndexed { index, diary ->
+            android.util.Log.d("MusicCalendarScreen", 
+                "Diary[$index]: " +
+                "id=${diary.id}, " +
+                "title=${diary.musicTitle}, " +
+                "artist=${diary.artist}, " +
+                "createDate=${diary.createDate}, " +
+                "scope=${diary.scope}"
+            )
+        }
+        android.util.Log.d("MusicCalendarScreen", "=== Diary List 로그 끝 ===")
+    }
+    
+    var selectedDate by remember(initialSelectedDate) {
         mutableStateOf<LocalDate?>(
             initialSelectedDate?.let { 
                 runCatching { LocalDate.parse(it) }.getOrNull()
@@ -238,10 +255,14 @@ fun MusicCalendarScreen(
 
         // 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
+            // 디버깅: selectedDiary의 id 확인
+            android.util.Log.d("MusicCalendarScreen", "selectedDiary: id=${selectedDiary.id}, title=${selectedDiary.musicTitle}")
+            
             DiaryEntryCard(
                 diary = selectedDiary, 
                 navController = navController,
-                selectedDate = selectedDate?.toString()
+                selectedDate = selectedDate?.toString(),
+                diaryId = selectedDiary.id
             )
         } else if (selectedDate != null) {
             Text(
@@ -604,7 +625,8 @@ fun CalendarDayCell(
 fun DiaryEntryCard(
     diary: Diary,
     navController: androidx.navigation.NavController? = null,
-    selectedDate: String? = null
+    selectedDate: String? = null,
+    diaryId: Long? = null
 ) {
     Column(
         modifier = Modifier
@@ -660,7 +682,17 @@ fun DiaryEntryCard(
             Column(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.clickable {
+                    if (diary.id == null) {
+                        android.util.Log.e("DiaryEntryCard", "diary.id가 null입니다. 일기 상세 페이지로 이동할 수 없습니다.")
+                        return@clickable
+                    }
+                    
                     val selectedDateParam = selectedDate?.let { "&selectedDate=${Uri.encode(it)}" } ?: ""
+                    val diaryIdParam = "&diaryId=${diary.id}"
+                    val scopeParam = "&scope=${diary.scope.name}"
+                    
+                    android.util.Log.d("DiaryEntryCard", "일기 상세 페이지로 이동 - diaryId: ${diary.id}")
+                    
                     navController?.navigate(
                         "diary_detail" +
                                 "?artist=${Uri.encode(diary.artist)}" +
@@ -672,6 +704,8 @@ fun DiaryEntryCard(
                                 "&start=${Uri.encode(diary.start)}" +
                                 "&end=${Uri.encode(diary.end)}" +
                                 "&createDate=${Uri.encode(diary.createDate)}" +
+                                scopeParam +
+                                diaryIdParam +
                                 selectedDateParam
                     )
                 }

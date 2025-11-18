@@ -100,7 +100,9 @@ fun NavGraph(
                     "&start={start}" +
                     "&end={end}" +
                     "&createDate={createDate}" +
-                    "&selectedDate={selectedDate}",
+                    "&selectedDate={selectedDate}" +
+                    "&scope={scope}" +
+                    "&diaryId={diaryId}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -111,7 +113,9 @@ fun NavGraph(
                 navArgument("start") { type = NavType.StringType; defaultValue = "" },
                 navArgument("end") { type = NavType.StringType; defaultValue = "" },
                 navArgument("createDate") { type = NavType.StringType; defaultValue = "" },
-                navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" }
+                navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" },
+                navArgument("scope") { type = NavType.StringType; defaultValue = "" },
+                navArgument("diaryId") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -124,6 +128,9 @@ fun NavGraph(
             val end = URLDecoder.decode(backStackEntry.arguments?.getString("end").orEmpty(), "UTF-8")
             val createDate = URLDecoder.decode(backStackEntry.arguments?.getString("createDate").orEmpty(), "UTF-8")
             val selectedDate = URLDecoder.decode(backStackEntry.arguments?.getString("selectedDate").orEmpty(), "UTF-8")
+            val scope = URLDecoder.decode(backStackEntry.arguments?.getString("scope").orEmpty(), "UTF-8")
+            val diaryIdStr = backStackEntry.arguments?.getString("diaryId") ?: ""
+            val diaryId = diaryIdStr.toLongOrNull()
 
             DiaryDetailScreen(
                 navController = navController,
@@ -136,7 +143,9 @@ fun NavGraph(
                 start = start,
                 end = end,
                 createDate = createDate,
-                selectedDate = selectedDate
+                selectedDate = selectedDate,
+                scope = scope,
+                diaryId = diaryId
             )
         }
     }

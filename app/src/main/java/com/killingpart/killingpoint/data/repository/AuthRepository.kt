@@ -101,7 +101,15 @@ class AuthRepository(
             try {
                 val accessToken = getAccessToken() 
                     ?: throw IllegalStateException("액세스 토큰이 없습니다")
-                api.getMyDiaries("Bearer $accessToken", page, size)
+                val result = api.getMyDiaries("Bearer $accessToken", page, size)
+                
+                // 디버깅: 받은 다이어리 데이터 로깅
+                android.util.Log.d("AuthRepository", "getMyDiaries 응답 - 총 ${result.content.size}개")
+                result.content.forEachIndexed { index, diary ->
+                    android.util.Log.d("AuthRepository", "Diary[$index]: id=${diary.id}, title=${diary.musicTitle}, artist=${diary.artist}")
+                }
+                
+                result
             } catch (e: HttpException) {
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
@@ -120,6 +128,20 @@ class AuthRepository(
             val code = e.code()
             val msg = e.response()?.errorBody()?.string().orEmpty()
             throw IllegalStateException("일기 작성 실패 ($code): $msg")
+        }
+    }
+
+    suspend fun updateDiary(diaryId: Long, body: CreateDiaryRequest) = withContext(Dispatchers.IO) {
+        try {
+            val accessToken = getAccessToken() ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateDiary("Bearer $accessToken", diaryId, body)
+            if (!response.isSuccessful) {
+                throw IllegalStateException("일기 수정 실패 (${response.code()}): ${response.message()}")
+            }
+        } catch (e: HttpException) {
+            val code = e.code()
+            val msg = e.response()?.errorBody()?.string().orEmpty()
+            throw IllegalStateException("일기 수정 실패 ($code): $msg")
         }
     }
 }
