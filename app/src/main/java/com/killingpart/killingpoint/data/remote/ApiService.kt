@@ -7,10 +7,16 @@ import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.data.model.UpdateTagRequest
+import com.killingpart.killingpoint.data.model.PresignedUrlResponse
+import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -43,4 +49,28 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: CreateDiaryRequest
     ): retrofit2.Response<Unit>
+
+    @PUT("diaries/{diaryId}")
+    suspend fun updateDiary(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long,
+        @Body body: CreateDiaryRequest
+    ): retrofit2.Response<Unit>
+
+    @PATCH("users/my/tags")
+    suspend fun updateTag(
+        @Header("Authorization") accessToken: String,
+        @Body body: UpdateTagRequest
+    ): retrofit2.Response<Unit>
+
+    @GET("presigned-url")
+    suspend fun getPresignedUrl(
+        @Header("Authorization") accessToken: String
+    ): PresignedUrlResponse
+
+    @PATCH("users/my/profile-image")
+    suspend fun updateProfileImage(
+        @Header("Authorization") accessToken: String,
+        @Body body: UpdateProfileImageRequest
+    ): UserInfo
 }

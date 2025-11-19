@@ -55,6 +55,7 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.DayOfWeek
+import android.net.Uri
 
 /**
  * MusicCalendarScreen
@@ -63,13 +64,47 @@ import java.time.DayOfWeek
  */
 @Composable
 fun MusicCalendarScreen(
-    diaries: List<Diary>
+    diaries: List<Diary>,
+    navController: androidx.navigation.NavController? = null,
+    initialSelectedDate: String? = null
 ) {
     // 현재 선택된 날짜 (null이면 아무것도 선택되지 않은 상태)
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    // Diary list 로그 출력
+    LaunchedEffect(diaries) {
+        android.util.Log.d("MusicCalendarScreen", "=== Diary List 로그 ===")
+        android.util.Log.d("MusicCalendarScreen", "총 ${diaries.size}개의 다이어리")
+        diaries.forEachIndexed { index, diary ->
+            android.util.Log.d("MusicCalendarScreen", 
+                "Diary[$index]: " +
+                "id=${diary.id}, " +
+                "title=${diary.musicTitle}, " +
+                "artist=${diary.artist}, " +
+                "createDate=${diary.createDate}, " +
+                "scope=${diary.scope}"
+            )
+        }
+        android.util.Log.d("MusicCalendarScreen", "=== Diary List 로그 끝 ===")
+    }
+    
+    var selectedDate by remember(initialSelectedDate) {
+        mutableStateOf<LocalDate?>(
+            initialSelectedDate?.let { 
+                runCatching { LocalDate.parse(it) }.getOrNull()
+            }
+        )
+    }
 
-    // 현재 표시 중인 달 (기본값: 현재 달)
-    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+    // 현재 표시 중인 달 (기본값: 현재 달 또는 선택된 날짜의 달)
+    var currentMonth by remember(initialSelectedDate) { 
+        mutableStateOf(
+            initialSelectedDate?.let { 
+                runCatching { 
+                    val date = LocalDate.parse(it)
+                    YearMonth.from(date)
+                }.getOrNull()
+            } ?: YearMonth.now()
+        )
+    }
 
     // 월 선택기(MonthPicker) 표시 여부
     var showMonthPicker by remember { mutableStateOf(false) }
@@ -220,7 +255,15 @@ fun MusicCalendarScreen(
 
         // 선택된 날짜의 일기 표시
         if (selectedDiary != null) {
-            DiaryEntryCard(selectedDiary)
+            // 디버깅: selectedDiary의 id 확인
+            android.util.Log.d("MusicCalendarScreen", "selectedDiary: id=${selectedDiary.id}, title=${selectedDiary.musicTitle}")
+            
+            DiaryEntryCard(
+                diary = selectedDiary, 
+                navController = navController,
+                selectedDate = selectedDate?.toString(),
+                diaryId = selectedDiary.id
+            )
         } else if (selectedDate != null) {
             Text(
                 text = "이 날짜에 등록된 킬링파트가 없습니다.",
@@ -579,7 +622,12 @@ fun CalendarDayCell(
 }
 
 @Composable
-fun DiaryEntryCard(diary: Diary) {
+fun DiaryEntryCard(
+    diary: Diary,
+    navController: androidx.navigation.NavController? = null,
+    selectedDate: String? = null,
+    diaryId: Long? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -633,7 +681,34 @@ fun DiaryEntryCard(diary: Diary) {
             // 코멘트 읽기 버튼
             Column(
                 horizontalAlignment = Alignment.End,
-                modifier = Modifier.clickable { /* TODO: 코멘트 읽기 기능 */ }
+                modifier = Modifier.clickable {
+                    if (diary.id == null) {
+                        android.util.Log.e("DiaryEntryCard", "diary.id가 null입니다. 일기 상세 페이지로 이동할 수 없습니다.")
+                        return@clickable
+                    }
+                    
+                    val selectedDateParam = selectedDate?.let { "&selectedDate=${Uri.encode(it)}" } ?: ""
+                    val diaryIdParam = "&diaryId=${diary.id}"
+                    val scopeParam = "&scope=${diary.scope.name}"
+                    
+                    android.util.Log.d("DiaryEntryCard", "일기 상세 페이지로 이동 - diaryId: ${diary.id}")
+                    
+                    navController?.navigate(
+                        "diary_detail" +
+                                "?artist=${Uri.encode(diary.artist)}" +
+                                "&musicTitle=${Uri.encode(diary.musicTitle)}" +
+                                "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
+                                "&content=${Uri.encode(diary.content)}" +
+                                "&videoUrl=${Uri.encode(diary.videoUrl)}" +
+                                "&duration=${Uri.encode(diary.duration)}" +
+                                "&start=${Uri.encode(diary.start)}" +
+                                "&end=${Uri.encode(diary.end)}" +
+                                "&createDate=${Uri.encode(diary.createDate)}" +
+                                scopeParam +
+                                diaryIdParam +
+                                selectedDateParam
+                    )
+                }
             ) {
                 Text(
                     text = "코멘트읽기",

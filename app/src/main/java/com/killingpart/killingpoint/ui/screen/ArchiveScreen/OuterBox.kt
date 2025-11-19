@@ -3,6 +3,7 @@ package com.killingpart.killingpoint.ui.screen.ArchiveScreen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,7 +36,8 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 @Composable
 fun OuterBox(
     diaries: List<Diary>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onProfileClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -84,6 +86,7 @@ fun OuterBox(
                             Image(
                                 painter = painterResource(id = R.drawable.default_profile),
                                 contentDescription = "프로필 사진",
+                                contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .size(60.dp)
                                     .clip(RoundedCornerShape(50))
@@ -92,30 +95,36 @@ fun OuterBox(
                         }
                     }
 
-                    // 사용자 이름
-                    Text(
-                        text = when (val s = userState) {
-                            is UserUiState.Success -> "@ ${s.userInfo.username}"
-                            is UserUiState.Loading -> "LOADING..."
-                            is UserUiState.Error -> "@KILLING_PART"
-                        },
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Thin,
-                        fontSize = 14.sp,
-                        color = mainGreen,
-                    )
+                    // username과 tag (클릭 가능)
+                    Column(
+                        modifier = Modifier.clickable { onProfileClick() }
+                    ) {
+                        Text(
+                            text = when (val s = userState) {
+                                is UserUiState.Success -> s.userInfo.username
+                                is UserUiState.Loading -> "LOADING..."
+                                is UserUiState.Error -> "KILLING_PART"
+                            },
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.W400,
+                            fontSize = 14.sp,
+                            color = mainGreen,
+                        )
+                        Text(
+                            text = when (val s = userState) {
+                                is UserUiState.Success -> "@${s.userInfo.tag}"
+                                is UserUiState.Loading -> "@LOADING"
+                                is UserUiState.Error -> "@KILLING_PART"
+                            },
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.W400,
+                            fontSize = 14.sp,
+                            color = mainGreen,
+                        )
+                    }
                 }
 
-                // 추가 버튼
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.add),
-                        contentDescription = "추가 버튼",
-                        modifier = Modifier.size(41.dp, 16.dp)
-                    )
-                }
+
             }
 
             Spacer(modifier = Modifier.height(20.dp))

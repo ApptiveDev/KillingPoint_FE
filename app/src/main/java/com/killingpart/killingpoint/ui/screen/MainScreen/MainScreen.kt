@@ -39,6 +39,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -62,14 +65,23 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
 import com.killingpart.killingpoint.ui.screen.MusicCalendarScreen.MusicCalendarScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ProfileSettingsScreen
 import kotlinx.coroutines.launch
 
 enum class MainTab {
-    STORAGE, PLAY, CALENDAR
+    PROFILE, PLAY, CALENDAR
 }
 @Composable
-fun MainScreen(navController: NavController) {
-    var selected by remember { mutableStateOf(MainTab.PLAY) }
+fun MainScreen(navController: NavController, initialTab: String = "play", initialSelectedDate: String = "") {
+    var selected by remember(initialTab) { 
+        mutableStateOf(
+            when (initialTab) {
+                "storage" -> MainTab.PROFILE
+                "calendar" -> MainTab.CALENDAR
+                else -> MainTab.PLAY
+            }
+        )
+    }
     var currentIndex by remember { mutableStateOf(0) }
     val mainListState = rememberLazyListState()
     
@@ -123,6 +135,14 @@ fun MainScreen(navController: NavController) {
 
     AppBackground {
         Box(modifier = Modifier.fillMaxSize()) {
+            // 프로필 설정 화면 상태 관리 (전역)
+            var showProfileSettings by remember { mutableStateOf(false) }
+            // TopPillTabs 위치 측정을 위한 상태
+            var topPillTabsBottomY by remember { mutableStateOf(0.dp) }
+            val density = LocalDensity.current
+            val configuration = LocalConfiguration.current
+            val screenHeight = configuration.screenHeightDp.dp
+            
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -148,25 +168,32 @@ fun MainScreen(navController: NavController) {
                 TopPillTabs(
                     options = listOf("내 프로필", "킬링파트 재생", "뮤직캘린더"),
                     selectedIndex = when (selected) {
-                        MainTab.STORAGE -> 0
+                        MainTab.PROFILE -> 0
                         MainTab.PLAY -> 1
                         MainTab.CALENDAR -> 2
                     },
                     onSelected = { idx ->
                         selected = when (idx) {
-                            0 -> MainTab.STORAGE
+                            0 -> MainTab.PROFILE
                             1 -> MainTab.PLAY
                             else -> MainTab.CALENDAR
                         }
                         listExpanded = false
                     },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 30.dp)
+                        .onGloballyPositioned { coordinates ->
+                            with(density) {
+                                topPillTabsBottomY = coordinates.positionInParent().y.toDp() + coordinates.size.height.toDp()
+                            }
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(15.dp))
 
                 when (selected) {
-                    MainTab.STORAGE -> {
+                    MainTab.PROFILE -> {
                         when (val state = diaryState) {
                             is DiaryUiState.Loading -> {
                                 Box(
@@ -180,7 +207,6 @@ fun MainScreen(navController: NavController) {
                             }
 
                             is DiaryUiState.Success -> {
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -194,7 +220,10 @@ fun MainScreen(navController: NavController) {
                                         contentPadding = PaddingValues(bottom = musicListHeight + MusicCueBtnHeight + MusicCueBtnGap + 16.dp)
                                     ) {
                                         item {
-                                            OuterBox(diaries = state.diaries)
+                                            OuterBox(
+                                                diaries = state.diaries,
+                                                onProfileClick = { showProfileSettings = true }
+                                            )
                                         }
                                     }
                                     // Overlay MusicListBox
@@ -282,7 +311,11 @@ fun MainScreen(navController: NavController) {
                                 .fillMaxWidth()
                                 .weight(1f)
                         ) {
-                            MusicCalendarScreen(diaries = diaries)
+                            MusicCalendarScreen(
+                                diaries = diaries, 
+                                navController = navController,
+                                initialSelectedDate = if (initialTab == "calendar") initialSelectedDate else null
+                            )
                         }
                     }
                 }
@@ -310,39 +343,15 @@ fun MainScreen(navController: NavController) {
                 }
             )
 
-            // STORAGE 탭: 하단 고정 배치는 제거(리스트 내부로 복구)
-
-            if (!listExpanded && selected == MainTab.PLAY) {
-                when (val s = userState) {
-                    is UserUiState.Success -> {
-                        AsyncImage(
-                            model = s.userInfo.profileImageUrl,
-                            contentDescription = "프로필 사진",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .align(Alignment.TopStart)
-                                .offset(x = 20.dp, y = 220.dp)
-                                .clip(RoundedCornerShape(50))
-                                .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                            placeholder = painterResource(id = R.drawable.default_profile),
-                            error = painterResource(id = R.drawable.default_profile)
-                        )
-                    }
-                    else -> {
-                        Image(
-                            painter = painterResource(id = R.drawable.default_profile),
-                            contentDescription = "프로필 사진",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .align(Alignment.TopStart)
-                                .offset(x = 20.dp, y = 220.dp)
-                                .clip(RoundedCornerShape(50))
-                                .border(3.dp, mainGreen, RoundedCornerShape(50))
-                        )
-                    }
-                }
+            // 프로필 설정 화면 오버레이 (MusicCueBtn 위에 표시)
+            if (showProfileSettings) {
+                val topOffset = topPillTabsBottomY + 15.dp // TopPillTabs 아래 + Spacer
+                val maxHeight = screenHeight - topOffset - BottomBarHeight // 전체 높이에서 상단 y 좌표와 BottomBar 높이를 뺀 값
+                ProfileSettingsScreen(
+                    onDismiss = { showProfileSettings = false },
+                    topOffset = topOffset,
+                    maxHeight = maxHeight
+                )
             }
         }
     }

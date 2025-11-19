@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ProfileSettingsScreen
 import java.util.regex.Pattern
 
 /**
@@ -116,37 +118,75 @@ fun RunMusicBox(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp )
+            .padding(horizontal = 24.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
         ) {
-            // username 상단 부분 (고정)
+            // 프로필 이미지 및 username/tag 상단 부분 (고정)
             Row(
-                modifier = Modifier.padding(start = 71.dp, end = 17.dp, top = 20.dp, bottom = 8.dp)
+                modifier = Modifier.padding(start = 15.dp, end = 17.dp, top = 20.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = when (val s = userState) {
-                        is UserUiState.Success -> "@ ${s.userInfo.username}"
-                        is UserUiState.Loading -> "LOADING..."
-                        is UserUiState.Error -> "KILLING_PART"
-                    },
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Thin,
-                    fontSize = 14.sp,
-                    color = mainGreen,
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.add),
-                        contentDescription = "킬링파트 추가 버튼",
-                        modifier = Modifier.size(41.dp, 16.dp)
+                // 프로필 이미지
+                when (val s = userState) {
+                    is UserUiState.Success -> {
+                        AsyncImage(
+                            model = s.userInfo.profileImageUrl,
+                            contentDescription = "프로필 사진",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(50))
+                                .border(3.dp, mainGreen, RoundedCornerShape(50)),
+                            placeholder = painterResource(id = R.drawable.default_profile),
+                            error = painterResource(id = R.drawable.default_profile)
+                        )
+                    }
+                    else -> {
+                        Image(
+                            painter = painterResource(id = R.drawable.default_profile),
+                            contentDescription = "프로필 사진",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(RoundedCornerShape(50))
+                                .border(3.dp, mainGreen, RoundedCornerShape(50))
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                // username과 tag (클릭 가능 - RunMusicBox에서는 클릭 불가)
+                Column {
+                    Text(
+                        text = when (val s = userState) {
+                            is UserUiState.Success -> s.userInfo.username
+                            is UserUiState.Loading -> "LOADING..."
+                            is UserUiState.Error -> "KILLING_PART"
+                        },
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W400,
+                        fontSize = 14.sp,
+                        color = mainGreen,
+                    )
+                    Text(
+                        text = when (val s = userState) {
+                            is UserUiState.Success -> "@${s.userInfo.tag}"
+                            is UserUiState.Loading -> "@LOADING"
+                            is UserUiState.Error -> "@KILLING_PART"
+                        },
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W400,
+                        fontSize = 14.sp,
+                        color = mainGreen,
                     )
                 }
+                
+
+
             }
 
             // 스크롤 가능한 영역 (YouTubePlayerBox, AlbumDiaryBox)

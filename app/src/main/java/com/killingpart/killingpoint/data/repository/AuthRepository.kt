@@ -9,11 +9,19 @@ import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.data.model.UpdateTagRequest
+import com.killingpart.killingpoint.data.model.PresignedUrlResponse
+import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.asRequestBody
+import java.io.File
 
 class AuthRepository(
     private val context: Context,
@@ -101,7 +109,15 @@ class AuthRepository(
             try {
                 val accessToken = getAccessToken() 
                     ?: throw IllegalStateException("액세스 토큰이 없습니다")
-                api.getMyDiaries("Bearer $accessToken", page, size)
+                val result = api.getMyDiaries("Bearer $accessToken", page, size)
+                
+                // 디버깅: 받은 다이어리 데이터 로깅
+                android.util.Log.d("AuthRepository", "getMyDiaries 응답 - 총 ${result.content.size}개")
+                result.content.forEachIndexed { index, diary ->
+                    android.util.Log.d("AuthRepository", "Diary[$index]: id=${diary.id}, title=${diary.musicTitle}, artist=${diary.artist}")
+                }
+                
+                result
             } catch (e: HttpException) {
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
@@ -120,6 +136,104 @@ class AuthRepository(
             val code = e.code()
             val msg = e.response()?.errorBody()?.string().orEmpty()
             throw IllegalStateException("일기 작성 실패 ($code): $msg")
+        }
+    }
+
+    suspend fun updateDiary(diaryId: Long, body: CreateDiaryRequest) = withContext(Dispatchers.IO) {
+        try {
+            val accessToken = getAccessToken() ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateDiary("Bearer $accessToken", diaryId, body)
+            if (!response.isSuccessful) {
+                throw IllegalStateException("일기 수정 실패 (${response.code()}): ${response.message()}")
+            }
+        } catch (e: HttpException) {
+            val code = e.code()
+            val msg = e.response()?.errorBody()?.string().orEmpty()
+            throw IllegalStateException("일기 수정 실패 ($code): $msg")
+        }
+    }
+
+    suspend fun updateTag(tag: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken() 
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateTag("Bearer $accessToken", UpdateTagRequest(tag))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("태그 업데이트 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("태그 업데이트 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
+     * PresignedUrl 발급
+     */
+    suspend fun getPresignedUrl(): Result<PresignedUrlResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getPresignedUrl("Bearer $accessToken")
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("PresignedUrl 발급 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
+     * S3에 이미지 업로드 (PUT 요청)
+     * @param presignedUrl 쿼리파라미터 포함된 presignedUrl
+     * @param imageFile 업로드할 이미지 파일
+     */
+    suspend fun uploadImageToS3(presignedUrl: String, imageFile: File): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val client = OkHttpClient()
+            val mediaType = "image/*".toMediaType()
+            val requestBody = imageFile.asRequestBody(mediaType)
+            
+            val request = Request.Builder()
+                .url(presignedUrl)
+                .put(requestBody)
+                .build()
+            
+            val response = client.newCall(request).execute()
+            
+            if (!response.isSuccessful) {
+                throw IllegalStateException("S3 업로드 실패 (${response.code}): ${response.message}")
+            }
+        }
+    }
+
+    /**
+     * 프로필 이미지 변경
+     * @param id PresignedUrl 발급 시 받은 TemporalFile의 PK
+     * @param presignedUrl 쿼리파라미터를 제거한 presignedUrl
+     */
+    suspend fun updateProfileImage(id: Long, presignedUrl: String): Result<UserInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.updateProfileImage("Bearer $accessToken", UpdateProfileImageRequest(id, presignedUrl))
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("프로필 이미지 변경 실패 ($code): $msg")
+            } else {
+                throw e
+            }
         }
     }
 }
