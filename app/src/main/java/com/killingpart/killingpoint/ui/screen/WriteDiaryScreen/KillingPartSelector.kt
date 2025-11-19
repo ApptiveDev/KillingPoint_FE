@@ -49,6 +49,7 @@ import com.killingpart.killingpoint.ui.theme.mainGreen
 import kotlin.math.roundToInt
 
 /**
+ * 핸들 밑에 나오는 start/end seconds의 시간 포맷팅 함수
  * duration과 startSeconds의 단위가 float이기 때문에
  * 포맷팅을 통해 Int 정수화 처리 후 출력
  */
@@ -59,6 +60,14 @@ fun formatTime(seconds: Float): String {
     return String.format("%02d:%02d", minutes, secs)
 }
 
+/**
+ * author: 김태란, 내용: 전체 구조 재설계, 이유: 타임라인 바, 양쪽 핸들, 타임 표시 세가지 컴포넌트의 좌표계 통일 위함
+ *
+ * 핵심 로직: barAbsoluteLeft = barIndex * pxPerSecond - scrollX
+ * scrollX: 절대적인 scroll의 위치
+ * barAbsoluteX: scrollState 변화 시 자동으로 변하는 값
+ * pxPerSecond: 타임라인 개별 바 하나의 second(초)
+ */
 @Composable
 fun KillingPartSelector(
     totalDuration: Int,
@@ -66,11 +75,12 @@ fun KillingPartSelector(
     onStartChange: (Float) -> Unit
 ) {
     val scrollState = rememberScrollState()
+    val scrollX = scrollState.value.toFloat()
+
     val density = LocalDensity.current
     val totalBars = totalDuration
     val barWidth = 6.dp
     val gap = 8.dp
-    val gapPx = with(density) { gap.toPx() }
 
     val leftBoxWidth = 16.dp
     val rightBoxWidth = 16.dp
@@ -84,10 +94,15 @@ fun KillingPartSelector(
     var parentWidthPx by remember { mutableStateOf(0f) }
 
     val barWidthPx = with(density) { barWidth.toPx() }
+    val gapPx = with(density) { gap.toPx() }
     val barSpacingPx = (barWidthPx + gapPx).roundToInt().toFloat()
     val leftBoxWidthPx = with(density) { leftBoxWidth.toPx() }
     val spaceBetweenBoxesPx = with(density) { spaceBetweenBoxes.toPx() }
     val greenBoxTotalWidthPx = with(density) { greenBoxTotalWidth.toPx() }
+
+    val pxPerSecond = barWidthPx + gapPx
+    var timelineWidthPx = totalDuration * pxPerSecond
+    val scrollX = scrollState.value.toFloat()
 
     val initialSpacerWidthPx = remember(parentWidthPx, greenBoxTotalWidthPx) {
         if (parentWidthPx > 0f) {
@@ -119,14 +134,11 @@ fun KillingPartSelector(
     
     val finalSpacerWidthDp = with(density) { finalSpacerWidthPx.toDp() }
 
-    val minDistancePx = 250f
-    val timelineWidthPx = 350f
-    val pxPerSecond = 20f
     val minDurationSec = 20f
     val maxDurationSec = 30f
     var currentStartSeconds by remember { mutableStateOf(0f) }
-    var leftHandleX by remember { mutableStateOf(100f) }
-    var rightHandleX by remember {mutableStateOf(100f + pxPerSecond * maxDurationSec)}
+    var leftHandleX by remember { mutableStateOf(150f) }
+    var rightHandleX by remember {mutableStateOf(150f + pxPerSecond * maxDurationSec)}
 
     Box(
         modifier = Modifier
