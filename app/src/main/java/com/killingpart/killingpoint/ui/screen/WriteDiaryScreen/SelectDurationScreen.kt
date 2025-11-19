@@ -94,24 +94,24 @@ fun SelectDurationScreen(
     artist: String,
     imageUrl: String
 ) {
-    var duration by remember { mutableStateOf("10") }
-    var start by remember { mutableStateOf("0") }
+    var duration by remember { mutableStateOf(10f) }
+    var start by remember { mutableStateOf(0f) }
 
     // start 값을 Float로 변환 (KillingPartSelector에서 받은 값)
     val startSeconds = remember(start) {
-        val seconds = start.toFloatOrNull() ?: 0f
+        val seconds = start ?: 0f
         seconds
     }
 
     // duration 값을 Float로 변환 (DurationScrollSelector에서 받은 값)
     val durationSeconds = remember(duration) {
-        val seconds = duration.toFloatOrNull() ?: 10f
+        val seconds = duration ?: 10f
         seconds
     }
 
     // end 값 계산: startSeconds + durationSeconds
-    val end = remember(startSeconds, durationSeconds) {
-        val endValue = (startSeconds + durationSeconds).toString()
+    var end = remember(startSeconds, durationSeconds) {
+        val endValue = (startSeconds + durationSeconds)
         endValue
     }
 
@@ -273,7 +273,11 @@ fun SelectDurationScreen(
                     Spacer(Modifier.height(18.dp))
 
                     KillingPartSelector(
-                        totalDuration, duration.toInt(), {start = it.toString()}
+                        totalDuration, onStartChange = { s,e,d ->
+                            start = s
+                            end = e
+                            duration =d
+                        }
                     )
 
                     Spacer(Modifier.height(38.dp))
@@ -287,9 +291,6 @@ fun SelectDurationScreen(
 
         Button(
             onClick = {
-                val encodedDuration = Uri.encode(duration)
-                val encodedStart = Uri.encode(start)
-                val encodedEnd = Uri.encode(end)
                 val encodedVideoUrl = Uri.encode(videoUrl ?: "")
 
                 navController.navigate(
@@ -297,9 +298,9 @@ fun SelectDurationScreen(
                             "?title=${Uri.encode(title)}" +
                             "&artist=${Uri.encode(artist)}" +
                             "&image=${Uri.encode(imageUrl)}" +
-                            "&duration=$encodedDuration" +
-                            "&start=$encodedStart" +
-                            "&end=$encodedEnd" +
+                            "&duration=${duration.toInt()}" +
+                            "&start=${start.toInt()}" +
+                            "&end=${end.toInt()}" +
                             "&videoUrl=$encodedVideoUrl"
                 )
             },

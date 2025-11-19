@@ -71,12 +71,12 @@ fun formatTime(seconds: Float): String {
  * scrollX: 절대적인 scroll의 위치
  * barAbsoluteX: scrollState 변화 시 자동으로 변하는 값
  * pxPerSecond: 타임라인 개별 바 하나의 second(초)
+ * 핸들 seconds = (handleLocalX + scrollX) / pxPerSecond
  */
 @Composable
 fun KillingPartSelector(
     totalDuration: Int,
-    selectedDuration: Int,
-    onStartChange: (Float) -> Unit
+    onStartChange: (start: Float, end: Float, duration: Float) -> Unit
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
@@ -99,7 +99,6 @@ fun KillingPartSelector(
     val gapPx = with(density) { gap.toPx() }
     val barSpacingPx = (barWidthPx + gapPx).roundToInt().toFloat()
     val leftBoxWidthPx = with(density) { leftBoxWidth.toPx() }
-    val spaceBetweenBoxesPx = with(density) { spaceBetweenBoxes.toPx() }
     val greenBoxTotalWidthPx = with(density) { greenBoxTotalWidth.toPx() }
 
     val pxPerSecond = barWidthPx + gapPx
@@ -136,8 +135,11 @@ fun KillingPartSelector(
     val finalSpacerWidthDp = with(density) { finalSpacerWidthPx.toDp() }
 
     val minDurationSec = 10f
-    val maxDurationSec = 25f
-    var currentStartSeconds by remember { mutableStateOf(0f) }
+    val maxDurationSec = 30f
+    var currentStartSeconds by remember { mutableStateOf(10f) }
+    var currentEndSeconds by remember {mutableStateOf(20f)}
+    var currentDuration by remember {mutableStateOf(10f)}
+
     var leftHandleX by remember { mutableStateOf(150f) }
     var rightHandleX by remember { mutableStateOf(150f + pxPerSecond * maxDurationSec) }
 
@@ -185,7 +187,7 @@ fun KillingPartSelector(
                     val localLeftHandle = leftHandleX + scrollX + barWidthPx
                     val localRightHandle = rightHandleX + scrollX + barWidthPx
 
-                    val isInside = barLeft > localLeftHandle &&
+                    val isInside = barLeft > localLeftHandle + 10f &&
                             barLeft < localRightHandle
 
                     val color = if (isInside) Color.White else Color(0xFF454545)
@@ -306,7 +308,7 @@ fun KillingPartSelector(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = formatTime(currentStartSeconds + selectedDuration),
+                text = formatTime(currentEndSeconds),
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W400,
                 fontSize = 14.sp,
@@ -316,6 +318,16 @@ fun KillingPartSelector(
     }
 
 
+    LaunchedEffect(leftHandleX, rightHandleX, scrollState.value) {
+        val absoluteLeft = leftHandleX + scrollState.value
+        val absoluteRight = rightHandleX + scrollState.value
+
+        currentStartSeconds = (absoluteLeft / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+        currentEndSeconds = (absoluteRight / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+        currentDuration = (currentEndSeconds - currentStartSeconds).coerceIn(0f, totalDuration.toFloat())
+
+        onStartChange(currentStartSeconds, currentEndSeconds, currentDuration)
+    }
 
 
     LaunchedEffect(scrollState.value, parentWidthPx) {
@@ -343,7 +355,7 @@ fun KillingPartSelector(
             val startSeconds = barIndex / 2f
 
             currentStartSeconds = startSeconds
-            onStartChange(startSeconds)
+            onStartChange(currentStartSeconds, currentEndSeconds, currentDuration)
         }
     }
 }
@@ -352,5 +364,5 @@ fun KillingPartSelector(
 @Preview
 @Composable
 fun KillingPartSelectorPreview() {
-    KillingPartSelector(185, 14, {})
+    KillingPartSelector(185, { _, _, _ -> })
 }
