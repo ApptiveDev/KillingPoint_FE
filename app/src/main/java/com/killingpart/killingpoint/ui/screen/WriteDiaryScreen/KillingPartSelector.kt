@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -32,11 +34,13 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.killingpart.killingpoint.R
@@ -115,7 +119,11 @@ fun KillingPartSelector(
     
     val finalSpacerWidthDp = with(density) { finalSpacerWidthPx.toDp() }
 
+    val minDistancePx = 250f
+    val timelineWidthPx = 350f
     var currentStartSeconds by remember { mutableStateOf(0f) }
+    var leftHandleX by remember { mutableStateOf(100f) }
+    var rightHandleX by remember {mutableStateOf(250f)}
 
     Box(
         modifier = Modifier
@@ -169,16 +177,23 @@ fun KillingPartSelector(
                 Spacer(modifier = Modifier.width(finalSpacerWidthDp))
             }
         }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
             Column (
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .offset { IntOffset(leftHandleX.roundToInt(), 0) }
+                    .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+
+                            val newX = (leftHandleX + dragAmount.x)
+                                .coerceIn(0f, rightHandleX - minDistancePx)
+
+                            leftHandleX = newX
+                        }
+                    )
+
+                }
             ) {
                 Box(
                     modifier = Modifier
@@ -216,7 +231,21 @@ fun KillingPartSelector(
             }
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .offset { IntOffset(rightHandleX.roundToInt(), 0)}
+                    .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+
+                            val newX = (rightHandleX + dragAmount.x)
+                                .coerceIn(leftHandleX + minDistancePx, timelineWidthPx)
+
+                            rightHandleX = newX
+                        }
+                    )
+                }
             ) {
                 Box(
                     modifier = Modifier
@@ -224,12 +253,12 @@ fun KillingPartSelector(
                         .height(88.dp)
                         .background(
                             mainGreen,
-                            RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                            RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
                         )
                         .border(
                             2.dp,
                             mainGreen,
-                            RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                            RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -252,7 +281,7 @@ fun KillingPartSelector(
                 )
             }
         }
-    }
+
 
     LaunchedEffect(scrollState.value, parentWidthPx) {
         if (parentWidthPx > 0f) {
