@@ -28,7 +28,7 @@ fun BoxScope.TimeLabelCentered(
         fontSize = fontSizeSp.sp,
         color = Color.White,
         fontFamily = PaperlogyFontFamily,
-        fontWeight = FontWeight.Thin
+        fontWeight = FontWeight.W400
     )
 
     // 텍스트 실제 폭 측정(px)
