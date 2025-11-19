@@ -62,17 +62,18 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
 import com.killingpart.killingpoint.ui.screen.MusicCalendarScreen.MusicCalendarScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ProfileSettingsScreen
 import kotlinx.coroutines.launch
 
 enum class MainTab {
-    STORAGE, PLAY, CALENDAR
+    PROFILE, PLAY, CALENDAR
 }
 @Composable
 fun MainScreen(navController: NavController, initialTab: String = "play", initialSelectedDate: String = "") {
     var selected by remember(initialTab) { 
         mutableStateOf(
             when (initialTab) {
-                "storage" -> MainTab.STORAGE
+                "storage" -> MainTab.PROFILE
                 "calendar" -> MainTab.CALENDAR
                 else -> MainTab.PLAY
             }
@@ -156,13 +157,13 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 TopPillTabs(
                     options = listOf("내 프로필", "킬링파트 재생", "뮤직캘린더"),
                     selectedIndex = when (selected) {
-                        MainTab.STORAGE -> 0
+                        MainTab.PROFILE -> 0
                         MainTab.PLAY -> 1
                         MainTab.CALENDAR -> 2
                     },
                     onSelected = { idx ->
                         selected = when (idx) {
-                            0 -> MainTab.STORAGE
+                            0 -> MainTab.PROFILE
                             1 -> MainTab.PLAY
                             else -> MainTab.CALENDAR
                         }
@@ -174,7 +175,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 Spacer(modifier = Modifier.height(15.dp))
 
                 when (selected) {
-                    MainTab.STORAGE -> {
+                    MainTab.PROFILE -> {
                         when (val state = diaryState) {
                             is DiaryUiState.Loading -> {
                                 Box(
@@ -188,6 +189,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                             }
 
                             is DiaryUiState.Success -> {
+                                var showProfileSettings by remember { mutableStateOf(false) }
 
                                 Box(
                                     modifier = Modifier
@@ -202,7 +204,10 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                         contentPadding = PaddingValues(bottom = musicListHeight + MusicCueBtnHeight + MusicCueBtnGap + 16.dp)
                                     ) {
                                         item {
-                                            OuterBox(diaries = state.diaries)
+                                            OuterBox(
+                                                diaries = state.diaries,
+                                                onProfileClick = { showProfileSettings = true }
+                                            )
                                         }
                                     }
                                     // Overlay MusicListBox
@@ -217,6 +222,13 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                             onToggle = { willOpen -> listExpanded = willOpen },
                                             diaries = state.diaries,
                                             showCurrentHeader = true
+                                        )
+                                    }
+                                    
+                                    // 프로필 설정 화면 오버레이
+                                    if (showProfileSettings) {
+                                        ProfileSettingsScreen(
+                                            onDismiss = { showProfileSettings = false }
                                         )
                                     }
                                 }

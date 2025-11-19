@@ -9,6 +9,7 @@ import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.data.model.UpdateTagRequest
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import kotlinx.coroutines.Dispatchers
@@ -142,6 +143,26 @@ class AuthRepository(
             val code = e.code()
             val msg = e.response()?.errorBody()?.string().orEmpty()
             throw IllegalStateException("일기 수정 실패 ($code): $msg")
+        }
+    }
+
+    suspend fun updateTag(tag: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken() 
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateTag("Bearer $accessToken", UpdateTagRequest(tag))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("태그 업데이트 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("태그 업데이트 실패 ($code): $msg")
+            } else {
+                throw e
+            }
         }
     }
 }

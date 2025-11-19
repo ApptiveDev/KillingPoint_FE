@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,6 +39,7 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ProfileSettingsScreen
 import java.util.regex.Pattern
 
 /**
@@ -116,7 +118,7 @@ fun RunMusicBox(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp )
+            .padding(horizontal = 24.dp)
     ) {
         Column(
             modifier = Modifier
@@ -157,7 +159,7 @@ fun RunMusicBox(
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
-                // username과 tag
+                // username과 tag (클릭 가능 - RunMusicBox에서는 클릭 불가)
                 Column {
                     Text(
                         text = when (val s = userState) {
