@@ -323,39 +323,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
             )
 
             // STORAGE 탭: 하단 고정 배치는 제거(리스트 내부로 복구)
-
-            if (!listExpanded && selected == MainTab.PLAY) {
-                when (val s = userState) {
-                    is UserUiState.Success -> {
-                        AsyncImage(
-                            model = s.userInfo.profileImageUrl,
-                            contentDescription = "프로필 사진",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .align(Alignment.TopStart)
-                                .offset(x = 20.dp, y = 220.dp)
-                                .clip(RoundedCornerShape(50))
-                                .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                            placeholder = painterResource(id = R.drawable.default_profile),
-                            error = painterResource(id = R.drawable.default_profile)
-                        )
-                    }
-                    else -> {
-                        Image(
-                            painter = painterResource(id = R.drawable.default_profile),
-                            contentDescription = "프로필 사진",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(60.dp)
-                                .align(Alignment.TopStart)
-                                .offset(x = 20.dp, y = 220.dp)
-                                .clip(RoundedCornerShape(50))
-                                .border(3.dp, mainGreen, RoundedCornerShape(50))
-                        )
-                    }
-                }
-            }
+            // 프로필 이미지는 RunMusicBox에서 표시하므로 여기서는 제거
         }
     }
 }
