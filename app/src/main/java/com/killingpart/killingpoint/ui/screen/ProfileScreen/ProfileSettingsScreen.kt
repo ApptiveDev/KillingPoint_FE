@@ -50,7 +50,9 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 
 @Composable
 fun ProfileSettingsScreen(
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    topOffset: androidx.compose.ui.unit.Dp = 0.dp,
+    maxHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -63,19 +65,31 @@ fun ProfileSettingsScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(5))
-            .background(Color.Black.copy(alpha = 0.95f))
-            .border(1.dp, Color(0xFFDADADA), RoundedCornerShape(5)),
-    )
-    {
+    ) {
+        // 반투명 배경 (배경 클릭 시 닫기)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+//                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable { onDismiss() }
+        )
+        
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight()
-                .align(Alignment.Center)
-                .padding(6.dp),
+                .then(
+                    if (maxHeight != androidx.compose.ui.unit.Dp.Unspecified) {
+                        Modifier.height(maxHeight)
+                    } else {
+                        Modifier.fillMaxHeight(0.85f)
+                    }
+                )
+                .align(Alignment.TopCenter)
+                .padding(horizontal = 16.dp)
+                .offset(y = topOffset),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Black)
+            colors = CardDefaults.cardColors(containerColor = Color.Black),
+            border = androidx.compose.foundation.BorderStroke(0.5.dp, Color(0xFFDADADA))
         ) {
             ProfileSettingsContent(
                 userState = userState,
@@ -164,36 +178,47 @@ private fun ProfileSettingsContent(
                     .onFailure { e ->
                         val errorMessage = e.message ?: "태그 업데이트 실패"
                         
-                        if (errorMessage.contains("400") || errorMessage.contains("BadRequest")) {
-                            try {
-                                val jsonStart = errorMessage.indexOf("{")
-                                if (jsonStart != -1) {
-                                    val jsonStr = errorMessage.substring(jsonStart)
-                                    val json = JSONObject(jsonStr)
-                                    
-                                    if (json.has("fieldErrors")) {
-                                        val fieldErrors = json.getJSONArray("fieldErrors")
-                                        if (fieldErrors.length() > 0) {
-                                            val firstError = fieldErrors.getJSONObject(0)
-                                            if (firstError.has("tag")) {
-                                                validationMessage = firstError.getString("tag")
-                                                isUpdating = false
-                                                return@launch
+                        // 에러 메시지에서 JSON 추출 시도
+                        try {
+                            // "태그 업데이트 실패 (400): {JSON}" 형식에서 JSON 추출
+                            val jsonStart = errorMessage.indexOf("{")
+                            if (jsonStart != -1) {
+                                val jsonStr = errorMessage.substring(jsonStart)
+                                val json = JSONObject(jsonStr)
+                                
+                                // 1. message 필드 확인 (중복 검사 등)
+                                if (json.has("message")) {
+                                    validationMessage = json.getString("message")
+                                    isUpdating = false
+                                    return@launch
+                                }
+                                
+                                // 2. fieldErrors 확인 (유효성 검사 에러)
+                                if (json.has("fieldErrors")) {
+                                    val fieldErrors = json.getJSONArray("fieldErrors")
+                                    if (fieldErrors.length() > 0) {
+                                        // 모든 fieldErrors의 tag 메시지를 합침
+                                        val errorMessages = mutableListOf<String>()
+                                        for (i in 0 until fieldErrors.length()) {
+                                            val errorObj = fieldErrors.getJSONObject(i)
+                                            if (errorObj.has("tag")) {
+                                                errorMessages.add(errorObj.getString("tag"))
                                             }
                                         }
-                                    }
-                                    
-                                    if (json.has("message")) {
-                                        validationMessage = json.getString("message")
-                                        isUpdating = false
-                                        return@launch
+                                        if (errorMessages.isNotEmpty()) {
+                                            validationMessage = errorMessages.joinToString("\n")
+                                            isUpdating = false
+                                            return@launch
+                                        }
                                     }
                                 }
-                            } catch (e: Exception) {
-                                // JSON 파싱 실패
                             }
+                        } catch (parseException: Exception) {
+                            android.util.Log.e("ProfileSettings", "JSON 파싱 실패: ${parseException.message}")
+                            // JSON 파싱 실패 시 원본 메시지 사용
                         }
                         
+                        // JSON 파싱 실패하거나 형식이 다른 경우 원본 에러 메시지 사용
                         validationMessage = errorMessage
                     }
                 isUpdating = false
@@ -306,6 +331,7 @@ private fun ProfileSettingsContent(
                                     )
                                     
                                     androidx.compose.foundation.text.BasicTextField(
+
                                         value = tagText,
                                         onValueChange = { newValue ->
                                             tagText = newValue.lowercase()
@@ -329,7 +355,8 @@ private fun ProfileSettingsContent(
                                                 updateTag(state.userInfo.tag)
                                             }
                                         ),
-                                        cursorBrush = androidx.compose.ui.graphics.SolidColor(mainGreen)
+                                        cursorBrush = androidx.compose.ui.graphics.SolidColor(mainGreen),
+
                                     )
                                 }
                             } else {

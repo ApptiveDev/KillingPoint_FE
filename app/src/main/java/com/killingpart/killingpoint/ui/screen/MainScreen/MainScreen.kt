@@ -39,6 +39,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -132,6 +135,14 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
 
     AppBackground {
         Box(modifier = Modifier.fillMaxSize()) {
+            // 프로필 설정 화면 상태 관리 (전역)
+            var showProfileSettings by remember { mutableStateOf(false) }
+            // TopPillTabs 위치 측정을 위한 상태
+            var topPillTabsBottomY by remember { mutableStateOf(0.dp) }
+            val density = LocalDensity.current
+            val configuration = LocalConfiguration.current
+            val screenHeight = configuration.screenHeightDp.dp
+            
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -169,7 +180,14 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                         }
                         listExpanded = false
                     },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 30.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 30.dp)
+                        .onGloballyPositioned { coordinates ->
+                            with(density) {
+                                topPillTabsBottomY = coordinates.positionInParent().y.toDp() + coordinates.size.height.toDp()
+                            }
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(15.dp))
@@ -189,8 +207,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                             }
 
                             is DiaryUiState.Success -> {
-                                var showProfileSettings by remember { mutableStateOf(false) }
-
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -222,13 +238,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                             onToggle = { willOpen -> listExpanded = willOpen },
                                             diaries = state.diaries,
                                             showCurrentHeader = true
-                                        )
-                                    }
-                                    
-                                    // 프로필 설정 화면 오버레이
-                                    if (showProfileSettings) {
-                                        ProfileSettingsScreen(
-                                            onDismiss = { showProfileSettings = false }
                                         )
                                     }
                                 }
@@ -334,8 +343,16 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 }
             )
 
-            // STORAGE 탭: 하단 고정 배치는 제거(리스트 내부로 복구)
-            // 프로필 이미지는 RunMusicBox에서 표시하므로 여기서는 제거
+            // 프로필 설정 화면 오버레이 (MusicCueBtn 위에 표시)
+            if (showProfileSettings) {
+                val topOffset = topPillTabsBottomY + 15.dp // TopPillTabs 아래 + Spacer
+                val maxHeight = screenHeight - topOffset - BottomBarHeight // 전체 높이에서 상단 y 좌표와 BottomBar 높이를 뺀 값
+                ProfileSettingsScreen(
+                    onDismiss = { showProfileSettings = false },
+                    topOffset = topOffset,
+                    maxHeight = maxHeight
+                )
+            }
         }
     }
 }
