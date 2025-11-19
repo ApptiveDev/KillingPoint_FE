@@ -67,7 +67,7 @@ fun KillingPartSelector(
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
-    val totalBars = totalDuration * 2
+    val totalBars = totalDuration
     val barWidth = 6.dp
     val gap = 8.dp
     val gapPx = with(density) { gap.toPx() }
@@ -121,9 +121,12 @@ fun KillingPartSelector(
 
     val minDistancePx = 250f
     val timelineWidthPx = 350f
+    val pxPerSecond = 20f
+    val minDurationSec = 20f
+    val maxDurationSec = 30f
     var currentStartSeconds by remember { mutableStateOf(0f) }
     var leftHandleX by remember { mutableStateOf(100f) }
-    var rightHandleX by remember {mutableStateOf(250f)}
+    var rightHandleX by remember {mutableStateOf(100f + pxPerSecond * maxDurationSec)}
 
     Box(
         modifier = Modifier
@@ -132,7 +135,7 @@ fun KillingPartSelector(
                 parentWidthPx = coordinates.size.width.toFloat()
             }
             .clipToBounds(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.TopStart
     ) {
         Row(
             modifier = Modifier
@@ -185,11 +188,11 @@ fun KillingPartSelector(
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
+                            val tryX = leftHandleX + dragAmount.x
+                            val durationIfMoved = (rightHandleX - tryX) / pxPerSecond
 
-                            val newX = (leftHandleX + dragAmount.x)
-                                .coerceIn(0f, rightHandleX - minDistancePx)
-
-                            leftHandleX = newX
+                            if (durationIfMoved >= minDurationSec && durationIfMoved <=maxDurationSec)
+                                leftHandleX = tryX
                         }
                     )
 
@@ -197,8 +200,8 @@ fun KillingPartSelector(
             ) {
                 Box(
                     modifier = Modifier
-                        .width(24.dp)
-                        .height(88.dp)
+                        .width(20.dp)
+                        .height(70.dp)
                         .background(
                             mainGreen,
                             RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
@@ -238,19 +241,20 @@ fun KillingPartSelector(
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
+                            val tryX = rightHandleX + dragAmount.x
+                            val durationIfMoved = (tryX - leftHandleX) / pxPerSecond
 
-                            val newX = (rightHandleX + dragAmount.x)
-                                .coerceIn(leftHandleX + minDistancePx, timelineWidthPx)
-
-                            rightHandleX = newX
+                            if (durationIfMoved >= minDurationSec && durationIfMoved <= maxDurationSec) {
+                                rightHandleX = tryX
+                            }
                         }
                     )
                 }
             ) {
                 Box(
                     modifier = Modifier
-                        .width(24.dp)
-                        .height(88.dp)
+                        .width(20.dp)
+                        .height(70.dp)
                         .background(
                             mainGreen,
                             RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
