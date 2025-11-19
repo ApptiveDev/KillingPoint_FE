@@ -32,9 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -75,8 +79,6 @@ fun KillingPartSelector(
     onStartChange: (Float) -> Unit
 ) {
     val scrollState = rememberScrollState()
-    val scrollX = scrollState.value.toFloat()
-
     val density = LocalDensity.current
     val totalBars = totalDuration
     val barWidth = 6.dp
@@ -101,7 +103,8 @@ fun KillingPartSelector(
     val greenBoxTotalWidthPx = with(density) { greenBoxTotalWidth.toPx() }
 
     val pxPerSecond = barWidthPx + gapPx
-    var timelineWidthPx = totalDuration * pxPerSecond
+    val timelineWidthPx = totalDuration * pxPerSecond
+    val timelineWidthDp = with(density) {timelineWidthPx.toDp()}
     val scrollX = scrollState.value.toFloat()
 
     val initialSpacerWidthPx = remember(parentWidthPx, greenBoxTotalWidthPx) {
@@ -111,8 +114,6 @@ fun KillingPartSelector(
             0f
         }
     }
-    
-    val initialSpacerWidthDp = with(density) { initialSpacerWidthPx.toDp() }
 
     val finalSpacerWidthPx = remember(
         parentWidthPx,
@@ -131,172 +132,181 @@ fun KillingPartSelector(
             finalSpacer.coerceAtLeast(0f)
         } else 0f
     }
-    
+
     val finalSpacerWidthDp = with(density) { finalSpacerWidthPx.toDp() }
 
-    val minDurationSec = 20f
-    val maxDurationSec = 30f
+    val minDurationSec = 10f
+    val maxDurationSec = 25f
     var currentStartSeconds by remember { mutableStateOf(0f) }
     var leftHandleX by remember { mutableStateOf(150f) }
-    var rightHandleX by remember {mutableStateOf(150f + pxPerSecond * maxDurationSec)}
+    var rightHandleX by remember { mutableStateOf(150f + pxPerSecond * maxDurationSec) }
+
+    LaunchedEffect(parentWidthPx) {
+        if(parentWidthPx > 0f) {
+            val left = parentWidthPx / 2f - pxPerSecond * 5
+            val right = parentWidthPx / 2f + pxPerSecond * 5
+
+            leftHandleX = left
+            rightHandleX = right
+
+            scrollState.scrollTo((left-parentWidthPx / 2f).toInt().coerceAtLeast(0))
+        }
+    }
+
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(120.dp)
             .onGloballyPositioned { coordinates ->
                 parentWidthPx = coordinates.size.width.toFloat()
             }
-            .clipToBounds(),
-        contentAlignment = Alignment.TopStart
     ) {
-        Row(
+        Row (
             modifier = Modifier
-                .wrapContentWidth()
-                .height(88.dp)
-                .horizontalScroll(scrollState),
-            verticalAlignment = Alignment.CenterVertically
+                .width(timelineWidthDp)
+                .fillMaxHeight()
+                .horizontalScroll(scrollState)
         ) {
-            if (parentWidthPx > 0f) {
-                Spacer(modifier = Modifier.width(initialSpacerWidthDp))
-            }
-            
-            repeat(totalBars) { i ->
-                val currentScrollValue = scrollState.value.toFloat()
+            Canvas(
+                modifier = Modifier
+                    .width(timelineWidthDp)
+                    .fillMaxHeight()
+            ) {
+                val heightPx = size.height
 
-                val barPositionInRowPx = initialSpacerWidthPx + i * barSpacingPx
-                val barLeftPx = barPositionInRowPx - currentScrollValue
-                val barRightPx = barLeftPx + barWidthPx
+                for (i in 0 until totalBars) {
+                    val barLeft = i * pxPerSecond
+                    val barRight = barLeft + barWidthPx
+                    val canvasHeight = size.height
+                    val barHeightPx = barHeights[i].toPx()
+                    val barTop = (canvasHeight - barHeightPx) / 2f
 
-                val greenBoxCenterPx = parentWidthPx / 2f
-                val greenBoxLeftBoxRightPx = greenBoxCenterPx - greenBoxTotalWidthPx / 2f + leftBoxWidthPx
-                val greenBoxRightBoxLeftPx = greenBoxCenterPx - greenBoxTotalWidthPx / 2f + leftBoxWidthPx + spaceBetweenBoxesPx
 
-                val isInsideGreenBox = barLeftPx < greenBoxRightBoxLeftPx && barRightPx > greenBoxLeftBoxRightPx
+                    if (barRight < 0 || barLeft > timelineWidthPx) continue
 
-                Box(
-                    modifier = Modifier
-                        .width(barWidth)
-                        .height(barHeights[i])
-                        .background(
-                            if (isInsideGreenBox) Color(0xFFFAFAFA) else Color(0xFF454545),
-                            RoundedCornerShape(3.dp)
-                        )
-                )
-
-                if (i != totalBars - 1) {
-                    Spacer(modifier = Modifier.width(gap))
+                    drawRoundRect(
+                        color = Color(0xFF454545),
+                        topLeft = Offset(barLeft, barTop),
+                        size = Size(barWidthPx, barHeightPx),
+                        cornerRadius = CornerRadius(6f, 6f)
+                    )
                 }
             }
-
-            if (parentWidthPx > 0f && finalSpacerWidthPx > 0f) {
-                Spacer(modifier = Modifier.width(finalSpacerWidthDp))
-            }
         }
-            Column (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .offset { IntOffset(leftHandleX.roundToInt(), 0) }
-                    .pointerInput(Unit) {
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .offset { IntOffset(leftHandleX.roundToInt(), 0) }
+                .pointerInput(Unit) {
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             val tryX = leftHandleX + dragAmount.x
-                            val durationIfMoved = (rightHandleX - tryX) / pxPerSecond
 
-                            if (durationIfMoved >= minDurationSec && durationIfMoved <=maxDurationSec)
+                            if (tryX < 0f) return@detectDragGestures
+                            if (tryX > rightHandleX) return@detectDragGestures
+                            val durationIfMoved = (rightHandleX - tryX) / pxPerSecond
+                            if (durationIfMoved >= minDurationSec && durationIfMoved <= maxDurationSec)
                                 leftHandleX = tryX
                         }
                     )
 
                 }
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(20.dp)
+                    .height(70.dp)
+                    .background(
+                        mainGreen,
+                        RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                    )
+                    .border(
+                        2.dp,
+                        mainGreen,
+                        RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.move),
+                    contentDescription = "left",
                     modifier = Modifier
-                        .width(20.dp)
-                        .height(70.dp)
-                        .background(
-                            mainGreen,
-                            RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
-                        )
-                        .border(
-                            2.dp,
-                            mainGreen,
-                            RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.move),
-                        contentDescription = "left",
-                        modifier = Modifier
-                            .size(7.dp, 13.dp)
-                            .rotate(180f)
-                    )
-                }
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Text(
-                        text = formatTime(currentStartSeconds),
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.W400,
-                        fontSize = 14.sp,
-                        color = Color.White
-                    )
+                        .size(7.dp, 13.dp)
+                        .rotate(180f)
+                )
             }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .offset { IntOffset(rightHandleX.roundToInt(), 0)}
-                    .pointerInput(Unit) {
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = formatTime(currentStartSeconds),
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.W400,
+                fontSize = 14.sp,
+                color = Color.White
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .offset { IntOffset(rightHandleX.roundToInt(), 0) }
+                .pointerInput(Unit) {
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
                             val tryX = rightHandleX + dragAmount.x
-                            val durationIfMoved = (tryX - leftHandleX) / pxPerSecond
 
+                            if (tryX > timelineWidthPx - scrollX) return@detectDragGestures
+                            if (tryX < leftHandleX) return@detectDragGestures
+
+                            val durationIfMoved = (tryX - leftHandleX) / pxPerSecond
                             if (durationIfMoved >= minDurationSec && durationIfMoved <= maxDurationSec) {
                                 rightHandleX = tryX
                             }
                         }
                     )
                 }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(20.dp)
-                        .height(70.dp)
-                        .background(
-                            mainGreen,
-                            RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
-                        )
-                        .border(
-                            2.dp,
-                            mainGreen,
-                            RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.move),
-                        contentDescription = "left",
-                        modifier = Modifier
-                            .size(7.dp, 13.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(20.dp)
+                    .height(70.dp)
+                    .background(
+                        mainGreen,
+                        RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
                     )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Text(
-                    text = formatTime(currentStartSeconds + selectedDuration),
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.W400,
-                    fontSize = 14.sp,
-                    color = Color.White
+                    .border(
+                        2.dp,
+                        mainGreen,
+                        RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.move),
+                    contentDescription = "left",
+                    modifier = Modifier
+                        .size(7.dp, 13.dp)
                 )
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = formatTime(currentStartSeconds + selectedDuration),
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.W400,
+                fontSize = 14.sp,
+                color = Color.White
+            )
         }
+    }
+
+
 
 
     LaunchedEffect(scrollState.value, parentWidthPx) {
@@ -328,6 +338,7 @@ fun KillingPartSelector(
         }
     }
 }
+
 
 @Preview
 @Composable
