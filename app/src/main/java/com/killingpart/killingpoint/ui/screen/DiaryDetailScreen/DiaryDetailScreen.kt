@@ -3,7 +3,10 @@ package com.killingpart.killingpoint.ui.screen.DiaryDetailScreen
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -49,6 +52,9 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
+import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
+import com.killingpart.killingpoint.ui.screen.MainScreen.AlbumDiaryBox
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import java.net.URLDecoder
@@ -160,60 +166,130 @@ fun DiaryDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 음악 플레이어 섹션
+            // 음악 플레이어 섹션 (스와이프 가능)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 앨범 아트
-                    AsyncImage(
-                        model = albumImageUrl,
-                        contentDescription = "앨범 아트",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(id = R.drawable.example_video),
-                        error = painterResource(id = R.drawable.example_video)
+                // Diary 객체 생성 (YouTubePlayerBox에 전달하기 위해)
+                val diary = remember(diaryId, artist, musicTitle, albumImageUrl, videoUrl, duration, start, end, scope) {
+                    val scopeEnum = try {
+                        Scope.valueOf(scope.ifEmpty { "PRIVATE" })
+                    } catch (e: Exception) {
+                        Scope.PRIVATE
+                    }
+                    Diary(
+                        id = diaryId,
+                        artist = artist,
+                        musicTitle = musicTitle,
+                        albumImageUrl = albumImageUrl,
+                        videoUrl = videoUrl,
+                        duration = duration,
+                        start = start,
+                        end = end,
+                        content = content,
+                        createDate = createDate,
+                        updateDate = createDate, // updateDate가 없으면 createDate 사용
+                        scope = scopeEnum
                     )
-
-                    Spacer(modifier = Modifier.width(20.dp))
-
-                    // 음악 정보
-                    Column(
-                        modifier = Modifier.weight(1f)
+                }
+                
+                val pagerState = rememberPagerState(pageCount = { 2 }, initialPage = 0)
+                
+                // YouTube 플레이어는 항상 렌더링하여 재생 상태 유지
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // YouTube 플레이어 (항상 렌더링, 투명하게 오버레이)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .offset(x = if (pagerState.currentPage == 1) 0.dp else (-10000).dp) // 화면 밖으로 이동
                     ) {
-                        Text(
-                            text = musicTitle,
-                            color = Color.White,
-                            fontFamily = PaperlogyFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            maxLines = 2
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            // YouTube 플레이어
+                            YouTubePlayerBox(
+                                diary = diary,
+                                startSeconds = startSeconds.toFloat(),
+                                durationSeconds = duringSeconds.toFloat()
+                            )
+                            
+                            Spacer(modifier = Modifier.height(24.dp))
+                            
+                            // 앨범 정보
+                            AlbumDiaryBox(diary)
+                        }
+                    }
+                    
+                    // HorizontalPager (앨범 정보와 YouTube 플레이어 페이지)
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    ) { page ->
+                        when (page) {
+                            0 -> {
+                                // 페이지 0: 앨범 정보
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // 앨범 아트
+                                    AsyncImage(
+                                        model = albumImageUrl,
+                                        contentDescription = "앨범 아트",
+                                        modifier = Modifier
+                                            .size(120.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop,
+                                        placeholder = painterResource(id = R.drawable.example_video),
+                                        error = painterResource(id = R.drawable.example_video)
+                                    )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.width(20.dp))
 
-                        Text(
-                            text = artist,
-                            color = Color.White,
-                            fontFamily = PaperlogyFontFamily,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp,
-                            maxLines = 1
-                        )
-                        // 진행 바
-                        MusicTimeBarForDiaryDetail(
-                            artist = artist,
-                            musicTitle = musicTitle,
-                            start = startSeconds,
-                            during = duringSeconds
-                        )
+                                    // 음악 정보
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            text = musicTitle,
+                                            color = Color.White,
+                                            fontFamily = PaperlogyFontFamily,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 20.sp,
+                                            maxLines = 2
+                                        )
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Text(
+                                            text = artist,
+                                            color = Color.White,
+                                            fontFamily = PaperlogyFontFamily,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 16.sp,
+                                            maxLines = 1
+                                        )
+                                        // 진행 바
+                                        MusicTimeBarForDiaryDetail(
+                                            artist = artist,
+                                            musicTitle = musicTitle,
+                                            start = startSeconds,
+                                            during = duringSeconds
+                                        )
+                                    }
+                                }
+                            }
+                            1 -> {
+                                // 페이지 1: YouTube 플레이어 (위에서 항상 렌더링되므로 여기서는 빈 Box)
+                                Box(modifier = Modifier.fillMaxSize())
+                            }
+                        }
                     }
                 }
 

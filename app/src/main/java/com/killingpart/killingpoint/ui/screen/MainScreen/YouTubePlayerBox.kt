@@ -74,16 +74,6 @@ fun YouTubePlayerBox(
                 }
             }
             
-            // 재생 상태 표시
-            if (isPlaying) {
-                Text(
-                    text = "🎵 재생 중...",
-                    fontFamily = PaperlogyFontFamily,
-                    color = Color(0xFFCCFF33),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            
             // YouTube Player with custom background
             Box(
                 modifier = Modifier
