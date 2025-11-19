@@ -182,11 +182,18 @@ fun KillingPartSelector(
                     val barHeightPx = barHeights[i].toPx()
                     val barTop = (canvasHeight - barHeightPx) / 2f
 
+                    val localLeftHandle = leftHandleX + scrollX + barWidthPx
+                    val localRightHandle = rightHandleX + scrollX + barWidthPx
+
+                    val isInside = barLeft > localLeftHandle &&
+                            barLeft < localRightHandle
+
+                    val color = if (isInside) Color.White else Color(0xFF454545)
 
                     if (barRight < 0 || barLeft > timelineWidthPx) continue
 
                     drawRoundRect(
-                        color = Color(0xFF454545),
+                        color = color,
                         topLeft = Offset(barLeft, barTop),
                         size = Size(barWidthPx, barHeightPx),
                         cornerRadius = CornerRadius(6f, 6f)
