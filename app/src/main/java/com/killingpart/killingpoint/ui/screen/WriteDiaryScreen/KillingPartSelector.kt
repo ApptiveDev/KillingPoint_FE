@@ -198,7 +198,8 @@ fun KillingPartSelector(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .offset { IntOffset(leftHandleX.roundToInt(), 0) }
+                .offset { IntOffset(leftHandleX.roundToInt(),
+                    with(density) {20.dp.toPx().roundToInt()}) }
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
@@ -253,7 +254,8 @@ fun KillingPartSelector(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .offset { IntOffset(rightHandleX.roundToInt(), 0) }
+                .offset { IntOffset(rightHandleX.roundToInt(),
+                    with(density) { 20.dp.toPx().roundToInt()}) }
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
