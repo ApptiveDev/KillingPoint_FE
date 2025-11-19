@@ -100,21 +100,18 @@ fun SelectDurationScreen(
     // start 값을 Float로 변환 (KillingPartSelector에서 받은 값)
     val startSeconds = remember(start) {
         val seconds = start.toFloatOrNull() ?: 0f
-        android.util.Log.d("SelectDurationScreen", "startSeconds updated: $seconds (from start: $start)")
         seconds
     }
     
     // duration 값을 Float로 변환 (DurationScrollSelector에서 받은 값)
     val durationSeconds = remember(duration) {
         val seconds = duration.toFloatOrNull() ?: 10f
-        android.util.Log.d("SelectDurationScreen", "durationSeconds updated: $seconds (from duration: $duration)")
         seconds
     }
     
     // end 값 계산: startSeconds + durationSeconds
     val end = remember(startSeconds, durationSeconds) {
         val endValue = (startSeconds + durationSeconds).toString()
-        android.util.Log.d("SelectDurationScreen", "end calculated: $endValue (startSeconds: $startSeconds + durationSeconds: $durationSeconds)")
         endValue
     }
 
@@ -131,20 +128,13 @@ fun SelectDurationScreen(
             val videos = repo.searchVideos(artist, title)
             val firstVideo = videos.firstOrNull()
             videoUrl = firstVideo?.url
-            // duration 파싱하여 초 단위로 변환
             firstVideo?.duration?.let { durationStr ->
                 val seconds = parseDurationToSeconds(durationStr)
                 totalDuration = seconds
-                android.util.Log.d("SelectDurationScreen", "Video duration: $durationStr -> $seconds seconds")
             } ?: run {
                 totalDuration = 10 // 기본값
             }
-            android.util.Log.d("SelectDurationScreen", "Search query: $artist - $title")
-            android.util.Log.d("SelectDurationScreen", "Found ${videos.size} videos")
-            android.util.Log.d("SelectDurationScreen", "First video URL: $videoUrl")
-            android.util.Log.d("SelectDurationScreen", "First video title: ${firstVideo?.title}")
         } catch (e: Exception) {
-            android.util.Log.e("SelectDurationScreen", "YouTube search failed: ${e.message}")
             videoUrl = null
             totalDuration = 10 // 기본값
         }
@@ -154,11 +144,9 @@ fun SelectDurationScreen(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
 
-    // 비디오 URL이 변경되면 자동으로 아래로 스크롤 (KillingPartSelector 보이도록)
     LaunchedEffect(videoUrl) {
         if (videoUrl != null) {
-            kotlinx.coroutines.delay(500) // 비디오 렌더링 대기
-            android.util.Log.d("SelectDurationScreen", "Auto scrolling down - videoUrl: $videoUrl")
+            kotlinx.coroutines.delay(500)
             val scrollOffset = with(density) { 300.dp.toPx().toInt() }
             scrollState.animateScrollTo(scrollOffset)
         }
@@ -290,20 +278,8 @@ fun SelectDurationScreen(
 
                     Spacer(Modifier.height(38.dp))
 
-                    Text(
-                        text = "킬링파트 길이 설정",
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Light,
-                        fontSize = 14.sp,
-                        color = Color(0xFFEBEBEB)
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
-                    DurationScrollSelector(duration.toInt(), {duration = it.toString()})
                 }
-                
-                // 하단 패딩 (버튼 공간 확보)
+
                 Spacer(modifier = Modifier.height(80.dp))
             }
         }
@@ -315,12 +291,6 @@ fun SelectDurationScreen(
                 val encodedStart = Uri.encode(start)
                 val encodedEnd = Uri.encode(end)
                 val encodedVideoUrl = Uri.encode(videoUrl ?: "")
-                
-                android.util.Log.d("SelectDurationScreen", "Navigating to writeDiaryScreen with:")
-                android.util.Log.d("SelectDurationScreen", "  - duration: $duration (encoded: $encodedDuration)")
-                android.util.Log.d("SelectDurationScreen", "  - start: $start (encoded: $encodedStart)")
-                android.util.Log.d("SelectDurationScreen", "  - end: $end (encoded: $encodedEnd)")
-                android.util.Log.d("SelectDurationScreen", "  - videoUrl: $videoUrl")
                 
                 navController.navigate(
                     "write_diary" +
