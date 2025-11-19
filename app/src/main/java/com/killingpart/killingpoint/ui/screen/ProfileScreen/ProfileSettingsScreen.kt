@@ -51,6 +51,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.focus.focusModifier
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -77,7 +78,6 @@ fun ProfileSettingsScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-//                .background(Color.Black.copy(alpha = 0.5f))
                 .clickable { onDismiss() }
         )
         
@@ -152,6 +152,61 @@ private fun ProfileSettingsContent(
     // presignedUrl에서 쿼리파라미터 제거
     fun removeQueryParams(url: String): String {
         return url.split("?").first()
+    }
+    
+    // 기본 이미지 URL
+    val defaultProfileImageUrl = "https://killingpart-file.s3.ap-northeast-2.amazonaws.com/defaultImage/userDefaultImage.png"
+    
+    // 기본 이미지로 설정
+    fun resetToDefaultImage() {
+        if (isUploadingImage) return
+        
+        isUploadingImage = true
+        imageUploadError = null
+        
+        scope.launch {
+            try {
+                // 기본 이미지의 경우도 presignedUrl 발급이 필요할 수 있지만,
+                // 이미 존재하는 파일이므로 기본 이미지 URL을 직접 사용
+                // 백엔드 API가 기본 이미지 URL을 직접 받을 수 있다면 이 방식으로,
+                // 그렇지 않다면 presignedUrl 발급 후 기본 이미지 URL을 업로드해야 함
+                
+                // 1. PresignedUrl 발급
+                val presignedUrlResult = repo.getPresignedUrl()
+                val presignedUrlResponse = presignedUrlResult.getOrElse {
+                    imageUploadError = it.message ?: "PresignedUrl 발급 실패"
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 2. 기본 이미지 URL을 presignedUrl로 업로드 (기본 이미지는 이미 S3에 있으므로 스킵 가능)
+                // 하지만 API 구조상 presignedUrl이 필요하므로, 기본 이미지 URL을 직접 전달
+                // 백엔드가 기본 이미지 URL을 처리할 수 있다면 이 방식으로
+                
+                // 3. 프로필 이미지를 기본 이미지 URL로 변경
+                // 기본 이미지 URL을 presignedUrl처럼 사용 (백엔드가 이를 처리할 수 있어야 함)
+                val updateResult = repo.updateProfileImage(
+                    presignedUrlResponse.id,
+                    defaultProfileImageUrl
+                )
+                updateResult.getOrElse {
+                    imageUploadError = it.message ?: "기본 이미지로 설정 실패"
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 4. 성공 - 사용자 정보 새로고침
+                userViewModel.loadUserInfo(context)
+                onTagUpdateSuccess()
+                imageUploadError = null
+                
+            } catch (e: Exception) {
+                imageUploadError = e.message ?: "기본 이미지로 설정 실패"
+                android.util.Log.e("ProfileSettings", "기본 이미지 설정 에러: ${e.message}", e)
+            } finally {
+                isUploadingImage = false
+            }
+        }
     }
     
     // 이미지 업로드 플로우
@@ -394,11 +449,13 @@ private fun ProfileSettingsContent(
         when (val state = userState) {
             is UserUiState.Success -> {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-//                    verticalAlignment = Alignment.Start
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
                 ) {
                     // 프로필 이미지 (클릭 가능)
-                    Box {
+                    Column()
+                    {
                         AsyncImage(
                             model = state.userInfo.profileImageUrl,
                             contentDescription = "프로필 사진",
@@ -430,13 +487,62 @@ private fun ProfileSettingsContent(
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            text = "프로필 사진",
+                            color = mainGreen,
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 12.sp
+                        )
+                        
+                        // 기본 이미지로 설정 버튼
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .clickable(
+                                    enabled = !isUploadingImage && 
+                                             state.userInfo.profileImageUrl != "https://killingpart-file.s3.ap-northeast-2.amazonaws.com/defaultImage/userDefaultImage.png"
+                                ) {
+                                    resetToDefaultImage()
+                                },
+                            text = "기본 이미지로 설정",
+                            color = if (!isUploadingImage && 
+                                       state.userInfo.profileImageUrl != "https://killingpart-file.s3.ap-northeast-2.amazonaws.com/defaultImage/userDefaultImage.png") {
+                                Color(0xFF7B7B7B)
+                            } else {
+                                Color(0xFF4A4A4A)
+                            },
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.W400
+                        )
+
+                        // 이미지 업로드 에러 메시지
+                        if (imageUploadError != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                text = imageUploadError!!,
+                                color = Color(0xFFFF6B6B),
+                                fontFamily = PaperlogyFontFamily,
+                                fontSize = 11.sp,
+                                lineHeight = 14.sp,
+                                maxLines = 2
+                            )
+                        }
                     }
                     
                     Spacer(modifier = Modifier.width(20.dp))
                     
                     // username과 tag
                     Column(
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+
                     ) {
                         Text(
                             text = state.userInfo.username,
@@ -543,8 +649,7 @@ private fun ProfileSettingsContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(32.dp), // 고정 높이로 레이아웃 시프트 방지
-                                horizontalArrangement = Arrangement.End,
+                                ,horizontalArrangement = Arrangement.End,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 if (isEditingTag) {
@@ -555,6 +660,38 @@ private fun ProfileSettingsContent(
                                             strokeWidth = 2.dp
                                         )
                                     } else {
+                                        // 검증 메시지 또는 성공 메시지 (항상 공간 확보)
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(40.dp) // 여러 줄 텍스트를 위한 높이 증가
+                                                .padding(start = 10.dp, top = 12.dp)
+                                            ,contentAlignment = Alignment.TopStart
+                                        ) {
+                                            if (isEditingTag) {
+                                                if (validationMessage != null) {
+                                                    Text(
+                                                        text = validationMessage!!,
+                                                        color = if (validationMessage!!.contains("사용 가능") || validationMessage!!.contains("성공")) {
+                                                            Color(0xFF4FDD79)
+                                                        } else {
+                                                            Color(0xFFFF6B6B)
+                                                        },
+                                                        fontFamily = PaperlogyFontFamily,
+                                                        fontSize = 12.sp,
+                                                        lineHeight = 16.sp,
+                                                        maxLines = 2
+                                                    )
+                                                } else if (tagText.isNotEmpty() && tagText != state.userInfo.tag && validateTag(tagText) == null) {
+                                                    Text(
+                                                        text = "사용 가능한 회원태그입니다!",
+                                                        color = Color(0xFF4FDD79),
+                                                        fontFamily = PaperlogyFontFamily,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
                                         IconButton(
                                             onClick = { cancelEditingTag() },
                                             modifier = Modifier.size(32.dp)
@@ -593,68 +730,11 @@ private fun ProfileSettingsContent(
                                 }
                             }
                             
-                            // 검증 메시지 또는 성공 메시지 (항상 공간 확보)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(40.dp) // 여러 줄 텍스트를 위한 높이 증가
-                                    .padding(start = 12.dp, top = 4.dp),
-                                contentAlignment = Alignment.TopStart
-                            ) {
-                                if (isEditingTag) {
-                                    if (validationMessage != null) {
-                                        Text(
-                                            text = validationMessage!!,
-                                            color = if (validationMessage!!.contains("사용 가능") || validationMessage!!.contains("성공")) {
-                                                Color(0xFF4FDD79)
-                                            } else {
-                                                Color(0xFFFF6B6B)
-                                            },
-                                            fontFamily = PaperlogyFontFamily,
-                                            fontSize = 12.sp,
-                                            lineHeight = 16.sp,
-                                            maxLines = 2
-                                        )
-                                    } else if (tagText.isNotEmpty() && tagText != state.userInfo.tag && validateTag(tagText) == null) {
-                                        Text(
-                                            text = "사용 가능한 회원태그입니다!",
-                                            color = Color(0xFF4FDD79),
-                                            fontFamily = PaperlogyFontFamily,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                }
-                            }
+
                         }
                     }
                 }
 
-                // 프로필 사진 라벨 및 에러 메시지
-                Column(
-                    modifier = Modifier
-                        .padding(start = 10.dp, top = 4.dp)
-                        .offset(y = (-40).dp)
-                ) {
-                    Text(
-                        text = "프로필 사진",
-                        color = mainGreen,
-                        fontFamily = PaperlogyFontFamily,
-                        fontSize = 12.sp
-                    )
-                    
-                    // 이미지 업로드 에러 메시지
-                    if (imageUploadError != null) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = imageUploadError!!,
-                            color = Color(0xFFFF6B6B),
-                            fontFamily = PaperlogyFontFamily,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            maxLines = 2
-                        )
-                    }
-                }
             }
             
             is UserUiState.Loading -> {
