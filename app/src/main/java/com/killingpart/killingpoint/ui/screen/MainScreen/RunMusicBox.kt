@@ -185,8 +185,7 @@ fun RunMusicBox(
                     )
                 }
                 
-                Spacer(modifier = Modifier.weight(1f))
-                
+
 
             }
 

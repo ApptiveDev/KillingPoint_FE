@@ -8,6 +8,8 @@ import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.UpdateTagRequest
+import com.killingpart.killingpoint.data.model.PresignedUrlResponse
+import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -60,4 +62,15 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: UpdateTagRequest
     ): retrofit2.Response<Unit>
+
+    @GET("presigned-url")
+    suspend fun getPresignedUrl(
+        @Header("Authorization") accessToken: String
+    ): PresignedUrlResponse
+
+    @PATCH("users/my/profile-image")
+    suspend fun updateProfileImage(
+        @Header("Authorization") accessToken: String,
+        @Body body: UpdateProfileImageRequest
+    ): UserInfo
 }

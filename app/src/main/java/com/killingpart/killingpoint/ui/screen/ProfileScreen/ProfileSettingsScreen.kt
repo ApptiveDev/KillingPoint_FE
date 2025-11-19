@@ -47,6 +47,13 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 
 @Composable
 fun ProfileSettingsScreen(
@@ -118,6 +125,116 @@ private fun ProfileSettingsContent(
     var tagText by remember { mutableStateOf("") }
     var validationMessage by remember { mutableStateOf<String?>(null) }
     var isUpdating by remember { mutableStateOf(false) }
+    
+    // 프로필 이미지 업로드 상태
+    var isUploadingImage by remember { mutableStateOf(false) }
+    var imageUploadError by remember { mutableStateOf<String?>(null) }
+    
+    // Uri를 File로 변환하는 헬퍼 함수
+    fun uriToFile(uri: Uri): File? {
+        return try {
+            val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
+            val file = File(context.cacheDir, "profile_image_${System.currentTimeMillis()}.jpg")
+            val outputStream = FileOutputStream(file)
+            
+            inputStream?.use { input ->
+                outputStream.use { output ->
+                    input.copyTo(output)
+                }
+            }
+            file
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileSettings", "파일 변환 실패: ${e.message}")
+            null
+        }
+    }
+    
+    // presignedUrl에서 쿼리파라미터 제거
+    fun removeQueryParams(url: String): String {
+        return url.split("?").first()
+    }
+    
+    // 이미지 업로드 플로우
+    fun uploadProfileImage(imageUri: Uri) {
+        if (isUploadingImage) return
+        
+        isUploadingImage = true
+        imageUploadError = null
+        
+        scope.launch {
+            try {
+                // 1. Uri를 File로 변환
+                val imageFile = uriToFile(imageUri)
+                if (imageFile == null) {
+                    imageUploadError = "이미지 파일을 읽을 수 없습니다."
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 2. PresignedUrl 발급
+                val presignedUrlResult = repo.getPresignedUrl()
+                val presignedUrlResponse = presignedUrlResult.getOrElse {
+                    imageUploadError = it.message ?: "PresignedUrl 발급 실패"
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 3. S3에 이미지 업로드
+                val uploadResult = repo.uploadImageToS3(
+                    presignedUrlResponse.presignedUrl,
+                    imageFile
+                )
+                uploadResult.getOrElse {
+                    imageUploadError = it.message ?: "이미지 업로드 실패"
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 4. 쿼리파라미터 제거한 presignedUrl
+                val cleanUrl = removeQueryParams(presignedUrlResponse.presignedUrl)
+                
+                // 5. 프로필 이미지 변경
+                val updateResult = repo.updateProfileImage(
+                    presignedUrlResponse.id,
+                    cleanUrl
+                )
+                updateResult.getOrElse {
+                    imageUploadError = it.message ?: "프로필 이미지 변경 실패"
+                    isUploadingImage = false
+                    return@launch
+                }
+                
+                // 6. 성공 - 사용자 정보 새로고침
+                userViewModel.loadUserInfo(context)
+                onTagUpdateSuccess()
+                imageUploadError = null
+                
+            } catch (e: Exception) {
+                imageUploadError = e.message ?: "프로필 이미지 업로드 실패"
+                android.util.Log.e("ProfileSettings", "이미지 업로드 에러: ${e.message}", e)
+            } finally {
+                isUploadingImage = false
+            }
+        }
+    }
+    
+    // 이미지 선택 launcher
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        uri?.let {
+            uploadProfileImage(it)
+        }
+    }
+    
+    // 이미지 선택 실행 함수
+    fun pickImage() {
+        imagePickerLauncher.launch(
+            PickVisualMediaRequest(
+                ActivityResultContracts.PickVisualMedia.ImageOnly
+            )
+        )
+    }
     
     // 태그 유효성 검사
     fun validateTag(tag: String): String? {
@@ -280,18 +397,40 @@ private fun ProfileSettingsContent(
                     modifier = Modifier.fillMaxWidth(),
 //                    verticalAlignment = Alignment.Start
                 ) {
-                    // 프로필 이미지
-                    AsyncImage(
-                        model = state.userInfo.profileImageUrl,
-                        contentDescription = "프로필 사진",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                        placeholder = painterResource(id = R.drawable.default_profile),
-                        error = painterResource(id = R.drawable.default_profile)
-                    )
+                    // 프로필 이미지 (클릭 가능)
+                    Box {
+                        AsyncImage(
+                            model = state.userInfo.profileImageUrl,
+                            contentDescription = "프로필 사진",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(50))
+                                .border(3.dp, mainGreen, RoundedCornerShape(50))
+                                .clickable(enabled = !isUploadingImage) {
+                                    pickImage()
+                                },
+                            placeholder = painterResource(id = R.drawable.default_profile),
+                            error = painterResource(id = R.drawable.default_profile)
+                        )
+                        
+                        // 업로드 중 로딩 표시
+                        if (isUploadingImage) {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(Color.Black.copy(alpha = 0.6f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(40.dp),
+                                    color = mainGreen,
+                                    strokeWidth = 3.dp
+                                )
+                            }
+                        }
+                    }
                     
                     Spacer(modifier = Modifier.width(20.dp))
                     
@@ -490,17 +629,32 @@ private fun ProfileSettingsContent(
                     }
                 }
 
-                // 프로필 사진 라벨
-                Text(
-                    text = "프로필 사진",
-                    color = mainGreen,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 12.sp,
+                // 프로필 사진 라벨 및 에러 메시지
+                Column(
                     modifier = Modifier
                         .padding(start = 10.dp, top = 4.dp)
                         .offset(y = (-40).dp)
-
-                )
+                ) {
+                    Text(
+                        text = "프로필 사진",
+                        color = mainGreen,
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 12.sp
+                    )
+                    
+                    // 이미지 업로드 에러 메시지
+                    if (imageUploadError != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = imageUploadError!!,
+                            color = Color(0xFFFF6B6B),
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 2
+                        )
+                    }
+                }
             }
             
             is UserUiState.Loading -> {
