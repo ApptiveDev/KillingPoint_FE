@@ -60,30 +60,30 @@ fun parseDurationToSeconds(duration: String): Int {
     // PT 제거
     val durationStr = duration.removePrefix("PT")
     if (durationStr.isEmpty()) return 0
-    
+
     var totalSeconds = 0
-    
+
     // 시간(H) 파싱
     val hourPattern = Pattern.compile("(\\d+)H")
     val hourMatcher = hourPattern.matcher(durationStr)
     if (hourMatcher.find()) {
         totalSeconds += hourMatcher.group(1).toInt() * 3600
     }
-    
+
     // 분(M) 파싱
     val minutePattern = Pattern.compile("(\\d+)M")
     val minuteMatcher = minutePattern.matcher(durationStr)
     if (minuteMatcher.find()) {
         totalSeconds += minuteMatcher.group(1).toInt() * 60
     }
-    
+
     // 초(S) 파싱
     val secondPattern = Pattern.compile("(\\d+)S")
     val secondMatcher = secondPattern.matcher(durationStr)
     if (secondMatcher.find()) {
         totalSeconds += secondMatcher.group(1).toInt()
     }
-    
+
     return totalSeconds
 }
 
@@ -96,19 +96,19 @@ fun SelectDurationScreen(
 ) {
     var duration by remember { mutableStateOf("10") }
     var start by remember { mutableStateOf("0") }
-    
+
     // start 값을 Float로 변환 (KillingPartSelector에서 받은 값)
     val startSeconds = remember(start) {
         val seconds = start.toFloatOrNull() ?: 0f
         seconds
     }
-    
+
     // duration 값을 Float로 변환 (DurationScrollSelector에서 받은 값)
     val durationSeconds = remember(duration) {
         val seconds = duration.toFloatOrNull() ?: 10f
         seconds
     }
-    
+
     // end 값 계산: startSeconds + durationSeconds
     val end = remember(startSeconds, durationSeconds) {
         val endValue = (startSeconds + durationSeconds).toString()
@@ -147,7 +147,7 @@ fun SelectDurationScreen(
     LaunchedEffect(videoUrl) {
         if (videoUrl != null) {
             kotlinx.coroutines.delay(500)
-            val scrollOffset = with(density) { 300.dp.toPx().toInt() }
+            val scrollOffset = with(density) { 350.dp.toPx().toInt() }
             scrollState.animateScrollTo(scrollOffset)
         }
     }
@@ -248,7 +248,7 @@ fun SelectDurationScreen(
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                
+
                 AlbumDiaryBoxWithoutContent(
                     track = SimpleTrack(
                         title = title,
@@ -256,7 +256,7 @@ fun SelectDurationScreen(
                         albumImageUrl = imageUrl
                     )
                 )
-                
+
                 Spacer(modifier = Modifier.height(38.dp))
 
                 Column(
@@ -291,7 +291,7 @@ fun SelectDurationScreen(
                 val encodedStart = Uri.encode(start)
                 val encodedEnd = Uri.encode(end)
                 val encodedVideoUrl = Uri.encode(videoUrl ?: "")
-                
+
                 navController.navigate(
                     "write_diary" +
                             "?title=${Uri.encode(title)}" +
