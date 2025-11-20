@@ -4,268 +4,301 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import kotlin.math.roundToInt
+
+fun formatTime(seconds: Float): String {
+    val totalSeconds = seconds.toInt().coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val secs = totalSeconds % 60
+    return String.format("%02d:%02d", minutes, secs)
+}
+
+/** 모든 구성 요소를 하나의 시간 좌표계로 통일한다
+ * 타임라인 바 : 절대 위치(px)
+ * 핸들 : 화면 위치(px)
+ * 스크롤 : 절대 이동량(px)
+ * 시간 : (절대 px + 화면 px) / pxPerSecond
+ *
+ * 핸들은 화면에 고정된 UI 요소
+ * 스크롤 + handle(px)를 합쳐야 핸들이 가리키는 절대 시간을 알 수 있음
+ * 바의 highlight는 '절대 시간' 기준
+ * barCenterSec, startSec, endSec 모두 절대 시간 통일
+ */
+
+/** 주요 통일 공식
+ * 절대 시간(초) = (스크롤된 px + 핸들의 화면 px) / pxPerSecond
+ * 절대 바의 시간 = 바의 절대 위치 px / pxPerSecond
+ * Visible X 좌표 = absoluteX - scrollX           // 실제 그리는 위치
+ */
+
+/** 중요 변수 정리
+ * pxPerSecond : 1초가 몇 px인지 정의하는 핵심 값 (바 1개 = 1초)
+ * barAbsX : 타임라인 전체에서 이 바가 가지는 절대 px 좌표 (스크롤하기 전)
+ * barVisibleX : 현재 화면에서 보여야 하는 픽셀 좌표
+ * handleX : 화면 px (스크롤해도 핸들이 고정되어야 하기 때문에 핸들을 위한 변수)
+ * startSec, endSec : 현재 화면의 핸들이 가리키는 절대 시간
+ */
 
 @Composable
 fun KillingPartSelector(
     totalDuration: Int,
-    selectedDuration: Int,
-    onStartChange: (Float) -> Unit
+    onStartChange: (start: Float, end: Float, duration: Float) -> Unit
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
-    val totalBars = totalDuration * 2
+
     val barWidth = 6.dp
-    val gap = 12.dp
+    val gap = 8.dp
+    val barWidthPx = with(density) { barWidth.toPx() }
     val gapPx = with(density) { gap.toPx() }
+    val pxPerSecond = barWidthPx + gapPx          // 1초당 px
 
-    val leftBoxWidth = 24.dp
-    val rightBoxWidth = 24.dp
-    val spaceBetweenBoxes = 170.dp
-    val greenBoxTotalWidth = leftBoxWidth + spaceBetweenBoxes + rightBoxWidth // 218.dp
+    val timelineWidthPx = totalDuration * pxPerSecond
+    val timelineWidthDp = with(density) { timelineWidthPx.toDp() }
 
-    val barHeights = remember(totalBars) {
-        (0 until totalBars).map { (30..70).random().dp }
+    val minDurationSec = 10f
+    val maxDurationSec = 30f.coerceAtMost(totalDuration.toFloat())
+
+    val barHeights = remember(totalDuration) {
+        (0 until totalDuration).map { (20..50).random().dp }
     }
 
     var parentWidthPx by remember { mutableStateOf(0f) }
 
-    val barWidthPx = with(density) { barWidth.toPx() }
-    val barSpacingPx = (barWidthPx + gapPx).roundToInt().toFloat()
-    val leftBoxWidthPx = with(density) { leftBoxWidth.toPx() }
-    val spaceBetweenBoxesPx = with(density) { spaceBetweenBoxes.toPx() }
-    val greenBoxTotalWidthPx = with(density) { greenBoxTotalWidth.toPx() }
-    
-    // 초록색 박스의 왼쪽 끝과 바 시작 위치를 맞추기 위한 초기 Spacer 너비 (픽셀 단위로 정확히 계산)
-    val initialSpacerWidthPx = remember(parentWidthPx, greenBoxTotalWidthPx) {
-        if (parentWidthPx > 0f) {
-            parentWidthPx / 2f - greenBoxTotalWidthPx / 2f
-        } else {
-            0f
+    var leftHandleX by remember { mutableStateOf(0f) }
+    var rightHandleX by remember { mutableStateOf(0f) }
+    var handlesInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(parentWidthPx) {
+        if (parentWidthPx > 0f && !handlesInitialized) {
+            val initialDurationSec = minDurationSec.coerceAtMost(maxDurationSec)
+            val durationPx = initialDurationSec * pxPerSecond
+            val center = parentWidthPx / 2f
+
+            leftHandleX = center - durationPx / 2f
+            rightHandleX = center + durationPx / 2f
+
+            handlesInitialized = true
         }
     }
-    
-    val initialSpacerWidthDp = with(density) { initialSpacerWidthPx.toDp() }
-    
-    // 초록색 박스의 오른쪽 끝과 마지막 바를 맞추기 위한 마지막 Spacer 너비
-    val finalSpacerWidthPx = remember(
-        parentWidthPx,
-        greenBoxTotalWidthPx,
-        totalBars,
-        barSpacingPx,
-        barWidthPx,
-        initialSpacerWidthPx
-    ) {
-        if (parentWidthPx > 0f) {
-            val totalBarSectionPx =
-                (totalBars * barWidthPx) + ((totalBars - 1) * gapPx)
 
-            // Row 전체 폭에서 (initial spacer + 모든 bar들)을 뺀 나머지가 final spacer
-            val totalRowContentPx = initialSpacerWidthPx + totalBarSectionPx
-            val finalSpacer = (parentWidthPx - greenBoxTotalWidthPx) / 2f
-            // 즉, 초록박스 좌우 여백이 같게
-            finalSpacer.coerceAtLeast(0f)
-        } else 0f
-    }
-    
-    val finalSpacerWidthDp = with(density) { finalSpacerWidthPx.toDp() }
+    val scrollX = scrollState.value.toFloat()
+
+    val startTime =
+        ((scrollX + leftHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+    val endTime =
+        ((scrollX + rightHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+    val durationSec = (endTime - startTime).coerceAtLeast(0f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(88.dp)
-            .onGloballyPositioned { coordinates ->
-                parentWidthPx = coordinates.size.width.toFloat()
+            .height(120.dp)
+            .onGloballyPositioned {
+                parentWidthPx = it.size.width.toFloat()
             }
-            .clipToBounds(),
-        contentAlignment = Alignment.Center
     ) {
         Row(
             modifier = Modifier
-                .wrapContentWidth()
-                .height(88.dp)
-                .horizontalScroll(scrollState),
-            verticalAlignment = Alignment.CenterVertically
+                .width(timelineWidthDp)
+                .fillMaxHeight()
+                .horizontalScroll(scrollState)
         ) {
-            // 초록색 박스의 왼쪽 끝과 바 시작 위치를 맞추기 위한 Spacer
-            if (parentWidthPx > 0f) {
-                Spacer(modifier = Modifier.width(initialSpacerWidthDp))
-            }
-            
-            repeat(totalBars) { i ->
-                val currentScrollValue = scrollState.value.toFloat()
-                
-                // Row 내에서의 바 위치 (Spacer 포함)
-                val barPositionInRowPx = initialSpacerWidthPx + i * barSpacingPx
-                // 화면 좌표계에서의 바 위치 (Row의 시작은 부모의 왼쪽 끝, 스크롤 오프셋만큼 이동)
-                val barLeftPx = barPositionInRowPx - currentScrollValue
-                val barRightPx = barLeftPx + barWidthPx
+            Canvas(
+                modifier = Modifier
+                    .width(timelineWidthDp)
+                    .fillMaxHeight()
+            ) {
 
-                val greenBoxCenterPx = parentWidthPx / 2f
-                // 초록색 박스의 왼쪽 박스 오른쪽 끝 = 초록색 박스 시작 + 왼쪽 박스 너비
-                val greenBoxLeftBoxRightPx = greenBoxCenterPx - greenBoxTotalWidthPx / 2f + leftBoxWidthPx
-                // 초록색 박스의 오른쪽 박스 왼쪽 끝 = 초록색 박스 시작 + 왼쪽 박스 너비 + 중간 영역 너비
-                val greenBoxRightBoxLeftPx = greenBoxCenterPx - greenBoxTotalWidthPx / 2f + leftBoxWidthPx + spaceBetweenBoxesPx
+                val absScrollX = scrollState.value.toFloat()
 
-                // 중간 영역(투명한 부분)에만 흰색으로 표시 - 바가 중간 영역과 겹치면 흰색
-                val isInsideGreenBox = barLeftPx < greenBoxRightBoxLeftPx && barRightPx > greenBoxLeftBoxRightPx
+                val currentStartSec = (absScrollX + leftHandleX) / pxPerSecond
+                val currentEndSec   = (absScrollX + rightHandleX) / pxPerSecond
 
-                Box(
-                    modifier = Modifier
-                        .width(barWidth)
-                        .height(barHeights[i])
-                        .background(
-                            if (isInsideGreenBox) Color(0xFFFAFAFA) else Color(0xFF454545),
-                            RoundedCornerShape(3.dp)
-                        )
-                )
+                for (i in 0 until totalDuration) {
 
-                if (i != totalBars - 1) {
-                    Spacer(modifier = Modifier.width(gap))
+                    val barAbsX = i * pxPerSecond
+                    val barVisibleX = barAbsX - absScrollX
+
+                    if (barVisibleX + barWidthPx < 0 || barVisibleX > size.width) continue
+
+                    val barHeightPx = barHeights[i].toPx()
+                    val top = (size.height - barHeightPx) / 2f
+
+                    val barCenterSec = ((barAbsX - absScrollX) + barWidthPx/2f) / pxPerSecond
+
+                    val inSelection = barCenterSec - 1f in currentStartSec..currentEndSec
+
+                    val color = if (inSelection) Color.White else Color(0xFF454545)
+
+                    drawRoundRect(
+                        color = color,
+                        topLeft = Offset(barVisibleX, top),
+                        size = Size(barWidthPx, barHeightPx),
+                        cornerRadius = CornerRadius(6f, 6f)
+                    )
                 }
             }
-            
-            // 초록색 박스의 오른쪽 끝과 마지막 바를 맞추기 위한 Spacer
-            if (parentWidthPx > 0f && finalSpacerWidthPx > 0f) {
-                Spacer(modifier = Modifier.width(finalSpacerWidthDp))
-            }
+
         }
 
-        Row(
+        val handleYOffsetPx = with(density) { 20.dp.toPx().roundToInt() }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .width(greenBoxTotalWidth)
-                .height(88.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .offset { IntOffset(leftHandleX.roundToInt(), handleYOffsetPx) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+
+                        val parent = parentWidthPx
+                        if (parent <= 0f) return@detectDragGestures
+
+                        val candidateX = (leftHandleX + drag.x)
+                            .coerceIn(0f, rightHandleX)  // 오른쪽 핸들 넘어가지 않게
+
+                        val candidateDurationSec =
+                            (rightHandleX - candidateX) / pxPerSecond
+
+                        // 최소/최대 duration 조건 만족할 때만 업데이트
+                        if (candidateDurationSec in minDurationSec..maxDurationSec) {
+                            leftHandleX = candidateX
+                        }
+                    }
+                }
+                .zIndex(10f)
         ) {
-            // 왼쪽 박스
             Box(
                 modifier = Modifier
-                    .width(24.dp)
-                    .fillMaxHeight()
-                    .background(mainGreen, RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp))
-                    .border(2.dp, mainGreen, RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)),
+                    .width(20.dp)
+                    .height(70.dp)
+                    .background(
+                        mainGreen,
+                        RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                    )
+                    .border(
+                        2.dp,
+                        mainGreen,
+                        RoundedCornerShape(topStart = 4.dp, bottomStart = 4.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.move),
                     contentDescription = "left",
-                    modifier = Modifier.size(7.dp, 13.dp)
-                )
-            }
-
-            // 중간 영역 (배경 보이도록 투명)
-            Box(
-                modifier = Modifier
-                    .width(170.dp)
-                    .fillMaxHeight()
-                    .background(Color.Transparent)
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 2.dp.toPx()
-                    drawLine(
-                        color = mainGreen,
-                        start = Offset(0f, 0f),
-                        end = Offset(size.width, 0f),
-                        strokeWidth = strokeWidth
-                    )
-                    drawLine(
-                        color = mainGreen,
-                        start = Offset(0f, size.height),
-                        end = Offset(size.width, size.height),
-                        strokeWidth = strokeWidth
-                    )
-                }
-            }
-
-            // 오른쪽 박스
-            Box(
-                modifier = Modifier
-                    .width(24.dp)
-                    .fillMaxHeight()
-                    .background(mainGreen, RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
-                    .border(2.dp, mainGreen, RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.move),
-                    contentDescription = "right",
                     modifier = Modifier
                         .size(7.dp, 13.dp)
                         .rotate(180f)
                 )
             }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = formatTime(startTime),
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.W400,
+                fontSize = 14.sp,
+                color = Color.White
+            )
+        }
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .offset { IntOffset(rightHandleX.roundToInt(), handleYOffsetPx) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+
+                        val parent = parentWidthPx
+                        if (parent <= 0f) return@detectDragGestures
+
+                        val candidateX = (rightHandleX + drag.x)
+                            .coerceIn(leftHandleX, parent)
+
+                        val candidateDurationSec =
+                            (candidateX - leftHandleX) / pxPerSecond
+
+                        if (candidateDurationSec in minDurationSec..maxDurationSec) {
+                            rightHandleX = candidateX
+                        }
+                    }
+                }
+                .zIndex(10f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(20.dp)
+                    .height(70.dp)
+                    .background(
+                        mainGreen,
+                        RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                    )
+                    .border(
+                        2.dp,
+                        mainGreen,
+                        RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.move),
+                    contentDescription = "right",
+                    modifier = Modifier.size(7.dp, 13.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = formatTime(endTime),
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.W400,
+                fontSize = 14.sp,
+                color = Color.White
+            )
         }
     }
 
-    // 스크롤에 따른 startSeconds 계산
-    LaunchedEffect(scrollState.value, parentWidthPx) {
-        if (parentWidthPx > 0f) {
-            val currentScrollValue = scrollState.value.toFloat()
-
-            val greenBoxCenterPx = parentWidthPx / 2f
-            val greenBoxLeftBoxRightPx =
-                greenBoxCenterPx - greenBoxTotalWidthPx / 2f + leftBoxWidthPx
-
-            // Row 전체 실제 길이 (초기 Spacer + 바들 + 마지막 Spacer)
-            val totalRowWidthPx =
-                initialSpacerWidthPx +
-                        (totalBars * barWidthPx) +
-                        ((totalBars - 1) * gapPx) +
-                        finalSpacerWidthPx
-
-            // 초록박스 시작 좌표 → Row 좌표로 변환
-            val visibleStartInRowPx = currentScrollValue + greenBoxLeftBoxRightPx
-
-            // 전체 길이에 맞춰 비율 보정 (끝부분 오차 제거)
-            val normalized =
-                ((visibleStartInRowPx - initialSpacerWidthPx) / (totalRowWidthPx - initialSpacerWidthPx))
-                    .coerceIn(0f, 1f)
-
-            // barIndex는 0~(totalBars-1) 사이에서 보간
-            val barIndex = normalized * (totalBars - 1)
-
-            val startSeconds = barIndex / 2f
-            onStartChange(startSeconds)
-        }
+    LaunchedEffect(startTime, endTime, durationSec) {
+        onStartChange(startTime, endTime, durationSec)
     }
 }
 
 @Preview
 @Composable
 fun KillingPartSelectorPreview() {
-    KillingPartSelector(185, 14, {})
+    KillingPartSelector(
+        totalDuration = 185,
+        onStartChange = { _, _, _ -> }
+    )
 }

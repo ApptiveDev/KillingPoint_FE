@@ -84,6 +84,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     }
     var currentIndex by remember { mutableStateOf(0) }
     val mainListState = rememberLazyListState()
+
+    var isPlaying by remember { mutableStateOf(true) } // 기본값은 재생 중
     
     // DiaryViewModel을 MainScreen에서 관리
     val diaryViewModel: DiaryViewModel = viewModel()
@@ -117,9 +119,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
             webView.clearCache(true)
             webView.clearHistory()
             webView.destroy()
-            android.util.Log.d("MainScreen", "WebView cache cleared on startup")
         } catch (e: Exception) {
-            android.util.Log.e("MainScreen", "Failed to clear WebView cache: ${e.message}")
         }
     }
 
@@ -213,7 +213,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                         .weight(1f)
                                         .padding(horizontal = 16.dp)
                                 ) {
-                                    // 다이어리만 스크롤
                                     val musicListHeight = if (listExpanded) 260.dp else 80.dp
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize(),
@@ -226,7 +225,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                             )
                                         }
                                     }
-                                    // Overlay MusicListBox
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)
@@ -281,7 +279,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                 ) {
                                     RunMusicBox(
                                         currentIndex = currentIndex,
-                                        currentDiary = diaries.getOrNull(currentIndex)
+                                        currentDiary = diaries.getOrNull(currentIndex),
+                                        isPlaying = isPlaying
                                     )
                                 }
                             }
@@ -330,23 +329,26 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 onPrevious = {
                     if (currentIndex > 0) {
                         currentIndex--
+                        isPlaying = true
                         android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
-                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
+
                     }
                 },
                 onNext = {
                     if (currentIndex < diaries.size - 1) {
                         currentIndex++
-                        android.util.Log.d("MainScreen", "Next clicked, new index: $currentIndex")
-                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
+                        isPlaying = true
+
                     }
+                },
+                onPlayPause = {
+                    isPlaying = !isPlaying
                 }
             )
 
-            // 프로필 설정 화면 오버레이 (MusicCueBtn 위에 표시)
             if (showProfileSettings) {
-                val topOffset = topPillTabsBottomY + 15.dp // TopPillTabs 아래 + Spacer
-                val maxHeight = screenHeight - topOffset - BottomBarHeight // 전체 높이에서 상단 y 좌표와 BottomBar 높이를 뺀 값
+                val topOffset = topPillTabsBottomY + 15.dp
+                val maxHeight = screenHeight - topOffset - BottomBarHeight
                 ProfileSettingsScreen(
                     onDismiss = { showProfileSettings = false },
                     topOffset = topOffset,

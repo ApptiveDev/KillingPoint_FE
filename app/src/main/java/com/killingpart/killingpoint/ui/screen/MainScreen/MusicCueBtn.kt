@@ -26,7 +26,8 @@ import com.killingpart.killingpoint.R
 fun MusicCueBtn(
     modifier: Modifier = Modifier,
     onPrevious: () -> Unit = {},
-    onNext: () -> Unit = {}
+    onNext: () -> Unit = {},
+    onPlayPause: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -59,7 +60,8 @@ fun MusicCueBtn(
 
             Box(
                 modifier = Modifier.size(70.dp)
-                    .background(color = Color.White, RoundedCornerShape(50.dp)),
+                    .background(color = Color.White, RoundedCornerShape(50.dp))
+                    .clickable { onPlayPause() },
                 contentAlignment = Alignment.Center
             ) {
                 Image(
