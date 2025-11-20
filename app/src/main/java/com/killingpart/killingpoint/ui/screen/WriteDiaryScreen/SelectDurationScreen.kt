@@ -92,7 +92,9 @@ fun SelectDurationScreen(
     navController: NavController,
     title: String,
     artist: String,
-    imageUrl: String
+    imageUrl: String,
+    videoUrl: String = "", // 파라미터로 받은 videoUrl
+    totalDuration: Int = 0 // 파라미터로 받은 totalDuration
 ) {
     var duration by remember { mutableStateOf(10f) }
     var start by remember { mutableStateOf(0f) }
@@ -114,6 +116,7 @@ fun SelectDurationScreen(
         val endValue = (startSeconds + durationSeconds)
         endValue
     }
+
 
     var videoUrl by remember { mutableStateOf<String?>(null) }
     var totalDuration by remember { mutableStateOf(10) } // YouTube 비디오의 전체 길이 (초 단위)
@@ -141,13 +144,16 @@ fun SelectDurationScreen(
         isLoadingVideo = false
     }
 
+
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
+
 
     LaunchedEffect(videoUrl) {
         if (videoUrl != null) {
             kotlinx.coroutines.delay(500)
             val scrollOffset = with(density) { 350.dp.toPx().toInt() }
+
             scrollState.animateScrollTo(scrollOffset)
         }
     }
@@ -201,7 +207,7 @@ fun SelectDurationScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                if (isLoadingVideo) {
+                if (finalVideoUrl == null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -216,12 +222,12 @@ fun SelectDurationScreen(
                             fontSize = 14.sp
                         )
                     }
-                } else if (videoUrl != null) {
+                } else if (finalVideoUrl != null) {
                     val tempDiary = Diary(
                         artist = artist,
                         musicTitle = title,
                         albumImageUrl = imageUrl,
-                        videoUrl = videoUrl!!,
+                        videoUrl = finalVideoUrl!!,
                         content = "",
                         scope = Scope.PUBLIC,
                         duration = "0",
@@ -273,11 +279,13 @@ fun SelectDurationScreen(
                     Spacer(Modifier.height(18.dp))
 
                     KillingPartSelector(
+
                         totalDuration, onStartChange = { s,e,d ->
                             start = s
                             end = e
                             duration =d
                         }
+
                     )
 
                     Spacer(Modifier.height(38.dp))
@@ -291,6 +299,7 @@ fun SelectDurationScreen(
 
         Button(
             onClick = {
+
                 val encodedVideoUrl = Uri.encode(videoUrl ?: "")
 
                 navController.navigate(
@@ -298,10 +307,12 @@ fun SelectDurationScreen(
                             "?title=${Uri.encode(title)}" +
                             "&artist=${Uri.encode(artist)}" +
                             "&image=${Uri.encode(imageUrl)}" +
+
                             "&duration=${duration.toInt()}" +
                             "&start=${start.toInt()}" +
                             "&end=${end.toInt()}" +
                             "&videoUrl=$encodedVideoUrl"
+
                 )
             },
             modifier = Modifier

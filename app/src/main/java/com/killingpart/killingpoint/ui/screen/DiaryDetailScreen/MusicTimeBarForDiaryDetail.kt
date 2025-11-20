@@ -20,7 +20,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.ui.screen.MainScreen.TimeLabelCentered
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -68,36 +67,13 @@ fun MusicTimeBarForDiaryDetail(
     musicTitle: String,
     start: Int,
     during: Int,
+    totalDuration: Int? = null, // DB에서 가져온 totalDuration (초 단위)
 ) {
-    val context = LocalContext.current
     val density = LocalDensity.current
     var barSize by remember { mutableStateOf(IntSize.Zero) }
     
-    // YouTube 비디오 전체 길이 (초 단위)
-    var videoTotalDuration by remember { mutableStateOf<Int?>(null) }
-    val repo = remember { AuthRepository(context) }
-    
-    // YouTube API에서 duration 가져오기
-    LaunchedEffect(artist, musicTitle) {
-        videoTotalDuration = null
-        if (artist.isNotEmpty() && musicTitle.isNotEmpty()) {
-            try {
-                val videos = repo.searchVideos(artist, musicTitle)
-                val firstVideo = videos.firstOrNull()
-                firstVideo?.duration?.let { durationStr ->
-                    val totalSeconds = parseDurationToSeconds(durationStr)
-                    videoTotalDuration = totalSeconds
-                    android.util.Log.d("MusicTimeBarForDiaryDetail", "YouTube video duration: $durationStr -> $totalSeconds seconds")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MusicTimeBarForDiaryDetail", "Failed to fetch video duration: ${e.message}")
-                videoTotalDuration = null
-            }
-        }
-    }
-    
-    // total은 YouTube API에서 가져온 비디오 전체 길이 사용, 없으면 기본값 180초
-    val total = videoTotalDuration ?: 180
+    // DB에서 가져온 totalDuration 사용, 없으면 기본값 180초
+    val total = totalDuration ?: 180
 
     Box(
         modifier = Modifier

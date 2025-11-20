@@ -87,8 +87,11 @@ fun RunMusicBox(
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
+    
+   
+    // DB에서 가져온 totalDuration 사용 (searchVideos 호출 제거)
+    val videoTotalDuration = currentDiary?.totalDuration
 
-    var videoTotalDuration by remember { mutableStateOf<Int?>(null) }
     val repo = remember { AuthRepository(context) }
 
     LaunchedEffect(Unit) {
@@ -112,6 +115,7 @@ fun RunMusicBox(
             }
         }
     }
+
 
     Box(
         modifier = Modifier
@@ -264,8 +268,10 @@ fun RunMusicBox(
                 val startTime = currentDiary?.start?.toFloatOrNull()?.toInt() ?: 0
                 val durationTime = currentDiary?.duration?.toFloatOrNull()?.toInt() ?: 0
 
-                val totalTime = videoTotalDuration ?: 180
+                
 
+
+                val totalTime = videoTotalDuration ?: 180
                 MusicTimeBar(
                     title = currentDiary?.musicTitle,
                     start = startTime,

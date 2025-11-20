@@ -75,7 +75,8 @@ fun DiaryDetailScreen(
     createDate: String,
     selectedDate: String = "",
     scope: String = "",
-    diaryId: Long? = null
+    diaryId: Long? = null,
+    totalDuration: Int? = null // YouTube 비디오 전체 길이 (초 단위)
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -173,7 +174,7 @@ fun DiaryDetailScreen(
                     .padding(horizontal = 24.dp)
             ) {
                 // Diary 객체 생성 (YouTubePlayerBox에 전달하기 위해)
-                val diary = remember(diaryId, artist, musicTitle, albumImageUrl, videoUrl, duration, start, end, scope) {
+                val diary = remember(diaryId, artist, musicTitle, albumImageUrl, videoUrl, duration, start, end, scope, totalDuration) {
                     val scopeEnum = try {
                         Scope.valueOf(scope.ifEmpty { "PRIVATE" })
                     } catch (e: Exception) {
@@ -191,7 +192,8 @@ fun DiaryDetailScreen(
                         content = content,
                         createDate = createDate,
                         updateDate = createDate, // updateDate가 없으면 createDate 사용
-                        scope = scopeEnum
+                        scope = scopeEnum,
+                        totalDuration = totalDuration
                     )
                 }
                 
@@ -280,7 +282,8 @@ fun DiaryDetailScreen(
                                             artist = artist,
                                             musicTitle = musicTitle,
                                             start = startSeconds,
-                                            during = duringSeconds
+                                            during = duringSeconds,
+                                            totalDuration = diary.totalDuration
                                         )
                                     }
                                 }
@@ -454,7 +457,8 @@ fun DiaryDetailScreen(
                                             content = editedContent,
                                             duration = duration,
                                             start = start,
-                                            end = end
+                                            end = end,
+                                            totalDuration = totalDuration ?: 0 // DB에서 가져온 totalDuration 사용
                                         )
                                         
                                         android.util.Log.d("DiaryDetailScreen", "업데이트 요청 전송 중...")
