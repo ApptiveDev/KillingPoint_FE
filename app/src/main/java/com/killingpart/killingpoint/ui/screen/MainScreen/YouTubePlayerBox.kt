@@ -54,7 +54,6 @@ fun YouTubePlayerBox(
     ) {
         if (diary != null) {
             val videoId = diary.videoUrl.substringAfter("/embed/").substringBefore("?")
-            Log.d("YouTubePlayerBox", "Video ID: $videoId")
             
             // startSeconds가 변경될 때 seekTo로 위치 이동 (디바운싱 적용)
             LaunchedEffect(startSeconds) {
@@ -62,14 +61,11 @@ fun YouTubePlayerBox(
                     // 500ms 디바운싱: 사용자가 슬라이더를 계속 움직이면 마지막 값만 적용
                     kotlinx.coroutines.delay(500)
                     player?.seekTo(startSeconds)
-                    Log.d("YouTubePlayerBox", "seekTo called: $startSeconds (debounced)")
                 }
             }
-            
-            // 반복재생을 위한 체크: currentTime이 endSeconds에 도달하면 startSeconds로 이동
+
             LaunchedEffect(currentTime, endSeconds, startSeconds, durationSeconds, player) {
                 if (isPlaying && player != null && endSeconds != null && durationSeconds > 0f && currentTime >= endSeconds) {
-                    Log.d("YouTubePlayerBox", "Reached endSeconds ($endSeconds), seeking to startSeconds ($startSeconds)")
                     player?.seekTo(startSeconds)
                 }
             }
