@@ -54,7 +54,6 @@ fun YouTubePlayerBox(
     ) {
         if (diary != null) {
             val videoId = diary.videoUrl.substringAfter("/embed/").substringBefore("?")
-            Log.d("YouTubePlayerBox", "Video ID: $videoId")
             
             // startSeconds가 변경될 때 seekTo로 위치 이동 (디바운싱 적용)
             LaunchedEffect(startSeconds) {
@@ -62,14 +61,11 @@ fun YouTubePlayerBox(
                     // 500ms 디바운싱: 사용자가 슬라이더를 계속 움직이면 마지막 값만 적용
                     kotlinx.coroutines.delay(500)
                     player?.seekTo(startSeconds)
-                    Log.d("YouTubePlayerBox", "seekTo called: $startSeconds (debounced)")
                 }
             }
-            
-            // 반복재생을 위한 체크: currentTime이 endSeconds에 도달하면 startSeconds로 이동
+
             LaunchedEffect(currentTime, endSeconds, startSeconds, durationSeconds, player) {
                 if (isPlaying && player != null && endSeconds != null && durationSeconds > 0f && currentTime >= endSeconds) {
-                    Log.d("YouTubePlayerBox", "Reached endSeconds ($endSeconds), seeking to startSeconds ($startSeconds)")
                     player?.seekTo(startSeconds)
                 }
             }
@@ -86,38 +82,25 @@ fun YouTubePlayerBox(
             ) {
                 // videoUrl이 변경될 때만 AndroidView 재생성 (startSeconds는 seekTo로 처리)
                 key(diary?.videoUrl) {
-                    Log.d("YouTubePlayerBox", "AndroidView 재생성 - diary: ${diary.musicTitle}, videoUrl: ${diary.videoUrl}")
                     
                     // videoUrl 변경 시에만 정리 작업
                     DisposableEffect(diary?.videoUrl) {
                         onDispose {
-                            Log.d("YouTubePlayerBox", "DisposableEffect onDispose - cleaning up player")
-                            try {
-                                player = null
-                            } catch (e: Exception) {
-                                Log.e("YouTubePlayerBox", "Error in onDispose: ${e.message}")
-                            }
+                            player = null
                         }
                     }
                     
                     AndroidView(
                         factory = { context ->
-                            Log.d("YouTubePlayerBox", "YouTubePlayerView factory 호출 - videoId: $videoId, startSeconds: $startSeconds")
                             YouTubePlayerView(context).apply {
-                                // YouTube Player 자체에 corner radius 적용
                                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                                
-                                // 리스너 내부에서 관리하는 로컬 플래그
                                 var hasCalledReady = false
                                 
                                 addYouTubePlayerListener(object : AbstractYouTubePlayerListener() {
                                 override fun onReady(youTubePlayer: YouTubePlayer) {
-                                    Log.d("YouTubePlayerBox", "Player ready for video: $videoId, startSeconds: $startSeconds")
                                     player = youTubePlayer
-                                    hasCalledReady = false // 비디오 준비 콜백 플래그 리셋
-                                    // 비디오 로드 (startSeconds 위치에서 시작)
+                                    hasCalledReady = false
                                     youTubePlayer.loadVideo(videoId, startSeconds)
-                                    Log.d("YouTubePlayerBox", "onReady: loadVideo called with startSeconds: $startSeconds")
                                     youTubePlayer.play()
                                     isPlaying = true
                                 }
@@ -127,12 +110,8 @@ fun YouTubePlayerBox(
                                     when (state) {
                                         com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PLAYING -> {
                                             isPlaying = true
-                                            Log.d("YouTubePlayerBox", "Playing at currentTime: $currentTime")
-                                            // 비디오가 재생 시작되면 준비 완료 콜백 호출 (한 번만)
                                             if (!hasCalledReady) {
-                                                Log.d("YouTubePlayerBox", "Video playing - calling onVideoReady")
                                                 hasCalledReady = true
-                                                // Handler를 사용하여 메인 스레드에서 지연 후 콜백 호출
                                                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                                                     videoReadyCallback()
                                                 }, 500)
@@ -140,12 +119,9 @@ fun YouTubePlayerBox(
                                         }
                                         com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.PAUSED -> {
                                             isPlaying = false
-                                            Log.d("YouTubePlayerBox", "Paused")
                                         }
                                         com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants.PlayerState.ENDED -> {
                                             isPlaying = false
-                                            Log.d("YouTubePlayerBox", "Ended")
-                                            // 영상이 끝났을 때 반복재생을 위해 startSeconds로 이동 (duration이 없을 때만)
                                             if (endSeconds == null || durationSeconds == 0f) {
                                                 youTubePlayer.seekTo(startSeconds)
                                                 youTubePlayer.play()
