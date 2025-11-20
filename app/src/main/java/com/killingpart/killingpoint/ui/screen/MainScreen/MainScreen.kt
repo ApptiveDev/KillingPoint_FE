@@ -119,9 +119,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
             webView.clearCache(true)
             webView.clearHistory()
             webView.destroy()
-            android.util.Log.d("MainScreen", "WebView cache cleared on startup")
         } catch (e: Exception) {
-            android.util.Log.e("MainScreen", "Failed to clear WebView cache: ${e.message}")
         }
     }
 
@@ -215,7 +213,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                         .weight(1f)
                                         .padding(horizontal = 16.dp)
                                 ) {
-                                    // 다이어리만 스크롤
                                     val musicListHeight = if (listExpanded) 260.dp else 80.dp
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize(),
@@ -228,7 +225,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                             )
                                         }
                                     }
-                                    // Overlay MusicListBox
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)

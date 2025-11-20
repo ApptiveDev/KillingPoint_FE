@@ -47,8 +47,7 @@ fun YouTubePlayerBox(
     } else {
         null
     }
-    
-    Log.d("YouTubePlayerBox", "YouTubePlayerBox called with diary: ${diary?.musicTitle}, videoUrl: ${diary?.videoUrl}, startSeconds: $startSeconds, durationSeconds: $durationSeconds, endSeconds: $endSeconds")
+
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally

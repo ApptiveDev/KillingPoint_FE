@@ -84,7 +84,6 @@ fun RunMusicBox(
     currentDiary: Diary?,
     isPlaying: Boolean? = null
 ) {
-    android.util.Log.d("RunMusicBox", "RunMusicBox called with index: $currentIndex, diary: ${currentDiary?.musicTitle}")
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
