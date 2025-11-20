@@ -207,7 +207,7 @@ fun SelectDurationScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                if (finalVideoUrl == null) {
+                if (videoUrl == null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -222,12 +222,12 @@ fun SelectDurationScreen(
                             fontSize = 14.sp
                         )
                     }
-                } else if (finalVideoUrl != null) {
+                } else if (videoUrl != null) {
                     val tempDiary = Diary(
                         artist = artist,
                         musicTitle = title,
                         albumImageUrl = imageUrl,
-                        videoUrl = finalVideoUrl!!,
+                        videoUrl = videoUrl!!,
                         content = "",
                         scope = Scope.PUBLIC,
                         duration = "0",
