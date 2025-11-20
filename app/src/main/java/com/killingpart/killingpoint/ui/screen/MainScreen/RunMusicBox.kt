@@ -88,32 +88,12 @@ fun RunMusicBox(
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
     
-    // YouTube 비디오 전체 길이 (초 단위)
-    var videoTotalDuration by remember { mutableStateOf<Int?>(null) }
-    val repo = remember { AuthRepository(context) }
-
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
     }
     
-    // currentDiary가 변경되면 YouTube API에서 duration 가져오기
-    LaunchedEffect(currentDiary?.musicTitle, currentDiary?.artist) {
-        videoTotalDuration = null
-        if (currentDiary != null && currentDiary.musicTitle.isNotEmpty() && currentDiary.artist.isNotEmpty()) {
-            try {
-                val videos = repo.searchVideos(currentDiary.artist, currentDiary.musicTitle)
-                val firstVideo = videos.firstOrNull()
-                firstVideo?.duration?.let { durationStr ->
-                    val totalSeconds = parseDurationToSeconds(durationStr)
-                    videoTotalDuration = totalSeconds
-                    android.util.Log.d("RunMusicBox", "YouTube video duration: $durationStr -> $totalSeconds seconds")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("RunMusicBox", "Failed to fetch video duration: ${e.message}")
-                videoTotalDuration = null
-            }
-        }
-    }
+    // DB에서 가져온 totalDuration 사용 (searchVideos 호출 제거)
+    val videoTotalDuration = currentDiary?.totalDuration
 
     Box(
         modifier = Modifier
@@ -282,8 +262,8 @@ fun RunMusicBox(
                 val startTime = currentDiary?.start?.toFloatOrNull()?.toInt() ?: 0
                 val durationTime = currentDiary?.duration?.toFloatOrNull()?.toInt() ?: 0
                 
-                // total은 YouTube API에서 가져온 비디오 전체 길이 사용
-                val totalTime = videoTotalDuration ?: 180 // 기본값 180초
+                // DB에서 가져온 totalDuration 사용, 없으면 기본값 180초
+                val totalTime = videoTotalDuration ?: 180
                 
                 android.util.Log.d("RunMusicBox", "MusicTimeBar raw values:")
                 android.util.Log.d("RunMusicBox", "  - start (raw): ${currentDiary?.start}")
@@ -291,8 +271,8 @@ fun RunMusicBox(
                 android.util.Log.d("RunMusicBox", "MusicTimeBar converted values:")
                 android.util.Log.d("RunMusicBox", "  - start: $startTime")
                 android.util.Log.d("RunMusicBox", "  - duration: $durationTime")
-                android.util.Log.d("RunMusicBox", "  - total (from YouTube API): $totalTime")
-                android.util.Log.d("RunMusicBox", "  - videoTotalDuration state: $videoTotalDuration")
+                android.util.Log.d("RunMusicBox", "  - total (from DB): $totalTime")
+                android.util.Log.d("RunMusicBox", "  - videoTotalDuration: $videoTotalDuration")
                 android.util.Log.d("RunMusicBox", "  - MusicTimeBar will show: $startTime ~ ${startTime + durationTime} / $totalTime")
                 
                 MusicTimeBar(

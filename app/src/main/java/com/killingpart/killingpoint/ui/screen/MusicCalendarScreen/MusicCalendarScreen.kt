@@ -693,6 +693,8 @@ fun DiaryEntryCard(
                     
                     android.util.Log.d("DiaryEntryCard", "일기 상세 페이지로 이동 - diaryId: ${diary.id}")
                     
+                    val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" } ?: ""
+                    
                     navController?.navigate(
                         "diary_detail" +
                                 "?artist=${Uri.encode(diary.artist)}" +
@@ -706,7 +708,8 @@ fun DiaryEntryCard(
                                 "&createDate=${Uri.encode(diary.createDate)}" +
                                 scopeParam +
                                 diaryIdParam +
-                                selectedDateParam
+                                selectedDateParam +
+                                totalDurationParam
                     )
                 }
             ) {

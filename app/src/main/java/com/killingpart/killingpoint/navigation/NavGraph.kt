@@ -45,18 +45,25 @@ fun NavGraph(
             route = "select_duration" +
                     "?title={title}" +
                     "&artist={artist}" +
-                    "&image={image}",
+                    "&image={image}" +
+                    "&videoUrl={videoUrl}" +
+                    "&totalDuration={totalDuration}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
-                navArgument("image") { type = NavType.StringType; defaultValue = "" }
+                navArgument("image") { type = NavType.StringType; defaultValue = "" },
+                navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
+                navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val title = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("title").orEmpty(), "UTF-8")
             val artist = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
             val image = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("image").orEmpty(), "UTF-8")
+            val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
+            val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
+            val totalDuration = totalDurationStr.toIntOrNull() ?: 0
 
-            SelectDurationScreen(navController, title, artist, image)
+            SelectDurationScreen(navController, title, artist, image, videoUrl, totalDuration)
         }
 
         composable(
@@ -67,7 +74,8 @@ fun NavGraph(
                     "&duration={duration}" +
                     "&start={start}" +
                     "&end={end}" +
-                    "&videoUrl={videoUrl}",
+                    "&videoUrl={videoUrl}" +
+                    "&totalDuration={totalDuration}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
@@ -75,7 +83,8 @@ fun NavGraph(
                 navArgument("duration") { type = NavType.StringType; defaultValue = "" },
                 navArgument("start") { type = NavType.StringType; defaultValue = "" },
                 navArgument("end") { type = NavType.StringType; defaultValue = "" },
-                navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" }
+                navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
+                navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val title = java.net.URLDecoder.decode(backStackEntry.arguments?.getString("title").orEmpty(), "UTF-8")
@@ -85,8 +94,10 @@ fun NavGraph(
             val start = URLDecoder.decode(backStackEntry.arguments?.getString("start").orEmpty(), "UTF-8")
             val end = URLDecoder.decode(backStackEntry.arguments?.getString("end").orEmpty(), "UTF-8")
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
+            val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
+            val totalDuration = totalDurationStr.toIntOrNull() ?: 0
 
-            WriteDiaryScreen(navController, title, artist, image, duration, start, end, videoUrl)
+            WriteDiaryScreen(navController, title, artist, image, duration, start, end, videoUrl, totalDuration)
         }
 
         composable(
@@ -102,7 +113,8 @@ fun NavGraph(
                     "&createDate={createDate}" +
                     "&selectedDate={selectedDate}" +
                     "&scope={scope}" +
-                    "&diaryId={diaryId}",
+                    "&diaryId={diaryId}" +
+                    "&totalDuration={totalDuration}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -115,7 +127,8 @@ fun NavGraph(
                 navArgument("createDate") { type = NavType.StringType; defaultValue = "" },
                 navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" },
                 navArgument("scope") { type = NavType.StringType; defaultValue = "" },
-                navArgument("diaryId") { type = NavType.StringType; defaultValue = "" }
+                navArgument("diaryId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -131,6 +144,8 @@ fun NavGraph(
             val scope = URLDecoder.decode(backStackEntry.arguments?.getString("scope").orEmpty(), "UTF-8")
             val diaryIdStr = backStackEntry.arguments?.getString("diaryId") ?: ""
             val diaryId = diaryIdStr.toLongOrNull()
+            val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
+            val totalDuration = totalDurationStr.toIntOrNull()
 
             DiaryDetailScreen(
                 navController = navController,
@@ -145,7 +160,8 @@ fun NavGraph(
                 createDate = createDate,
                 selectedDate = selectedDate,
                 scope = scope,
-                diaryId = diaryId
+                diaryId = diaryId,
+                totalDuration = totalDuration
             )
         }
     }

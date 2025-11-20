@@ -49,6 +49,46 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalInspectionMode
+import com.killingpart.killingpoint.data.repository.AuthRepository
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import java.util.regex.Pattern
+
+/**
+ * ISO 8601 duration 형식(예: "PT2M28S")을 초 단위로 변환
+ * @param duration ISO 8601 duration 문자열 (예: "PT2M28S", "PT1H2M30S", "PT30S")
+ * @return 초 단위로 변환된 값 (예: 148, 3750, 30)
+ */
+fun parseDurationToSeconds(duration: String): Int {
+    // PT 제거
+    val durationStr = duration.removePrefix("PT")
+    if (durationStr.isEmpty()) return 0
+    
+    var totalSeconds = 0
+    
+    // 시간(H) 파싱
+    val hourPattern = Pattern.compile("(\\d+)H")
+    val hourMatcher = hourPattern.matcher(durationStr)
+    if (hourMatcher.find()) {
+        totalSeconds += hourMatcher.group(1).toInt() * 3600
+    }
+    
+    // 분(M) 파싱
+    val minutePattern = Pattern.compile("(\\d+)M")
+    val minuteMatcher = minutePattern.matcher(durationStr)
+    if (minuteMatcher.find()) {
+        totalSeconds += minuteMatcher.group(1).toInt() * 60
+    }
+    
+    // 초(S) 파싱
+    val secondPattern = Pattern.compile("(\\d+)S")
+    val secondMatcher = secondPattern.matcher(durationStr)
+    if (secondMatcher.find()) {
+        totalSeconds += secondMatcher.group(1).toInt()
+    }
+    
+    return totalSeconds
+}
 
 @Composable
 fun AddMusicScreen(navController: NavController) {
@@ -102,12 +142,11 @@ fun AddMusicScreen(navController: NavController) {
                             contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
                             items(tracks) { track ->
-                                TrackRow(track, onClick = {
-                                    val encodedTitle = java.net.URLEncoder.encode(track.title, "UTF-8")
-                                    val encodedArtist = java.net.URLEncoder.encode(track.artist, "UTF-8")
-                                    val encodedImage = java.net.URLEncoder.encode(track.albumImageUrl ?: "", "UTF-8")
-                                    navController.navigate("select_duration?title=$encodedTitle&artist=$encodedArtist&image=$encodedImage")
-                                })
+                                TrackRowWithVideoSearch(
+                                    track = track,
+                                    navController = navController,
+                                    context = context
+                                )
                                 Spacer(modifier = Modifier.height(10.dp))
                             }
                         }
@@ -125,10 +164,71 @@ fun AddMusicScreen(navController: NavController) {
 }
 
 @Composable
-private fun TrackRow(track: SimpleTrack, onClick: () -> Unit = {}) {
+private fun TrackRowWithVideoSearch(
+    track: SimpleTrack,
+    navController: NavController,
+    context: android.content.Context
+) {
+    val scope = rememberCoroutineScope()
+    val repo = remember { AuthRepository(context) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    TrackRow(track, onClick = {
+        if (isLoading) return@TrackRow
+        
+        isLoading = true
+        scope.launch {
+            try {
+                val videos = repo.searchVideos(track.artist, track.title)
+                val firstVideo = videos.firstOrNull()
+                val videoUrl = firstVideo?.url ?: ""
+                
+                // duration 파싱하여 초 단위로 변환
+                val totalDuration = firstVideo?.duration?.let { durationStr ->
+                    parseDurationToSeconds(durationStr)
+                } ?: 180 // 기본값 180초
+                
+                val encodedTitle = java.net.URLEncoder.encode(track.title, "UTF-8")
+                val encodedArtist = java.net.URLEncoder.encode(track.artist, "UTF-8")
+                val encodedImage = java.net.URLEncoder.encode(track.albumImageUrl ?: "", "UTF-8")
+                val encodedVideoUrl = java.net.URLEncoder.encode(videoUrl, "UTF-8")
+                
+                navController.navigate(
+                    "select_duration" +
+                            "?title=$encodedTitle" +
+                            "&artist=$encodedArtist" +
+                            "&image=$encodedImage" +
+                            "&videoUrl=$encodedVideoUrl" +
+                            "&totalDuration=$totalDuration"
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("AddMusicScreen", "YouTube search failed: ${e.message}")
+                // 에러 발생 시에도 기본값으로 진행
+                val encodedTitle = java.net.URLEncoder.encode(track.title, "UTF-8")
+                val encodedArtist = java.net.URLEncoder.encode(track.artist, "UTF-8")
+                val encodedImage = java.net.URLEncoder.encode(track.albumImageUrl ?: "", "UTF-8")
+                navController.navigate(
+                    "select_duration" +
+                            "?title=$encodedTitle" +
+                            "&artist=$encodedArtist" +
+                            "&image=$encodedImage" +
+                            "&videoUrl=" +
+                            "&totalDuration=180"
+                )
+            } finally {
+                isLoading = false
+            }
+        }
+    }, isLoading = isLoading)
+}
+
+@Composable
+private fun TrackRow(track: SimpleTrack, onClick: () -> Unit = {}, isLoading: Boolean = false) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFF232427)),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = !isLoading) { onClick() }
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
             if (LocalInspectionMode.current) {

@@ -92,7 +92,9 @@ fun SelectDurationScreen(
     navController: NavController,
     title: String,
     artist: String,
-    imageUrl: String
+    imageUrl: String,
+    videoUrl: String = "", // 파라미터로 받은 videoUrl
+    totalDuration: Int = 0 // 파라미터로 받은 totalDuration
 ) {
     var duration by remember { mutableStateOf("10") }
     var start by remember { mutableStateOf("0") }
@@ -118,47 +120,18 @@ fun SelectDurationScreen(
         endValue
     }
 
-    var videoUrl by remember { mutableStateOf<String?>(null) }
-    var totalDuration by remember { mutableStateOf(10) } // YouTube 비디오의 전체 길이 (초 단위)
-    var isLoadingVideo by remember { mutableStateOf(true) }
-    val scope = rememberCoroutineScope()
-    val context = LocalContext.current
-    val repo = remember { AuthRepository(context) }
-
-    LaunchedEffect(title, artist) {
-        isLoadingVideo = true
-        try {
-            val videos = repo.searchVideos(artist, title)
-            val firstVideo = videos.firstOrNull()
-            videoUrl = firstVideo?.url
-            // duration 파싱하여 초 단위로 변환
-            firstVideo?.duration?.let { durationStr ->
-                val seconds = parseDurationToSeconds(durationStr)
-                totalDuration = seconds
-                android.util.Log.d("SelectDurationScreen", "Video duration: $durationStr -> $seconds seconds")
-            } ?: run {
-                totalDuration = 10 // 기본값
-            }
-            android.util.Log.d("SelectDurationScreen", "Search query: $artist - $title")
-            android.util.Log.d("SelectDurationScreen", "Found ${videos.size} videos")
-            android.util.Log.d("SelectDurationScreen", "First video URL: $videoUrl")
-            android.util.Log.d("SelectDurationScreen", "First video title: ${firstVideo?.title}")
-        } catch (e: Exception) {
-            android.util.Log.e("SelectDurationScreen", "YouTube search failed: ${e.message}")
-            videoUrl = null
-            totalDuration = 10 // 기본값
-        }
-        isLoadingVideo = false
-    }
+    // 파라미터로 받은 videoUrl과 totalDuration 사용 (searchVideos 호출 제거)
+    val finalVideoUrl = if (videoUrl.isNotEmpty()) videoUrl else null
+    val finalTotalDuration = if (totalDuration > 0) totalDuration else 180 // 기본값 180초
 
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
 
     // 비디오 URL이 변경되면 자동으로 아래로 스크롤 (KillingPartSelector 보이도록)
-    LaunchedEffect(videoUrl) {
-        if (videoUrl != null) {
+    LaunchedEffect(finalVideoUrl) {
+        if (finalVideoUrl != null) {
             kotlinx.coroutines.delay(500) // 비디오 렌더링 대기
-            android.util.Log.d("SelectDurationScreen", "Auto scrolling down - videoUrl: $videoUrl")
+            android.util.Log.d("SelectDurationScreen", "Auto scrolling down - videoUrl: $finalVideoUrl")
             val scrollOffset = with(density) { 300.dp.toPx().toInt() }
             scrollState.animateScrollTo(scrollOffset)
         }
@@ -213,7 +186,7 @@ fun SelectDurationScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                if (isLoadingVideo) {
+                if (finalVideoUrl == null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -228,12 +201,12 @@ fun SelectDurationScreen(
                             fontSize = 14.sp
                         )
                     }
-                } else if (videoUrl != null) {
+                } else if (finalVideoUrl != null) {
                     val tempDiary = Diary(
                         artist = artist,
                         musicTitle = title,
                         albumImageUrl = imageUrl,
-                        videoUrl = videoUrl!!,
+                        videoUrl = finalVideoUrl!!,
                         content = "",
                         scope = Scope.PUBLIC,
                         duration = "0",
@@ -285,7 +258,7 @@ fun SelectDurationScreen(
                     Spacer(Modifier.height(18.dp))
 
                     KillingPartSelector(
-                        totalDuration, duration.toInt(), {start = it.toString()}
+                        finalTotalDuration, duration.toInt(), {start = it.toString()}
                     )
 
                     Spacer(Modifier.height(38.dp))
@@ -314,7 +287,7 @@ fun SelectDurationScreen(
                 val encodedDuration = Uri.encode(duration)
                 val encodedStart = Uri.encode(start)
                 val encodedEnd = Uri.encode(end)
-                val encodedVideoUrl = Uri.encode(videoUrl ?: "")
+                val encodedVideoUrl = Uri.encode(finalVideoUrl ?: "")
                 
                 android.util.Log.d("SelectDurationScreen", "Navigating to writeDiaryScreen with:")
                 android.util.Log.d("SelectDurationScreen", "  - duration: $duration (encoded: $encodedDuration)")
@@ -330,7 +303,8 @@ fun SelectDurationScreen(
                             "&duration=$encodedDuration" +
                             "&start=$encodedStart" +
                             "&end=$encodedEnd" +
-                            "&videoUrl=$encodedVideoUrl"
+                            "&videoUrl=$encodedVideoUrl" +
+                            "&totalDuration=$finalTotalDuration"
                 )
             },
             modifier = Modifier

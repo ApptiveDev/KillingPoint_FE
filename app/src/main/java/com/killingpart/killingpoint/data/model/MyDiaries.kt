@@ -23,6 +23,8 @@ data class Diary(
     var duration: String,
     var start: String,
     var end: String,
+    @SerializedName("totalDuration")
+    val totalDuration: Int? = null, // YouTube 비디오 전체 길이 (초 단위)
     @SerializedName("createDate")
     val createDate: String,
     @SerializedName("updateDate")

@@ -57,7 +57,8 @@ fun WriteDiaryScreen(
     duration: String,
     start: String,
     end: String,
-    videoUrl: String
+    videoUrl: String,
+    totalDuration: Int = 0 // YouTube 비디오 전체 길이 (초 단위)
 ) {
     // 파라미터 확인 로그
     LaunchedEffect(Unit) {
@@ -244,6 +245,7 @@ fun WriteDiaryScreen(
                                 duration = duration,
                                 start = start,
                                 end = end,
+                                totalDuration = totalDuration
                             )
                             android.util.Log.d("WriteDiaryScreen", "Creating diary with:")
                             android.util.Log.d("WriteDiaryScreen", "  - duration: ${body.duration}")

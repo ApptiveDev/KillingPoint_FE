@@ -10,6 +10,7 @@ data class CreateDiaryRequest(
     val duration: String,
     val start: String,
     val end: String,
+    val totalDuration: Int // YouTube 비디오 전체 길이 (초 단위)
 )
 
 
