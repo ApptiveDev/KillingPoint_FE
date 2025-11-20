@@ -31,7 +31,8 @@ fun YouTubePlayerBox(
     diary: Diary?, 
     startSeconds: Float, 
     durationSeconds: Float = 0f,
-    onVideoReady: () -> Unit = {}
+    onVideoReady: () -> Unit = {},
+    isPlayingState: Boolean? = null
 ) {
     val context = LocalContext.current
     var isPlaying by remember { mutableStateOf(false) }
@@ -46,8 +47,7 @@ fun YouTubePlayerBox(
     } else {
         null
     }
-    
-    Log.d("YouTubePlayerBox", "YouTubePlayerBox called with diary: ${diary?.musicTitle}, videoUrl: ${diary?.videoUrl}, startSeconds: $startSeconds, durationSeconds: $durationSeconds, endSeconds: $endSeconds")
+
     
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -67,6 +67,16 @@ fun YouTubePlayerBox(
             LaunchedEffect(currentTime, endSeconds, startSeconds, durationSeconds, player) {
                 if (isPlaying && player != null && endSeconds != null && durationSeconds > 0f && currentTime >= endSeconds) {
                     player?.seekTo(startSeconds)
+                }
+            }
+
+            LaunchedEffect(isPlayingState, player) {
+                if (player != null && isPlayingState != null) {
+                    if (isPlayingState) {
+                        player?.play()
+                    } else {
+                        player?.pause()
+                    }
                 }
             }
             
