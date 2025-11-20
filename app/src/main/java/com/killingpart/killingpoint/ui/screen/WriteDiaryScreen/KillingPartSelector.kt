@@ -48,12 +48,11 @@ fun KillingPartSelector(
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
 
-    // 바 1개 = 1초
     val barWidth = 6.dp
     val gap = 8.dp
     val barWidthPx = with(density) { barWidth.toPx() }
     val gapPx = with(density) { gap.toPx() }
-    val pxPerSecond = barWidthPx + gapPx
+    val pxPerSecond = barWidthPx + gapPx          // 1초당 px
 
     val timelineWidthPx = totalDuration * pxPerSecond
     val timelineWidthDp = with(density) { timelineWidthPx.toDp() }
@@ -61,24 +60,43 @@ fun KillingPartSelector(
     val minDurationSec = 10f
     val maxDurationSec = 30f.coerceAtMost(totalDuration.toFloat())
 
-    var leftTime by remember { mutableStateOf(5f) }
-    var rightTime by remember { mutableStateOf(15f) }
-
-    val duration by remember {
-        derivedStateOf { (rightTime - leftTime).coerceAtLeast(0f) }
-    }
-
     val barHeights = remember(totalDuration) {
         (0 until totalDuration).map { (20..50).random().dp }
     }
 
-    var previousScrollX by remember { mutableStateOf(0f) }
+    var parentWidthPx by remember { mutableStateOf(0f) }
+
+    var leftHandleX by remember { mutableStateOf(0f) }
+    var rightHandleX by remember { mutableStateOf(0f) }
+    var handlesInitialized by remember { mutableStateOf(false) }
+
+    LaunchedEffect(parentWidthPx) {
+        if (parentWidthPx > 0f && !handlesInitialized) {
+            val initialDurationSec = minDurationSec.coerceAtMost(maxDurationSec)
+            val durationPx = initialDurationSec * pxPerSecond
+            val center = parentWidthPx / 2f
+
+            leftHandleX = center - durationPx / 2f
+            rightHandleX = center + durationPx / 2f
+
+            handlesInitialized = true
+        }
+    }
+
+    val scrollX = scrollState.value.toFloat()
+
+    val startTime =
+        ((scrollX + leftHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+    val endTime =
+        ((scrollX + rightHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+    val durationSec = (endTime - startTime).coerceAtLeast(0f)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
             .onGloballyPositioned {
+                parentWidthPx = it.size.width.toFloat()
             }
     ) {
         Row(
@@ -92,20 +110,25 @@ fun KillingPartSelector(
                     .width(timelineWidthDp)
                     .fillMaxHeight()
             ) {
-                val scrollX = scrollState.value.toFloat()
+
+                val absScrollX = scrollState.value.toFloat()
+
+                val currentStartSec = (absScrollX + leftHandleX) / pxPerSecond
+                val currentEndSec   = (absScrollX + rightHandleX) / pxPerSecond
 
                 for (i in 0 until totalDuration) {
+
                     val barAbsX = i * pxPerSecond
-                    val barVisibleX = barAbsX - scrollX
+                    val barVisibleX = barAbsX - absScrollX
 
                     if (barVisibleX + barWidthPx < 0 || barVisibleX > size.width) continue
 
                     val barHeightPx = barHeights[i].toPx()
                     val top = (size.height - barHeightPx) / 2f
 
-                    val barCenterAbsX = barAbsX + barWidthPx / 2f
-                    val barCenterSec = barCenterAbsX / pxPerSecond
-                    val inSelection = barCenterSec >= leftTime && barCenterSec <= rightTime
+                    val barCenterSec = ((barAbsX - absScrollX) + barWidthPx/2f) / pxPerSecond
+
+                    val inSelection = barCenterSec - 1f in currentStartSec..currentEndSec
 
                     val color = if (inSelection) Color.White else Color(0xFF454545)
 
@@ -117,14 +140,7 @@ fun KillingPartSelector(
                     )
                 }
             }
-        }
 
-        val scrollX = scrollState.value.toFloat()
-        val leftVisibleX by remember {
-            derivedStateOf { (leftTime * pxPerSecond) - scrollX }
-        }
-        val rightVisibleX by remember {
-            derivedStateOf { (rightTime * pxPerSecond) - scrollX }
         }
 
         val handleYOffsetPx = with(density) { 20.dp.toPx().roundToInt() }
@@ -132,22 +148,24 @@ fun KillingPartSelector(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .offset { IntOffset(leftVisibleX.roundToInt(), handleYOffsetPx) }
+                .offset { IntOffset(leftHandleX.roundToInt(), handleYOffsetPx) }
                 .pointerInput(Unit) {
                     detectDragGestures { change, drag ->
                         change.consume()
 
-                        val deltaSec = drag.x / pxPerSecond
-                        var newLeft = leftTime + deltaSec
+                        val parent = parentWidthPx
+                        if (parent <= 0f) return@detectDragGestures
 
-                        // 범위 clamp
-                        if (newLeft < 0f) newLeft = 0f
-                        if (rightTime - newLeft < minDurationSec)
-                            newLeft = rightTime - minDurationSec
-                        if (rightTime - newLeft > maxDurationSec)
-                            newLeft = rightTime - maxDurationSec
+                        val candidateX = (leftHandleX + drag.x)
+                            .coerceIn(0f, rightHandleX)  // 오른쪽 핸들 넘어가지 않게
 
-                        leftTime = newLeft.coerceIn(0f, totalDuration.toFloat())
+                        val candidateDurationSec =
+                            (rightHandleX - candidateX) / pxPerSecond
+
+                        // 최소/최대 duration 조건 만족할 때만 업데이트
+                        if (candidateDurationSec in minDurationSec..maxDurationSec) {
+                            leftHandleX = candidateX
+                        }
                     }
                 }
                 .zIndex(10f)
@@ -179,7 +197,7 @@ fun KillingPartSelector(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = formatTime(leftTime),
+                text = formatTime(startTime),
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W400,
                 fontSize = 14.sp,
@@ -190,21 +208,23 @@ fun KillingPartSelector(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .offset { IntOffset(rightVisibleX.roundToInt(), handleYOffsetPx) }
+                .offset { IntOffset(rightHandleX.roundToInt(), handleYOffsetPx) }
                 .pointerInput(Unit) {
                     detectDragGestures { change, drag ->
                         change.consume()
 
-                        val deltaSec = drag.x / pxPerSecond
-                        var newRight = rightTime + deltaSec
+                        val parent = parentWidthPx
+                        if (parent <= 0f) return@detectDragGestures
 
-                        if (newRight > totalDuration) newRight = totalDuration.toFloat()
-                        if (newRight - leftTime < minDurationSec)
-                            newRight = leftTime + minDurationSec
-                        if (newRight - leftTime > maxDurationSec)
-                            newRight = leftTime + maxDurationSec
+                        val candidateX = (rightHandleX + drag.x)
+                            .coerceIn(leftHandleX, parent)
 
-                        rightTime = newRight.coerceIn(0f, totalDuration.toFloat())
+                        val candidateDurationSec =
+                            (candidateX - leftHandleX) / pxPerSecond
+
+                        if (candidateDurationSec in minDurationSec..maxDurationSec) {
+                            rightHandleX = candidateX
+                        }
                     }
                 }
                 .zIndex(10f)
@@ -234,7 +254,7 @@ fun KillingPartSelector(
             Spacer(modifier = Modifier.height(18.dp))
 
             Text(
-                text = formatTime(rightTime),
+                text = formatTime(endTime),
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W400,
                 fontSize = 14.sp,
@@ -243,39 +263,16 @@ fun KillingPartSelector(
         }
     }
 
-    LaunchedEffect(scrollState.value) {
-        val newScrollX = scrollState.value.toFloat()
-        val deltaPx = newScrollX - previousScrollX
-
-        if (deltaPx != 0f) {
-            val deltaSec = deltaPx / pxPerSecond
-            val currentDuration = (rightTime - leftTime).coerceIn(minDurationSec, maxDurationSec)
-
-            var newLeft = leftTime + deltaSec
-            var newRight = rightTime + deltaSec
-
-            if (newLeft < 0f) {
-                newLeft = 0f
-                newRight = currentDuration
-            } else if (newRight > totalDuration) {
-                newRight = totalDuration.toFloat()
-                newLeft = newRight - currentDuration
-            }
-
-            leftTime = newLeft
-            rightTime = newRight
-        }
-
-        previousScrollX = newScrollX
-    }
-
-    LaunchedEffect(leftTime, rightTime, duration) {
-        onStartChange(leftTime, rightTime, duration)
+    LaunchedEffect(startTime, endTime, durationSec) {
+        onStartChange(startTime, endTime, durationSec)
     }
 }
 
 @Preview
 @Composable
 fun KillingPartSelectorPreview() {
-    KillingPartSelector(185) { _, _, _ -> }
+    KillingPartSelector(
+        totalDuration = 185,
+        onStartChange = { _, _, _ -> }
+    )
 }
