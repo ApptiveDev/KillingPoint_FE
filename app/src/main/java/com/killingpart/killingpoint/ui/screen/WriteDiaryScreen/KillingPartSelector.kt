@@ -40,6 +40,32 @@ fun formatTime(seconds: Float): String {
     return String.format("%02d:%02d", minutes, secs)
 }
 
+/** 모든 구성 요소를 하나의 시간 좌표계로 통일한다
+ * 타임라인 바 : 절대 위치(px)
+ * 핸들 : 화면 위치(px)
+ * 스크롤 : 절대 이동량(px)
+ * 시간 : (절대 px + 화면 px) / pxPerSecond
+ *
+ * 핸들은 화면에 고정된 UI 요소
+ * 스크롤 + handle(px)를 합쳐야 핸들이 가리키는 절대 시간을 알 수 있음
+ * 바의 highlight는 '절대 시간' 기준
+ * barCenterSec, startSec, endSec 모두 절대 시간 통일
+ */
+
+/** 주요 통일 공식
+ * 절대 시간(초) = (스크롤된 px + 핸들의 화면 px) / pxPerSecond
+ * 절대 바의 시간 = 바의 절대 위치 px / pxPerSecond
+ * Visible X 좌표 = absoluteX - scrollX           // 실제 그리는 위치
+ */
+
+/** 중요 변수 정리
+ * pxPerSecond : 1초가 몇 px인지 정의하는 핵심 값 (바 1개 = 1초)
+ * barAbsX : 타임라인 전체에서 이 바가 가지는 절대 px 좌표 (스크롤하기 전)
+ * barVisibleX : 현재 화면에서 보여야 하는 픽셀 좌표
+ * handleX : 화면 px (스크롤해도 핸들이 고정되어야 하기 때문에 핸들을 위한 변수)
+ * startSec, endSec : 현재 화면의 핸들이 가리키는 절대 시간
+ */
+
 @Composable
 fun KillingPartSelector(
     totalDuration: Int,
