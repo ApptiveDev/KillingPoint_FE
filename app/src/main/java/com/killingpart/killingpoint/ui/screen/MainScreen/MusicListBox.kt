@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,30 +85,42 @@ fun MusicListBox(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 400.dp)
                         .background(color = Color.Black, shape = RoundedCornerShape(12.dp))
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (diaries.isEmpty()) {
-                        Text(
-                            text = "플레이리스트를 불러오는 중...",
-                            fontFamily = PaperlogyFontFamily,
-                            fontWeight = FontWeight.Light,
-                            fontSize = 12.sp,
-                            color = Color.White
-                        )
-                    } else {
-                        diaries.forEachIndexed { index, d ->
-                            MusicListOne(
-                                imageUrl = d.albumImageUrl,
-                                musicTitle = d.musicTitle,
-                                artist = d.artist,
-                                isNow = if (index == currentIndex) Color(0xFF060606) else Color.Transparent
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "플레이리스트를 불러오는 중...",
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.Light,
+                                fontSize = 12.sp,
+                                color = Color.White
                             )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(diaries) { index, d ->
+                                MusicListOne(
+                                    imageUrl = d.albumImageUrl,
+                                    musicTitle = d.musicTitle,
+                                    artist = d.artist,
+                                    isNow = if (index == currentIndex) Color(0xFF060606) else Color.Transparent
+                                )
+                            }
                         }
                     }
                 }
