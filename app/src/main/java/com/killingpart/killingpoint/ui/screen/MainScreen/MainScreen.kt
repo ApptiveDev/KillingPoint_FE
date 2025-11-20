@@ -84,6 +84,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     }
     var currentIndex by remember { mutableStateOf(0) }
     val mainListState = rememberLazyListState()
+
+    var isPlaying by remember { mutableStateOf(true) } // 기본값은 재생 중
     
     // DiaryViewModel을 MainScreen에서 관리
     val diaryViewModel: DiaryViewModel = viewModel()
@@ -281,7 +283,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                 ) {
                                     RunMusicBox(
                                         currentIndex = currentIndex,
-                                        currentDiary = diaries.getOrNull(currentIndex)
+                                        currentDiary = diaries.getOrNull(currentIndex),
+                                        isPlaying = isPlaying
                                     )
                                 }
                             }
@@ -330,23 +333,26 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 onPrevious = {
                     if (currentIndex > 0) {
                         currentIndex--
+                        isPlaying = true
                         android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
-                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
+
                     }
                 },
                 onNext = {
                     if (currentIndex < diaries.size - 1) {
                         currentIndex++
-                        android.util.Log.d("MainScreen", "Next clicked, new index: $currentIndex")
-                        // 비디오로 스크롤하지 않음 - 앨범 부분 유지
+                        isPlaying = true
+
                     }
+                },
+                onPlayPause = {
+                    isPlaying = !isPlaying
                 }
             )
 
-            // 프로필 설정 화면 오버레이 (MusicCueBtn 위에 표시)
             if (showProfileSettings) {
-                val topOffset = topPillTabsBottomY + 15.dp // TopPillTabs 아래 + Spacer
-                val maxHeight = screenHeight - topOffset - BottomBarHeight // 전체 높이에서 상단 y 좌표와 BottomBar 높이를 뺀 값
+                val topOffset = topPillTabsBottomY + 15.dp
+                val maxHeight = screenHeight - topOffset - BottomBarHeight
                 ProfileSettingsScreen(
                     onDismiss = { showProfileSettings = false },
                     topOffset = topOffset,
