@@ -12,6 +12,7 @@ import com.killingpart.killingpoint.data.model.PresignedUrlResponse
 import com.killingpart.killingpoint.data.model.TestAuthResponse
 import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
@@ -60,6 +61,12 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Path("diaryId") diaryId: Long,
         @Body body: CreateDiaryRequest
+    ): retrofit2.Response<Unit>
+
+    @DELETE("diaries/{diaryId}")
+    suspend fun deleteDiary(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long
     ): retrofit2.Response<Unit>
 
     @PATCH("users/my/tags")

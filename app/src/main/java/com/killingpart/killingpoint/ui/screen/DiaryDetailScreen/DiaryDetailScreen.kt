@@ -15,11 +15,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -89,6 +92,8 @@ fun DiaryDetailScreen(
     var currentContent by remember { mutableStateOf(content) }
     var editedContent by remember { mutableStateOf(content) }
     var isLoading by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var isDeleting by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
@@ -144,23 +149,31 @@ fun DiaryDetailScreen(
                 }
 
                 if (!isEditing) {
-                    // diaryId가 null이면 편집 버튼 비활성화
                     if (diaryId != null) {
-                        IconButton(
-                            onClick = { isEditing = true }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "편집",
-                                tint = Color.White
-                            )
+                        Row {
+                            IconButton(
+                                onClick = { showDeleteDialog = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "삭제",
+                                    tint = Color.White
+                                )
+                            }
+                            IconButton(
+                                onClick = { isEditing = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "편집",
+                                    tint = Color.White
+                                )
+                            }
                         }
                     } else {
-                        // diaryId가 null일 때는 편집 불가 안내 (또는 빈 공간)
                         Spacer(modifier = Modifier.width(48.dp))
                     }
                 } else {
-                    // 편집 모드일 때는 빈 공간 (저장/취소 버튼은 아래에 배치)
                     Spacer(modifier = Modifier.width(48.dp))
                 }
             }
@@ -486,6 +499,84 @@ fun DiaryDetailScreen(
 
             // 하단 네비게이션 바
             BottomBar(navController = navController)
+        }
+
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { 
+                    if (!isDeleting) {
+                        showDeleteDialog = false
+                    }
+                },
+                title = {
+                    Text(
+                        text = "일기 삭제",
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color.White
+                    )
+                },
+                text = {
+                    Text(
+                        text = "일기를 삭제하시겠습니까?\n삭제된 일기는 복구할 수 없습니다.",
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (diaryId != null && !isDeleting) {
+                                isDeleting = true
+                                coroutineScope.launch {
+                                    try {
+                                        repo.deleteDiary(diaryId)
+
+                                        val selectedDateParam = if (selectedDate.isNotEmpty()) "&selectedDate=${android.net.Uri.encode(selectedDate)}" else ""
+                                        navController.navigate("main?tab=calendar$selectedDateParam") {
+                                            popUpTo("main") { inclusive = false }
+                                        }
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("DiaryDetailScreen", "다이어리 삭제 실패: ${e.message}", e)
+                                        e.printStackTrace()
+                                        isDeleting = false
+                                        showDeleteDialog = false
+                                    }
+                                }
+                            }
+                        },
+                        enabled = !isDeleting
+                    ) {
+                        Text(
+                            text = if (isDeleting) "삭제 중..." else "삭제",
+                            fontFamily = PaperlogyFontFamily,
+                            color = Color(0xFFFF4444),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { 
+                            if (!isDeleting) {
+                                showDeleteDialog = false
+                            }
+                        },
+                        enabled = !isDeleting
+                    ) {
+                        Text(
+                            text = "취소",
+                            fontFamily = PaperlogyFontFamily,
+                            color = Color(0xFFAAAAAA)
+                        )
+                    }
+                },
+                containerColor = Color(0xFF1A1A1A),
+                titleContentColor = Color.White,
+                textContentColor = Color.White
+            )
         }
     }
 }

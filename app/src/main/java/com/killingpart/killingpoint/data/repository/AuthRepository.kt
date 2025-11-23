@@ -186,6 +186,20 @@ class AuthRepository(
         }
     }
 
+    suspend fun deleteDiary(diaryId: Long) = withContext(Dispatchers.IO) {
+        try {
+            val accessToken = getAccessToken() ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.deleteDiary("Bearer $accessToken", diaryId)
+            if (!response.isSuccessful) {
+                throw IllegalStateException("일기 삭제 실패 (${response.code()}): ${response.message()}")
+            }
+        } catch (e: HttpException) {
+            val code = e.code()
+            val msg = e.response()?.errorBody()?.string().orEmpty()
+            throw IllegalStateException("일기 삭제 실패 ($code): $msg")
+        }
+    }
+
     suspend fun updateTag(tag: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val accessToken = getAccessToken() 
