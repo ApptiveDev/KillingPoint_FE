@@ -114,7 +114,8 @@ fun NavGraph(
                     "&selectedDate={selectedDate}" +
                     "&scope={scope}" +
                     "&diaryId={diaryId}" +
-                    "&totalDuration={totalDuration}",
+                    "&totalDuration={totalDuration}" +
+                    "&fromTab={fromTab}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -128,7 +129,8 @@ fun NavGraph(
                 navArgument("selectedDate") { type = NavType.StringType; defaultValue = "" },
                 navArgument("scope") { type = NavType.StringType; defaultValue = "" },
                 navArgument("diaryId") { type = NavType.StringType; defaultValue = "" },
-                navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" }
+                navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("fromTab") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -146,6 +148,8 @@ fun NavGraph(
             val diaryId = diaryIdStr.toLongOrNull()
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull()
+            android.util.Log.d("NavGraph", "diary_detail - totalDurationStr: '$totalDurationStr', totalDuration: $totalDuration")
+            val fromTab = URLDecoder.decode(backStackEntry.arguments?.getString("fromTab").orEmpty(), "UTF-8")
 
             DiaryDetailScreen(
                 navController = navController,
@@ -161,7 +165,8 @@ fun NavGraph(
                 selectedDate = selectedDate,
                 scope = scope,
                 diaryId = diaryId,
-                totalDuration = totalDuration
+                totalDuration = totalDuration,
+                fromTab = fromTab
             )
         }
     }

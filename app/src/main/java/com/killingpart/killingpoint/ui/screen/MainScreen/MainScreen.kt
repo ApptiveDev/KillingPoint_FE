@@ -76,7 +76,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     var selected by remember(initialTab) { 
         mutableStateOf(
             when (initialTab) {
-                "storage" -> MainTab.PROFILE
+                "play" -> MainTab.PLAY
+                "profile" -> MainTab.PROFILE
                 "calendar" -> MainTab.CALENDAR
                 else -> MainTab.PLAY
             }
@@ -220,6 +221,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                     ) {
                                         item {
                                             OuterBox(
+                                                navController = navController,
                                                 diaries = state.diaries,
                                                 onProfileClick = { showProfileSettings = true }
                                             )
@@ -354,7 +356,13 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 ProfileSettingsScreen(
                     onDismiss = { showProfileSettings = false },
                     topOffset = topOffset,
-                    maxHeight = maxHeight
+                    maxHeight = maxHeight,
+                    onLogout = {
+                        // 로그아웃/회원탈퇴 후 로그인 화면으로 이동
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
                 )
             }
         }

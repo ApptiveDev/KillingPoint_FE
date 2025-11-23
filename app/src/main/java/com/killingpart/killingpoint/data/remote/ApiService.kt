@@ -85,4 +85,14 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: UpdateProfileImageRequest
     ): UserInfo
+
+    @POST("users/logout")
+    suspend fun logout(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
+
+    @DELETE("users/my")
+    suspend fun unregister(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
 }
