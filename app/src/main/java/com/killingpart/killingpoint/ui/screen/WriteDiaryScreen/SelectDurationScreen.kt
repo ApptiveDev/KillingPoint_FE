@@ -93,6 +93,8 @@ fun SelectDurationScreen(
     title: String,
     artist: String,
     imageUrl: String,
+    videoUrl: String = "",
+    totalDuration: Int = 0
 ) {
     var duration by remember { mutableStateOf(10f) }
     var start by remember { mutableStateOf(0f) }
@@ -112,31 +114,52 @@ fun SelectDurationScreen(
         endValue
     }
 
-
-    var videoUrl by remember { mutableStateOf<String?>(null) }
-    var totalDuration by remember { mutableStateOf(10) } // YouTube 비디오의 전체 길이 (초 단위)
-    var isLoadingVideo by remember { mutableStateOf(true) }
+    // 네비게이션으로 전달받은 videoUrl과 totalDuration 사용
+    var currentVideoUrl by remember { mutableStateOf<String?>(if (videoUrl.isNotEmpty()) videoUrl else null) }
+    var currentTotalDuration by remember { mutableStateOf(if (totalDuration > 0) totalDuration else 10) }
+    var isLoadingVideo by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val repo = remember { AuthRepository(context) }
 
+    // videoUrl이 비어있을 때만 searchVideos 호출
     LaunchedEffect(title, artist) {
-        isLoadingVideo = true
-        try {
-            val videos = repo.searchVideos("", artist, title) // albumId는 파라미터로 받지 않으므로 빈 문자열
-            val firstVideo = videos.firstOrNull()
-            videoUrl = firstVideo?.url
-            firstVideo?.duration?.let { durationStr ->
-                val seconds = parseDurationToSeconds(durationStr)
-                totalDuration = seconds
-            } ?: run {
-                totalDuration = 10 // 기본값
+        if (videoUrl.isEmpty()) {
+            isLoadingVideo = true
+            try {
+                android.util.Log.d("SelectDurationScreen", "searchVideos 호출 전:")
+                android.util.Log.d("SelectDurationScreen", "  - id: \"\" (빈 문자열)")
+                android.util.Log.d("SelectDurationScreen", "  - artist: $artist")
+                android.util.Log.d("SelectDurationScreen", "  - title: $title")
+                val videos = repo.searchVideos("", artist, title)
+                android.util.Log.d("SelectDurationScreen", "searchVideos 응답 받음: ${videos.size}개 비디오")
+                videos.forEachIndexed { index, video ->
+                    android.util.Log.d("SelectDurationScreen", "  비디오[$index]: url=${video.url}")
+                }
+                val firstVideo = videos.firstOrNull()
+                val newVideoUrl = firstVideo?.url
+                android.util.Log.d("SelectDurationScreen", "이전 videoUrl: $currentVideoUrl")
+                android.util.Log.d("SelectDurationScreen", "새로운 videoUrl: $newVideoUrl")
+                currentVideoUrl = newVideoUrl
+                android.util.Log.d("SelectDurationScreen", "videoUrl 업데이트 후: $currentVideoUrl")
+                firstVideo?.duration?.let { durationStr ->
+                    val seconds = parseDurationToSeconds(durationStr)
+                    currentTotalDuration = seconds
+                    android.util.Log.d("SelectDurationScreen", "비디오 duration: $durationStr -> $seconds 초")
+                } ?: run {
+                    currentTotalDuration = 10 // 기본값
+                    android.util.Log.d("SelectDurationScreen", "duration 없음, 기본값 10초 사용")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SelectDurationScreen", "searchVideos 실패: ${e.message}", e)
+                currentVideoUrl = null
+                currentTotalDuration = 10 // 기본값
             }
-        } catch (e: Exception) {
-            videoUrl = null
-            totalDuration = 10 // 기본값
+            isLoadingVideo = false
+        } else {
+            android.util.Log.d("SelectDurationScreen", "네비게이션으로 전달받은 videoUrl 사용: $videoUrl")
+            android.util.Log.d("SelectDurationScreen", "네비게이션으로 전달받은 totalDuration 사용: $totalDuration")
         }
-        isLoadingVideo = false
     }
 
 
@@ -144,8 +167,8 @@ fun SelectDurationScreen(
     val density = LocalDensity.current
 
 
-    LaunchedEffect(videoUrl) {
-        if (videoUrl != null) {
+    LaunchedEffect(currentVideoUrl) {
+        if (currentVideoUrl != null) {
             kotlinx.coroutines.delay(500)
             val scrollOffset = with(density) { 350.dp.toPx().toInt() }
 
@@ -202,7 +225,7 @@ fun SelectDurationScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                if (videoUrl == null) {
+                if (isLoadingVideo || currentVideoUrl == null) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -211,18 +234,22 @@ fun SelectDurationScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "YouTube 비디오 검색 중...",
+                            text = if (isLoadingVideo) "YouTube 비디오 검색 중..." else "YouTube 비디오를 찾을 수 없습니다",
                             fontFamily = PaperlogyFontFamily,
                             color = Color.White,
                             fontSize = 14.sp
                         )
                     }
-                } else if (videoUrl != null) {
+                } else {
+                    android.util.Log.d("SelectDurationScreen", "YouTubePlayerBox 렌더링:")
+                    android.util.Log.d("SelectDurationScreen", "  - title: $title")
+                    android.util.Log.d("SelectDurationScreen", "  - artist: $artist")
+                    android.util.Log.d("SelectDurationScreen", "  - videoUrl: $currentVideoUrl")
                     val tempDiary = Diary(
                         artist = artist,
                         musicTitle = title,
                         albumImageUrl = imageUrl,
-                        videoUrl = videoUrl!!,
+                        videoUrl = currentVideoUrl!!,
                         content = "",
                         scope = Scope.PUBLIC,
                         duration = "0",
@@ -231,22 +258,8 @@ fun SelectDurationScreen(
                         createDate = "",
                         updateDate = ""
                     )
+                    android.util.Log.d("SelectDurationScreen", "tempDiary 생성 완료, videoUrl: ${tempDiary.videoUrl}")
                     YouTubePlayerBox(tempDiary, startSeconds, durationSeconds)
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(Color(0xFF1A1A1A), RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "YouTube 비디오를 찾을 수 없습니다",
-                            fontFamily = PaperlogyFontFamily,
-                            color = Color.White,
-                            fontSize = 14.sp
-                        )
-                    }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -277,7 +290,7 @@ fun SelectDurationScreen(
 
                     KillingPartSelector(
 
-                        totalDuration, onStartChange = { s,e,d ->
+                        currentTotalDuration, onStartChange = { s,e,d ->
                             start = s
                             end = e
                             duration =d
@@ -297,19 +310,18 @@ fun SelectDurationScreen(
         Button(
             onClick = {
 
-                val encodedVideoUrl = Uri.encode(videoUrl ?: "")
+                val encodedVideoUrl = Uri.encode(currentVideoUrl ?: "")
 
                 navController.navigate(
                     "write_diary" +
                             "?title=${Uri.encode(title)}" +
                             "&artist=${Uri.encode(artist)}" +
                             "&image=${Uri.encode(imageUrl)}" +
-
                             "&duration=${duration.toInt()}" +
                             "&start=${start.toInt()}" +
                             "&end=${end.toInt()}" +
-                            "&videoUrl=$encodedVideoUrl"
-
+                            "&videoUrl=$encodedVideoUrl" +
+                            "&totalDuration=${currentTotalDuration}"
                 )
             },
             modifier = Modifier
@@ -339,7 +351,9 @@ fun SelectDurationPreview() {
         navController = rememberNavController(),
         title = "Death Sonnet von Dat",
         artist = "Davinci Leo",
-        imageUrl = "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0"
+        imageUrl = "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0",
+        videoUrl = "",
+        totalDuration = 0
     )
 }
 

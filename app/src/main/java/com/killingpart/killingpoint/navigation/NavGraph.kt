@@ -63,7 +63,7 @@ fun NavGraph(
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull() ?: 0
 
-            SelectDurationScreen(navController, title, artist, image)
+            SelectDurationScreen(navController, title, artist, image, videoUrl, totalDuration)
         }
 
         composable(

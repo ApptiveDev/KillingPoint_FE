@@ -117,10 +117,21 @@ class AuthRepository(
             try {
                 val accessToken = getAccessToken()
                     ?: throw IllegalStateException("액세스 토큰이 없습니다")
-                api.searchVideos("Bearer $accessToken", id, artist, title)
+                android.util.Log.d("AuthRepository", "searchVideos API 호출:")
+                android.util.Log.d("AuthRepository", "  - id: \"$id\"")
+                android.util.Log.d("AuthRepository", "  - artist: \"$artist\"")
+                android.util.Log.d("AuthRepository", "  - title: \"$title\"")
+                android.util.Log.d("AuthRepository", "  - accessToken: ${if (accessToken.isNotEmpty()) "있음" else "없음"}")
+                val result = api.searchVideos("Bearer $accessToken", id, artist, title)
+                android.util.Log.d("AuthRepository", "searchVideos 응답: ${result.size}개 비디오")
+                result.forEachIndexed { index, video ->
+                    android.util.Log.d("AuthRepository", "  비디오[$index]: url=${video.url}, duration=${video.duration}")
+                }
+                result
             } catch (e: HttpException) {
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
+                android.util.Log.e("AuthRepository", "searchVideos HTTP 에러 ($code): $msg")
                 throw IllegalStateException("비디오 검색 실패 ($code): $msg")
             }
         }

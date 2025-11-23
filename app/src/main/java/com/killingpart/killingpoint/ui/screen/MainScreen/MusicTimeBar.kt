@@ -78,13 +78,7 @@ fun MusicTimeBar(
 
                 val startX = (start.toFloat() / total) * w
                 val endX = ((start + during).toFloat() / total) * w
-                
-                android.util.Log.d("MusicTimeBar", "Canvas drawing values:")
-                android.util.Log.d("MusicTimeBar", "  - start: $start, during: $during, total: $total")
-                android.util.Log.d("MusicTimeBar", "  - width: $w, height: $h")
-                android.util.Log.d("MusicTimeBar", "  - startX: $startX, endX: $endX")
-                android.util.Log.d("MusicTimeBar", "  - start ratio: ${start.toFloat() / total}, end ratio: ${(start + during).toFloat() / total}")
-                
+
                 drawLine(
                     color = mainGreen,
                     start = Offset(startX, h / 2f),
@@ -103,8 +97,8 @@ fun MusicTimeBar(
             val barWidthDp = with(density) { barWidthPx.toDp() }.value
 
             val x0 = 0f
-            val xStart = (start.toFloat() / total) * barWidthDp
-            val xEnd = ((start + during).toFloat() / total) * barWidthDp
+            val xStart = (start.toFloat() / total) * barWidthDp - 10f
+            val xEnd = ((start + during).toFloat() / total) * barWidthDp + 10f
             val xTotal = barWidthDp
 
             Box(Modifier.fillMaxWidth().height(20.dp)) {
@@ -143,5 +137,5 @@ private fun formatTime(seconds: Int): String {
 @Preview
 @Composable
 fun MusicTimeBarPreview() {
-    MusicTimeBar("사랑한단 말의 뜻을 알아가자", 102, 28, 180)
+    MusicTimeBar("사랑한단 말의 뜻을 알아가자", 8, 9, 180)
 }
