@@ -258,4 +258,70 @@ class AuthRepository(
             }
         }
     }
+
+    /**
+     * 로그아웃
+     * 백엔드에서 리프래시 토큰 삭제 후, 프론트에서 액세스 토큰 삭제
+     * SocketException이나 IOException이 발생해도 서버가 연결을 닫았을 수 있으므로 토큰은 삭제
+     */
+    suspend fun logout(): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            
+            try {
+                val response = api.logout("Bearer $accessToken")
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string().orEmpty()
+                    throw IllegalStateException("로그아웃 실패 (${response.code()}): $errorBody")
+                }
+            } catch (e: java.net.SocketException) {
+                // 서버가 연결을 닫았을 수 있음 (로그아웃 성공 가능성)
+                android.util.Log.w("AuthRepository", "로그아웃 중 SocketException 발생 (서버가 연결을 닫았을 수 있음): ${e.message}")
+            } catch (e: java.io.IOException) {
+                // 네트워크 에러 (로그아웃 성공 가능성)
+                android.util.Log.w("AuthRepository", "로그아웃 중 IOException 발생: ${e.message}")
+            } catch (e: HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("로그아웃 실패 ($code): $msg")
+            }
+            
+            // 프론트에서 액세스 토큰 삭제 (에러가 발생해도 토큰은 삭제)
+            tokenStore.clear()
+        }
+    }
+
+    /**
+     * 회원탈퇴
+     * 백엔드에서 회원 정보 삭제 후, 프론트에서 토큰 삭제
+     * SocketException이나 IOException이 발생해도 서버가 연결을 닫았을 수 있으므로 토큰은 삭제
+     */
+    suspend fun unregister(): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            
+            try {
+                val response = api.unregister("Bearer $accessToken")
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string().orEmpty()
+                    throw IllegalStateException("회원탈퇴 실패 (${response.code()}): $errorBody")
+                }
+            } catch (e: java.net.SocketException) {
+                // 서버가 연결을 닫았을 수 있음 (회원탈퇴 성공 가능성)
+                android.util.Log.w("AuthRepository", "회원탈퇴 중 SocketException 발생 (서버가 연결을 닫았을 수 있음): ${e.message}")
+            } catch (e: java.io.IOException) {
+                // 네트워크 에러 (회원탈퇴 성공 가능성)
+                android.util.Log.w("AuthRepository", "회원탈퇴 중 IOException 발생: ${e.message}")
+            } catch (e: HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("회원탈퇴 실패 ($code): $msg")
+            }
+            
+            // 프론트에서 토큰 삭제 (에러가 발생해도 토큰은 삭제)
+            tokenStore.clear()
+        }
+    }
 }

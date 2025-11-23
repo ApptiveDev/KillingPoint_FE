@@ -352,7 +352,13 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 ProfileSettingsScreen(
                     onDismiss = { showProfileSettings = false },
                     topOffset = topOffset,
-                    maxHeight = maxHeight
+                    maxHeight = maxHeight,
+                    onLogout = {
+                        // 로그아웃/회원탈퇴 후 로그인 화면으로 이동
+                        navController.navigate("home") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
                 )
             }
         }

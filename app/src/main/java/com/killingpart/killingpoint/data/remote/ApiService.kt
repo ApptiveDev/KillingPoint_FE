@@ -12,6 +12,7 @@ import com.killingpart.killingpoint.data.model.PresignedUrlResponse
 import com.killingpart.killingpoint.data.model.TestAuthResponse
 import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
@@ -36,7 +37,8 @@ interface ApiService {
     @POST("oauth2/kakao")
     suspend fun loginWithKakao(@Body body: KakaoAuthRequest): KakaoAuthResponse
 
-    @GET("users/my")
+    @GET("" +
+            "users/my")
     suspend fun getUserInfo(@Header("Authorization") accessToken: String): UserInfo
 
     @POST("jwt/exchange")
@@ -78,4 +80,14 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: UpdateProfileImageRequest
     ): UserInfo
+
+    @POST("users/logout")
+    suspend fun logout(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
+
+    @DELETE("users/my")
+    suspend fun unregister(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
 }
