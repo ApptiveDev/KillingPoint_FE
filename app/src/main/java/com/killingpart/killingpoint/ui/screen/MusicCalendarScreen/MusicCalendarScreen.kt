@@ -129,8 +129,8 @@ fun MusicCalendarScreen(
         }.filterKeys { it != null }.mapKeys { it.key!! }
     }
 
-    // 선택된 날짜의 일기
-    val selectedDiary = selectedDate?.let { diariesByDate[it]?.firstOrNull() }
+    // 선택된 날짜의 모든 일기
+    val selectedDiaries = selectedDate?.let { diariesByDate[it] } ?: emptyList()
 
     Column(
         modifier = Modifier
@@ -253,17 +253,25 @@ fun MusicCalendarScreen(
             )
         }
 
-        // 선택된 날짜의 일기 표시
-        if (selectedDiary != null) {
-            // 디버깅: selectedDiary의 id 확인
-            android.util.Log.d("MusicCalendarScreen", "selectedDiary: id=${selectedDiary.id}, title=${selectedDiary.musicTitle}")
+        // 선택된 날짜의 모든 일기 표시
+        if (selectedDiaries.isNotEmpty()) {
+            // 디버깅: selectedDiaries 로그
+            android.util.Log.d("MusicCalendarScreen", "selectedDiaries: ${selectedDiaries.size}개")
+            selectedDiaries.forEachIndexed { index, diary ->
+                android.util.Log.d("MusicCalendarScreen", "  Diary[$index]: id=${diary.id}, title=${diary.musicTitle}")
+            }
             
-            DiaryEntryCard(
-                diary = selectedDiary, 
-                navController = navController,
-                selectedDate = selectedDate?.toString(),
-                diaryId = selectedDiary.id
-            )
+            selectedDiaries.forEachIndexed { index, diary ->
+                if (index > 0) {
+                    Spacer(Modifier.height(12.dp))
+                }
+                DiaryEntryCard(
+                    diary = diary, 
+                    navController = navController,
+                    selectedDate = selectedDate?.toString(),
+                    diaryId = diary.id
+                )
+            }
         } else if (selectedDate != null) {
             Text(
                 text = "이 날짜에 등록된 킬링파트가 없습니다.",
