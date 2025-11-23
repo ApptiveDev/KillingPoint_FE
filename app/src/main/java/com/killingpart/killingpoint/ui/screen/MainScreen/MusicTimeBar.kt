@@ -120,7 +120,7 @@ fun MusicTimeBar(
 }
 
 @Composable
-private fun BoxScope.TimeLabel(text: String, x: Float) {
+private fun BoxScope.TimeLabelCentered(text: String, x: Float) {
     Text(
         text = text,
         fontSize = 7.sp,
