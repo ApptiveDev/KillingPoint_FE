@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -196,29 +197,44 @@ fun OuterBox(
             val itemSize = (screenWidth - horizontalContainerPadding * 2 - interColumnSpacing) / 2
 
             val chunkedDiaries = diaries.chunked(2)
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(itemSize * 2 + rowSpacing)
             ) {
-                items(chunkedDiaries.size) { index ->
-                    val rowItems = chunkedDiaries[index]
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = rowSpacing),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        rowItems.forEach { diary ->
-                            DiaryCard(
-                                diary = diary,
-                                modifier = Modifier
-                                    .weight(1f)
-                            )
-                        }
-                        // 홀수 개일 경우 빈 공간 추가
-                        if (rowItems.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
+                // 배경 로고
+                Image(
+                    painter = painterResource(id = R.drawable.killingpart_logo_gray),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(0.3f),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center
+                )
+                
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(chunkedDiaries.size) { index ->
+                        val rowItems = chunkedDiaries[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = rowSpacing),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowItems.forEach { diary ->
+                                DiaryCard(
+                                    diary = diary,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                )
+                            }
+                            // 홀수 개일 경우 빈 공간 추가
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
