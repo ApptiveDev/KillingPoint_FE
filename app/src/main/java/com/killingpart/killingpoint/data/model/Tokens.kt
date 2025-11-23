@@ -6,3 +6,8 @@ data class KakaoAuthResponse(
     val accessToken: String,
     val refreshToken: String
 )
+
+data class TestAuthResponse(
+    val accessToken: String,
+    val refreshToken: String
+)

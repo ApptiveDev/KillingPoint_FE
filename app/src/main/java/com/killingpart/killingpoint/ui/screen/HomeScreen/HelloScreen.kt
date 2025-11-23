@@ -67,6 +67,7 @@ fun HelloScreen(navController: NavController) {
             painter = painterResource(id = R.drawable.killingpart_logo),
             contentDescription = "KillingPart Logo",
             modifier = Modifier.size(width = 300.dp, height = 78.dp)
+                .clickable{onTestLoginClick(context, loginViewModel)}
         )
 
         Spacer(modifier = Modifier.height(182.dp))
@@ -104,27 +105,27 @@ fun HelloScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(7.dp))
 
-        Row(
-            modifier = Modifier.size(240.dp, 54.dp)
-                .background(color = Color(0xFF1D1E20), RoundedCornerShape(100))
-                .clickable {onSnsLoginClick(context, loginViewModel)},
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.google),
-                contentDescription = "GoogleLogin",
-                modifier = Modifier.size(14.dp)
-            )
-            Spacer(modifier = Modifier.width(14.dp))
-            Text(
-                text = "구글 로그인",
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Normal,
-                fontSize = 14.sp,
-                color = Color.White
-            )
-        }
+//        Row(
+//            modifier = Modifier.size(240.dp, 54.dp)
+//                .background(color = Color(0xFF1D1E20), RoundedCornerShape(100))
+//                .clickable {onSnsLoginClick(context, loginViewModel)},
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.Center
+//        ) {
+//            Image(
+//                painter = painterResource(id = R.drawable.google),
+//                contentDescription = "GoogleLogin",
+//                modifier = Modifier.size(14.dp)
+//            )
+//            Spacer(modifier = Modifier.width(14.dp))
+//            Text(
+//                text = "구글 로그인",
+//                fontFamily = PaperlogyFontFamily,
+//                fontWeight = FontWeight.Normal,
+//                fontSize = 14.sp,
+//                color = Color.White
+//            )
+//        }
 
     }
 }
@@ -133,6 +134,10 @@ private fun onSnsLoginClick(context: Context, loginViewModel: LoginViewModel) {
     loginViewModel.loginWithKakao(context) { kakaoAccessToken ->
         loginViewModel.loginWithServer(context, kakaoAccessToken)
     }
+}
+
+private fun onTestLoginClick(context: Context, loginViewModel: LoginViewModel) {
+    loginViewModel.loginWithTest(context)
 }
 
 @Preview
