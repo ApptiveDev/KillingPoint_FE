@@ -344,7 +344,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                     },
                     onPlayPause = {
                         isPlaying = !isPlaying
-                    }
+                    },
+                    isPlaying = isPlaying
 
             )
 
