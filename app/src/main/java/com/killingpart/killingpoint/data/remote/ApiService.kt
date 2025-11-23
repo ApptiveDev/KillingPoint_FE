@@ -37,8 +37,7 @@ interface ApiService {
     @POST("oauth2/kakao")
     suspend fun loginWithKakao(@Body body: KakaoAuthRequest): KakaoAuthResponse
 
-    @GET("" +
-            "users/my")
+    @GET("users/my")
     suspend fun getUserInfo(@Header("Authorization") accessToken: String): UserInfo
 
     @POST("jwt/exchange")
