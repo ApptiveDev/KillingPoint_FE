@@ -238,7 +238,7 @@ fun RunMusicBox(
 
         Box(
             modifier = Modifier
-                .size(316.dp, 80.dp)
+                .size(316.dp)
                 .offset(y = 370.dp)
                 .background(color = Color.Transparent, shape = RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)

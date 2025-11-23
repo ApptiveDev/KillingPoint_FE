@@ -101,7 +101,7 @@ fun MusicTimeBar(
             val xEnd = ((start + during).toFloat() / total) * barWidthDp + 10f
             val xTotal = barWidthDp
 
-            Box(Modifier.fillMaxWidth().height(20.dp)) {
+            Box(Modifier.fillMaxWidth()) {
                 // start
                 TimeLabelCentered(formatTime(start), xStart, barWidthDp)
 
