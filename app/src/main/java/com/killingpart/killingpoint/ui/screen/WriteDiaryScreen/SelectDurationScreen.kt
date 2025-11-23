@@ -93,25 +93,20 @@ fun SelectDurationScreen(
     title: String,
     artist: String,
     imageUrl: String,
-    videoUrl: String = "", // 파라미터로 받은 videoUrl
-    totalDuration: Int = 0 // 파라미터로 받은 totalDuration
 ) {
     var duration by remember { mutableStateOf(10f) }
     var start by remember { mutableStateOf(0f) }
 
-    // start 값을 Float로 변환 (KillingPartSelector에서 받은 값)
     val startSeconds = remember(start) {
         val seconds = start ?: 0f
         seconds
     }
 
-    // duration 값을 Float로 변환 (DurationScrollSelector에서 받은 값)
     val durationSeconds = remember(duration) {
         val seconds = duration ?: 10f
         seconds
     }
 
-    // end 값 계산: startSeconds + durationSeconds
     var end = remember(startSeconds, durationSeconds) {
         val endValue = (startSeconds + durationSeconds)
         endValue
@@ -128,7 +123,7 @@ fun SelectDurationScreen(
     LaunchedEffect(title, artist) {
         isLoadingVideo = true
         try {
-            val videos = repo.searchVideos(artist, title)
+            val videos = repo.searchVideos("", artist, title) // albumId는 파라미터로 받지 않으므로 빈 문자열
             val firstVideo = videos.firstOrNull()
             videoUrl = firstVideo?.url
             firstVideo?.duration?.let { durationStr ->
@@ -257,9 +252,11 @@ fun SelectDurationScreen(
 
                 AlbumDiaryBoxWithoutContent(
                     track = SimpleTrack(
+                        id = "",
                         title = title,
                         artist = artist,
-                        albumImageUrl = imageUrl
+                        albumImageUrl = imageUrl,
+                        albumId = ""
                     )
                 )
 

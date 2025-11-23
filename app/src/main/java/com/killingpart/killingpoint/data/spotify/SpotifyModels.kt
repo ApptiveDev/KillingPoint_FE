@@ -9,6 +9,7 @@ data class Tracks(
 )
 
 data class TrackItem(
+    val id: String,
     val name: String, // 제목
     val artists: List<Artist>,
     val album: Album
@@ -19,6 +20,7 @@ data class Artist(
 )
 
 data class Album(
+    val id: String, // Spotify 앨범 ID
     val images: List<Image>
 )
 
@@ -29,8 +31,10 @@ data class Image(
 )
 
 data class SimpleTrack(
+    val id: String,
     val title: String,
     val artist: String,
-    val albumImageUrl: String?
+    val albumImageUrl: String?,
+    val albumId: String // Spotify 앨범 ID
 )
 

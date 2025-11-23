@@ -179,7 +179,7 @@ private fun TrackRowWithVideoSearch(
         isLoading = true
         scope.launch {
             try {
-                val videos = repo.searchVideos(track.artist, track.title)
+                val videos = repo.searchVideos(track.id, track.artist, track.title)
                 val firstVideo = videos.firstOrNull()
                 val videoUrl = firstVideo?.url ?: ""
                 
@@ -264,11 +264,11 @@ fun AddMusicScreenPreview() {
 @Composable
 fun AddMusicScreenSuccessPreview() {
     val mockTracks = listOf(
-        SimpleTrack("Effie - CAN I SIP 담배", "Effie", "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0"),
-        SimpleTrack("A Night At The Symphony", "Laufey", null),
-        SimpleTrack("Love Story", "Taylor Swift", null),
-        SimpleTrack("Dynamite", "BTS", null),
-        SimpleTrack("HypeBoy", "NewJeans", null)
+        SimpleTrack("track1", "Effie - CAN I SIP 담배", "Effie", "https://i.scdn.co/image/ab67616d00001e02c6b31f5f1ce2958380fdb9b0", "album1"),
+        SimpleTrack("track2", "A Night At The Symphony", "Laufey", null, "album2"),
+        SimpleTrack("track3", "Love Story", "Taylor Swift", null, "album3"),
+        SimpleTrack("track4", "Dynamite", "BTS", null, "album4"),
+        SimpleTrack("track5", "HypeBoy", "NewJeans", null, "album5")
     )
 
     Box(

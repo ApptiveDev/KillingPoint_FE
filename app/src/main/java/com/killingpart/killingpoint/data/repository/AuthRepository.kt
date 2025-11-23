@@ -112,12 +112,12 @@ class AuthRepository(
             }
         }
 
-    suspend fun searchVideos(artist: String, title: String): List<YouTubeVideo> =
+    suspend fun searchVideos(id: String, artist: String, title: String): List<YouTubeVideo> =
         withContext(Dispatchers.IO) {
             try {
                 val accessToken = getAccessToken()
                     ?: throw IllegalStateException("액세스 토큰이 없습니다")
-                api.searchVideos("Bearer $accessToken", artist, title)
+                api.searchVideos("Bearer $accessToken", id, artist, title)
             } catch (e: HttpException) {
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
