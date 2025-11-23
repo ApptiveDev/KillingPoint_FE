@@ -67,6 +67,7 @@ fun WriteDiaryScreen(
         android.util.Log.d("WriteDiaryScreen", "  - start: $start")
         android.util.Log.d("WriteDiaryScreen", "  - end: $end")
         android.util.Log.d("WriteDiaryScreen", "  - videoUrl: $videoUrl")
+        android.util.Log.d("WriteDiaryScreen", "  - totalDuration: $totalDuration")
     }
     
     val coroutineScope = rememberCoroutineScope()
@@ -253,6 +254,7 @@ fun WriteDiaryScreen(
                             android.util.Log.d("WriteDiaryScreen", "  - duration: ${body.duration}")
                             android.util.Log.d("WriteDiaryScreen", "  - start: ${body.start}")
                             android.util.Log.d("WriteDiaryScreen", "  - end: ${body.end}")
+                            android.util.Log.d("WriteDiaryScreen", "  - totalDuration: ${body.totalDuration}")
                             repo.createDiary(body)
                         }.onSuccess {
                             android.util.Log.d("WriteDiaryScreen", "Diary created successfully")

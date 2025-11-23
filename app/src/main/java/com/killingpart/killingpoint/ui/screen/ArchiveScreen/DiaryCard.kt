@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.ui.screen.ArchiveScreen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,7 +34,8 @@ import androidx.compose.material3.Surface
 @Composable
 fun DiaryCard(
     diary: Diary,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     // 날짜에서 시간 부분 제거하고 포맷 변경 (예: "2025-10-29T23:52:08" -> "2025.10.29")
     val dateOnly = try {
@@ -44,8 +46,16 @@ fun DiaryCard(
         diary.createDate
     }
     
+    val clickableModifier = if (onClick != null) {
+        Modifier.clickable { onClick() }
+    } else {
+        Modifier
+    }
+    
     Column(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .then(clickableModifier)
     ) {
         // 상단 아이콘들 (좋아요 + 공개 범위)
         Row(
