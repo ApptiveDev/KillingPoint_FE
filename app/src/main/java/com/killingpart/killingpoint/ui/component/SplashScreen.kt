@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,15 +30,32 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(onTimeout: () -> Unit) {
+    var startFadeOut by remember { mutableStateOf(false) }
+    
     LaunchedEffect(Unit) {
-        delay(1200)
+        // 로고 페이드인 대기
+        delay(800)
+        // 페이드아웃 시작
+        startFadeOut = true
+        // 페이드아웃 애니메이션 시간 대기 후 콜백 호출
+        delay(400)
         onTimeout()
     }
 
-    val albumAnim = animateFloatAsState(
+    // 로고 페이드인 애니메이션
+    val logoFadeIn = animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween (
+        animationSpec = tween(
             durationMillis = 800,
+            easing = LinearEasing
+        )
+    )
+    
+    // 전체 화면 페이드아웃 애니메이션
+    val fadeOut = animateFloatAsState(
+        targetValue = if (startFadeOut) 0f else 1f,
+        animationSpec = tween(
+            durationMillis = 400,
             easing = LinearEasing
         )
     )
@@ -42,7 +63,8 @@ fun SplashScreen(onTimeout: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(Color.Black)
+            .alpha(fadeOut.value),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(246.dp))
@@ -52,7 +74,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
             contentDescription = "스플래시 로고",
             modifier = Modifier
                 .size(width = 300.dp, height = 78.dp)
-                .alpha(albumAnim.value)
+                .alpha(logoFadeIn.value)
         )
     }
 
