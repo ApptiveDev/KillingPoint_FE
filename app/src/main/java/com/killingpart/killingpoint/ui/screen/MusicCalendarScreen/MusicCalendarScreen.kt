@@ -31,6 +31,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +60,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.DayOfWeek
 import android.net.Uri
+import androidx.compose.foundation.border
 
 /**
  * MusicCalendarScreen
@@ -304,6 +309,10 @@ fun MonthPicker(
 
     var selectedYear by remember { mutableStateOf(selectedMonth.year) }
     var selectedMonthValue by remember { mutableStateOf(selectedMonth.monthValue) }
+    var showUnsupportedMonthModal by remember { mutableStateOf(false) }
+    
+    // 지원되는 가장 오래된 월 (availableMonths의 마지막 항목)
+    val oldestAvailableMonth = availableMonths.lastOrNull() ?: YearMonth.now()
 
     // onDismissHandlerReady 안 쓰더라도, 기존 구조 깨기 싫으면 빈 핸들러 넘겨줘도 됨
     LaunchedEffect(Unit) {
@@ -389,9 +398,11 @@ fun MonthPicker(
                             Log.d("MonthPicker", "확인 클릭됨: $newMonth") // 로그 찍기
                             if (availableMonths.contains(newMonth)) {
                                 onMonthSelected(newMonth)
+                                onDismiss()
+                            } else {
+                                // 지원하지 않는 월 선택 시 모달 표시
+                                showUnsupportedMonthModal = true
                             }
-                            onDismiss()
-
                         }
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
@@ -422,9 +433,78 @@ fun MonthPicker(
                 )
             }
         }
+        
+        // 지원하지 않는 월 선택 시 모달
+        if (showUnsupportedMonthModal) {
+            UnsupportedMonthModal(
+                oldestMonth = oldestAvailableMonth,
+                onDismiss = { showUnsupportedMonthModal = false }
+            )
+        }
     }
 }
 
+/**
+ * 지원하지 않는 월 선택 시 표시되는 모달
+ */
+@Composable
+private fun UnsupportedMonthModal(
+    oldestMonth: YearMonth,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f))
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .border(width = 1.dp, color = mainGreen, shape = RoundedCornerShape(12.dp))
+                .clickable(enabled = false) {},
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.6f))
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "${oldestMonth.year}년 ${oldestMonth.monthValue}월까지의\n킬링파트만 지원됩니다.",
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 24.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .border(width =1.dp, color = mainGreen, shape = RoundedCornerShape(12.dp)),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = mainGreen
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        text = "확인",
+                        color = Color.Black,
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
 
 /**
  * WheelPicker
@@ -440,9 +520,17 @@ fun WheelPicker(
     val itemHeight = 40.dp
     val visibleItems = 3
     val centerOffset = visibleItems / 2
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedIndex - centerOffset).coerceAtLeast(0))
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = selectedIndex.coerceAtLeast(0))
     val density = LocalDensity.current
     var wasScrolling by remember { mutableStateOf(false) }
+
+    // 초기 선택된 인덱스로 스크롤 (중앙에 오도록)
+    LaunchedEffect(selectedIndex) {
+        val targetIndex = selectedIndex.coerceAtLeast(0)
+        if (listState.firstVisibleItemIndex != targetIndex) {
+            listState.animateScrollToItem(targetIndex)
+        }
+    }
 
     // 스크롤 끝난 후 중앙 항목 계산
     LaunchedEffect(listState.isScrollInProgress) {
@@ -456,13 +544,14 @@ fun WheelPicker(
             val offsetRatio = scrollOffset / itemHeightPx
 
             // 중앙 항목은 현재 보이는 첫 번째 항목 + offset 보정
-            val centerIndex = (listState.firstVisibleItemIndex + offsetRatio + centerOffset)
+            // contentPadding 때문에 실제로는 firstVisibleItemIndex가 중앙에 위치
+            val centerIndex = (listState.firstVisibleItemIndex + offsetRatio)
                 .toInt()
                 .coerceIn(0, items.size - 1)
 
             onSelected(centerIndex)
             // 중앙 맞추기 위해 살짝 보정 스크롤
-            listState.animateScrollToItem((centerIndex - centerOffset).coerceAtLeast(0))
+            listState.animateScrollToItem(centerIndex.coerceAtLeast(0))
         }
     }
 
@@ -481,7 +570,11 @@ fun WheelPicker(
         ) {
             itemsIndexed(items) { index, item ->
                 val firstVisibleIndex = listState.firstVisibleItemIndex
-                val centerIndex = firstVisibleIndex + centerOffset
+                val scrollOffset = listState.firstVisibleItemScrollOffset
+                val itemHeightPx = with(density) { itemHeight.toPx() }
+                val offsetRatio = scrollOffset / itemHeightPx
+                // contentPadding 때문에 firstVisibleItemIndex가 실제로 중앙에 위치
+                val centerIndex = (firstVisibleIndex + offsetRatio).toInt().coerceIn(0, items.size - 1)
                 val isSelected = index == centerIndex
                 val alpha = when (kotlin.math.abs(index - centerIndex)) {
                     0 -> 1f
