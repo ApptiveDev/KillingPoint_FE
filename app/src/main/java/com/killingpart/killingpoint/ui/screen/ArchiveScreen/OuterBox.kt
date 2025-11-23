@@ -5,13 +5,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -107,7 +114,7 @@ fun OuterBox(
                             },
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 14.sp,
+                            fontSize = 16.sp,
                             color = mainGreen,
                         )
                         Text(
@@ -123,8 +130,60 @@ fun OuterBox(
                         )
                     }
                 }
-
-
+                
+                // 다이어리 개수 표시 (오른쪽에 배치)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "${diaries.size}",
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W400,
+                        fontSize = 16.sp,
+                        color = mainGreen,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                    Text(
+                        text = "킬링파트",
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W400,
+                        fontSize = 10.sp,
+                        color = mainGreen,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Button(
+                    onClick = { onProfileClick() },
+                    modifier = Modifier
+                        .fillMaxWidth(0.8f)
+                        .height(32.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF262626)
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+//                    border = androidx.compose.foundation.BorderStroke(1.dp, mainGreen),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "프로필 편집",
+                        tint = mainGreen,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "프로필 편집",
+                        color = mainGreen,
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.W400
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -138,29 +197,44 @@ fun OuterBox(
             val itemSize = (screenWidth - horizontalContainerPadding * 2 - interColumnSpacing) / 2
 
             val chunkedDiaries = diaries.chunked(2)
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(itemSize * 2 + rowSpacing)
             ) {
-                items(chunkedDiaries.size) { index ->
-                    val rowItems = chunkedDiaries[index]
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = rowSpacing),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        rowItems.forEach { diary ->
-                            DiaryCard(
-                                diary = diary,
-                                modifier = Modifier
-                                    .weight(1f)
-                            )
-                        }
-                        // 홀수 개일 경우 빈 공간 추가
-                        if (rowItems.size == 1) {
-                            Spacer(modifier = Modifier.weight(1f))
+                // 배경 로고
+                Image(
+                    painter = painterResource(id = R.drawable.killingpart_logo_gray),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(0.3f),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center
+                )
+                
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(chunkedDiaries.size) { index ->
+                        val rowItems = chunkedDiaries[index]
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = rowSpacing),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            rowItems.forEach { diary ->
+                                DiaryCard(
+                                    diary = diary,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                )
+                            }
+                            // 홀수 개일 경우 빈 공간 추가
+                            if (rowItems.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
