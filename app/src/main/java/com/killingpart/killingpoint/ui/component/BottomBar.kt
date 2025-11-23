@@ -6,12 +6,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,7 +36,7 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
             .background(color = Color.Black)
             .height(94.dp)
             .padding(horizontal = 42.dp,),
-        horizontalArrangement = Arrangement.spacedBy(38.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ){
         Column (
@@ -56,40 +58,42 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
             )
         }
 
-        Column (
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Image(
-                painter = painterResource(id = R.drawable.navi_search),
-                contentDescription = "탐색 네비게이션 바",
-                modifier = Modifier.size(48.dp)
-            )
-            Text(
-                text = "탐색",
-                fontFamily = UnboundedFontFamily,
-                fontWeight = FontWeight.Light,
-                fontSize = 14.sp,
-                color = Color.White
-            )
-        }
-        Column (
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Image(
-                painter = painterResource(id = R.drawable.navi_social),
-                contentDescription = "소셜 네비게이션 바",
-                modifier = Modifier.size(48.dp)
-            )
-            Text(
-                text = "소셜",
-                fontFamily = UnboundedFontFamily,
-                fontWeight = FontWeight.Light,
-                fontSize = 14.sp,
-                color = Color.White
-            )
-        }
+        Spacer(modifier = Modifier.width(120.dp))
+
+//        Column (
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ){
+//            Image(
+//                painter = painterResource(id = R.drawable.navi_search),
+//                contentDescription = "탐색 네비게이션 바",
+//                modifier = Modifier.size(48.dp)
+//            )
+//            Text(
+//                text = "탐색",
+//                fontFamily = UnboundedFontFamily,
+//                fontWeight = FontWeight.Light,
+//                fontSize = 14.sp,
+//                color = Color.White
+//            )
+//        }
+//        Column (
+//            verticalArrangement = Arrangement.Center,
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ){
+//            Image(
+//                painter = painterResource(id = R.drawable.navi_social),
+//                contentDescription = "소셜 네비게이션 바",
+//                modifier = Modifier.size(48.dp)
+//            )
+//            Text(
+//                text = "소셜",
+//                fontFamily = UnboundedFontFamily,
+//                fontWeight = FontWeight.Light,
+//                fontSize = 14.sp,
+//                color = Color.White
+//            )
+//        }
         Column (
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
