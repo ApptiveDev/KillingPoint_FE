@@ -38,11 +38,11 @@ fun MusicCueBtn(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.shuffle),
-                contentDescription = "셔플",
-                modifier = Modifier.size(24.dp)
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.shuffle),
+//                contentDescription = "셔플",
+//                modifier = Modifier.size(24.dp)
+//            )
 
             Box(
                 modifier = Modifier
@@ -85,11 +85,11 @@ fun MusicCueBtn(
                 )
             }
 
-            Image(
-                painter = painterResource(id = R.drawable.repeat),
-                contentDescription = "반복재생",
-                modifier = Modifier.size(24.dp)
-            )
+//            Image(
+//                painter = painterResource(id = R.drawable.repeat),
+//                contentDescription = "반복재생",
+//                modifier = Modifier.size(24.dp)
+//            )
         }
     }
 }

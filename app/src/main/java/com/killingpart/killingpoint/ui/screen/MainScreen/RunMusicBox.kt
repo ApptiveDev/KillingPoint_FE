@@ -264,10 +264,6 @@ fun RunMusicBox(
             ) {
                 val startTime = currentDiary?.start?.toFloatOrNull()?.toInt() ?: 0
                 val durationTime = currentDiary?.duration?.toFloatOrNull()?.toInt() ?: 0
-
-                
-
-
                 val totalTime = videoTotalDuration ?: 180
                 MusicTimeBar(
                     title = currentDiary?.musicTitle,
