@@ -63,12 +63,26 @@ fun HelloScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
-        Image(
-            painter = painterResource(id = R.drawable.killingpart_logo),
-            contentDescription = "KillingPart Logo",
-            modifier = Modifier.size(width = 300.dp, height = 78.dp)
-                .clickable{onTestLoginClick(context, loginViewModel)}
-        )
+
+        Column (
+            horizontalAlignment = Alignment.Start
+        ){
+            Image(
+                painter = painterResource(id = R.drawable.killingpart_logo),
+                contentDescription = "KillingPart Logo",
+                modifier = Modifier.size(width = 300.dp, height = 78.dp)
+                    .clickable{onTestLoginClick(context, loginViewModel)}
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.killingpart_logo1),
+                contentDescription = "KillingPart Logo Desc",
+                modifier = Modifier.size(234.dp, 33.dp)
+            )
+        }
+
 
         Spacer(modifier = Modifier.height(182.dp))
 

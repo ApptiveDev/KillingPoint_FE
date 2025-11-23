@@ -291,6 +291,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
+                                        .offset(y = (-40).dp)
                                         .padding(horizontal = 16.dp)
                                         .background(color = Color.Black, RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp))
                                 ) {
@@ -345,7 +346,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 },
                 onPlayPause = {
                     isPlaying = !isPlaying
-                }
+                },
+                isPlaying = isPlaying
             )
 
             if (showProfileSettings) {

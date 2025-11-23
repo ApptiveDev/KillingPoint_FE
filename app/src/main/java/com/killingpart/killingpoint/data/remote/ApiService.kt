@@ -63,6 +63,12 @@ interface ApiService {
         @Body body: CreateDiaryRequest
     ): retrofit2.Response<Unit>
 
+    @DELETE("diaries/{diaryId}")
+    suspend fun deleteDiary(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long
+    ): retrofit2.Response<Unit>
+
     @PATCH("users/my/tags")
     suspend fun updateTag(
         @Header("Authorization") accessToken: String,
