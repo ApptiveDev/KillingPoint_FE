@@ -9,6 +9,7 @@ import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.UpdateTagRequest
 import com.killingpart.killingpoint.data.model.PresignedUrlResponse
+import com.killingpart.killingpoint.data.model.TestAuthResponse
 import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -27,6 +28,9 @@ interface ApiService {
         @Query("artist") artist: String,
         @Query("title") title: String
     ): List<YouTubeVideo>
+
+    @GET("oauth2/test")
+    suspend fun loginWithTest() : TestAuthResponse
 
     @POST("oauth2/kakao")
     suspend fun loginWithKakao(@Body body: KakaoAuthRequest): KakaoAuthResponse

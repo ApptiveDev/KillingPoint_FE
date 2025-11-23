@@ -48,4 +48,14 @@ class LoginViewModel(
                 .onFailure { _state.value = LoginUiState.Error(it.message ?: "로그인 실패") }
         }
     }
+
+    fun loginWithTest(context: Context) {
+        _state.value = LoginUiState.Loading
+        val repo = repoFactory(context)
+        viewModelScope.launch {
+            repo.loginWithTest()
+                .onSuccess { _state.value = LoginUiState.Success }
+                .onFailure { _state.value = LoginUiState.Error(it.message ?: "테스터 로그인 실패") }
+        }
+    }
 }

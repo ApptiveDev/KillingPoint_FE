@@ -17,6 +17,7 @@ class AuthInterceptor(
 
         val requestWithAuth = if (accessToken != null) {
             originalRequest.newBuilder()
+                .header("Authorization", "Bearer $accessToken")
                 .build()
         } else {
             originalRequest

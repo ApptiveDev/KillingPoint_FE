@@ -4,6 +4,7 @@ import android.content.Context
 import com.killingpart.killingpoint.data.local.TokenStore
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
+import com.killingpart.killingpoint.data.model.TestAuthResponse
 import com.killingpart.killingpoint.data.model.MyDiaries
 import com.killingpart.killingpoint.data.model.UserInfo
 import com.killingpart.killingpoint.data.model.YouTubeVideo
@@ -43,6 +44,27 @@ class AuthRepository(
                     val code = e.code()
                     val msg = e.response()?.errorBody()?.string().orEmpty()
                     throw IllegalStateException("로그인 실패 ($code): $msg")
+                } else {
+                    throw e
+                }
+            }
+        }
+
+    /**
+     * 테스터 로그인:
+     *   1) 우리 서버 /oauth2/test 호출
+     *   2) 우리 서버 access/refresh 토큰 저장
+     */
+    suspend fun loginWithTest(): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val res: TestAuthResponse = api.loginWithTest()
+                tokenStore.save(res.accessToken, res.refreshToken)
+            }.recoverCatching { e ->
+                if (e is HttpException) {
+                    val code = e.code()
+                    val msg = e.response()?.errorBody()?.string().orEmpty()
+                    throw IllegalStateException("테스터 로그인 실패 ($code): $msg")
                 } else {
                     throw e
                 }
