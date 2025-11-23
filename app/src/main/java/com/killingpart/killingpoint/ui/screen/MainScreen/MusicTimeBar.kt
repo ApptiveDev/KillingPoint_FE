@@ -108,17 +108,11 @@ fun MusicTimeBar(
             val xTotal = barWidthDp
 
             Box(Modifier.fillMaxWidth().height(20.dp)) {
-                // 0 초
-                TimeLabelCentered("0", x0, barWidthDp)
-
                 // start
                 TimeLabelCentered(formatTime(start), xStart, barWidthDp)
 
                 // start + during
                 TimeLabelCentered(formatTime(start + during), xEnd, barWidthDp)
-
-                // total
-                TimeLabelCentered(formatTime(total), xTotal, barWidthDp)
             }
         }
         }
