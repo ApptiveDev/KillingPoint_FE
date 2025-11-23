@@ -35,9 +35,13 @@ fun YouTubePlayerBox(
     isPlayingState: Boolean? = null
 ) {
     val context = LocalContext.current
-    var isPlaying by remember { mutableStateOf(false) }
-    var player by remember { mutableStateOf<YouTubePlayer?>(null) }
-    var currentTime by remember { mutableStateOf(0f) }
+    
+    // videoUrl이 변경되면 player 상태도 초기화되도록 key 사용
+    val currentVideoUrl = diary?.videoUrl ?: ""
+    
+    var isPlaying by remember(currentVideoUrl) { mutableStateOf(false) }
+    var player by remember(currentVideoUrl) { mutableStateOf<YouTubePlayer?>(null) }
+    var currentTime by remember(currentVideoUrl) { mutableStateOf(0f) }
     
     // 콜백을 remember로 저장하여 리스너에서 사용
     val videoReadyCallback = remember(onVideoReady) { onVideoReady }
@@ -79,8 +83,14 @@ fun YouTubePlayerBox(
                     }
                 }
             }
-            
-            // YouTube Player with custom background
+
+            LaunchedEffect(diary.videoUrl) {
+                player?.pause()
+                player = null
+                isPlaying = false
+                currentTime = 0f
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -90,19 +100,29 @@ fun YouTubePlayerBox(
                         shape = RoundedCornerShape(16.dp)
                     )
             ) {
-                // videoUrl이 변경될 때만 AndroidView 재생성 (startSeconds는 seekTo로 처리)
-                key(diary?.videoUrl) {
-                    
-                    // videoUrl 변경 시에만 정리 작업
-                    DisposableEffect(diary?.videoUrl) {
+                key(diary.videoUrl) {
+
+                    var playerView by remember { mutableStateOf<YouTubePlayerView?>(null) }
+
+                    DisposableEffect(diary.videoUrl) {
                         onDispose {
+                            player?.pause()
                             player = null
+                            isPlaying = false
+                            currentTime = 0f
+                            playerView?.release()
+                            playerView = null
                         }
                     }
                     
                     AndroidView(
                         factory = { context ->
+                            player?.pause()
+                            player = null
+                            playerView?.release()
+                            
                             YouTubePlayerView(context).apply {
+                                playerView = this
                                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
                                 var hasCalledReady = false
                                 
@@ -157,7 +177,6 @@ fun YouTubePlayerBox(
             
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 제목 (AlbumDiaryBox와 동일한 스타일)
             diary.musicTitle?.let { title ->
                 Text(
                     text = title,
@@ -170,7 +189,6 @@ fun YouTubePlayerBox(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 가수 (AlbumDiaryBox와 동일한 스타일)
             diary.artist?.let { artist ->
                 Text(
                     text = artist,

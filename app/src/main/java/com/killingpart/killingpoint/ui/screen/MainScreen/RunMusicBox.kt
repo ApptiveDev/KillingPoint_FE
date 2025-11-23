@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import android.graphics.Shader
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
@@ -88,8 +89,7 @@ fun RunMusicBox(
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
     
-   
-    // DB에서 가져온 totalDuration 사용 (searchVideos 호출 제거)
+
     val videoTotalDuration = currentDiary?.totalDuration
 
     val repo = remember { AuthRepository(context) }
@@ -238,7 +238,7 @@ fun RunMusicBox(
 
         Box(
             modifier = Modifier
-                .size(316.dp, 80.dp)
+                .size(316.dp)
                 .offset(y = 370.dp)
                 .background(color = Color.Transparent, shape = RoundedCornerShape(16.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -264,10 +264,6 @@ fun RunMusicBox(
             ) {
                 val startTime = currentDiary?.start?.toFloatOrNull()?.toInt() ?: 0
                 val durationTime = currentDiary?.duration?.toFloatOrNull()?.toInt() ?: 0
-
-                
-
-
                 val totalTime = videoTotalDuration ?: 180
                 MusicTimeBar(
                     title = currentDiary?.musicTitle,
@@ -275,6 +271,8 @@ fun RunMusicBox(
                     during = durationTime,
                     total = totalTime
                 )
+
+                Log.d("musicTimebar", "startTime: ${startTime}, duration: ${durationTime}, total: ${totalTime}")
             }
         }
 
