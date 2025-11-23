@@ -13,9 +13,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -60,11 +65,18 @@ import java.io.InputStream
 fun ProfileSettingsScreen(
     onDismiss: () -> Unit,
     topOffset: androidx.compose.ui.unit.Dp = 0.dp,
-    maxHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified
+    maxHeight: androidx.compose.ui.unit.Dp = androidx.compose.ui.unit.Dp.Unspecified,
+    onLogout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
+    val scope = rememberCoroutineScope()
+    val repo = remember { AuthRepository(context) }
+    
+    // 모달 상태를 최상위 레벨로 이동
+    var showLogoutModal by remember { mutableStateOf(false) }
+    var showUnregisterModal by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
@@ -78,6 +90,7 @@ fun ProfileSettingsScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f))
                 .clickable { onDismiss() }
         )
         
@@ -103,7 +116,51 @@ fun ProfileSettingsScreen(
                 onDismiss = onDismiss,
                 onTagUpdateSuccess = {
                     userViewModel.loadUserInfo(context)
-                }
+                },
+                onLogoutClick = { showLogoutModal = true },
+                onUnregisterClick = { showUnregisterModal = true }
+            )
+        }
+        
+        // 로그아웃 모달 (Card 밖에서 렌더링)
+        if (showLogoutModal) {
+            LogoutUnregisterModal(
+                title = "로그아웃을 진행합니다.",
+                message = "로그아웃하시겠습니까?",
+                confirmButtonText = "로그아웃하기",
+                onConfirm = {
+                    showLogoutModal = false
+                    scope.launch {
+                        try {
+                            repo.logout()
+                            onLogout() // 로그인 화면으로 이동
+                        } catch (e: Exception) {
+                            android.util.Log.e("ProfileSettings", "로그아웃 실패: ${e.message}", e)
+                        }
+                    }
+                },
+                onDismiss = { showLogoutModal = false }
+            )
+        }
+        
+        // 회원탈퇴 모달 (Card 밖에서 렌더링)
+        if (showUnregisterModal) {
+            LogoutUnregisterModal(
+                title = "회원탈퇴를 진행합니다.",
+                message = "회원탈퇴시 기존 저장된 정보는 모두 초기화 됩니다.",
+                confirmButtonText = "탈퇴하기",
+                onConfirm = {
+                    showUnregisterModal = false
+                    scope.launch {
+                        try {
+                            repo.unregister()
+                            onLogout() // 로그인 화면으로 이동
+                        } catch (e: Exception) {
+                            android.util.Log.e("ProfileSettings", "회원탈퇴 실패: ${e.message}", e)
+                        }
+                    }
+                },
+                onDismiss = { showUnregisterModal = false }
             )
         }
     }
@@ -113,7 +170,9 @@ fun ProfileSettingsScreen(
 private fun ProfileSettingsContent(
     userState: UserUiState,
     onDismiss: () -> Unit,
-    onTagUpdateSuccess: () -> Unit
+    onTagUpdateSuccess: () -> Unit,
+    onLogoutClick: () -> Unit,
+    onUnregisterClick: () -> Unit
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -129,6 +188,10 @@ private fun ProfileSettingsContent(
     // 프로필 이미지 업로드 상태
     var isUploadingImage by remember { mutableStateOf(false) }
     var imageUploadError by remember { mutableStateOf<String?>(null) }
+    
+    // 로그아웃/회원탈퇴 모달 상태
+    var showLogoutModal by remember { mutableStateOf(false) }
+    var showUnregisterModal by remember { mutableStateOf(false) }
     
     // Uri를 File로 변환하는 헬퍼 함수
     fun uriToFile(uri: Uri): File? {
@@ -415,7 +478,7 @@ private fun ProfileSettingsContent(
     
     Column(
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
         // 헤더
@@ -450,8 +513,7 @@ private fun ProfileSettingsContent(
             is UserUiState.Success -> {
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(),
+                        .fillMaxWidth(),
                 ) {
                     // 프로필 이미지 (클릭 가능)
                     Column()
@@ -541,8 +603,6 @@ private fun ProfileSettingsContent(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight()
-
                     ) {
                         Text(
                             text = state.userInfo.username,
@@ -767,16 +827,205 @@ private fun ProfileSettingsContent(
         Spacer(modifier = Modifier.weight(1f))
         
         // 로그아웃 / 회원탈퇴
-        Text(
-            text = "로그아웃 / 회원탈퇴",
-            color = Color.White,
-            fontFamily = PaperlogyFontFamily,
-            fontSize = 14.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        LogoutUnregisterSection(
+            onLogoutClick = onLogoutClick,
+            onUnregisterClick = onUnregisterClick
         )
+    }
+}
+
+@Composable
+private fun LogoutUnregisterSection(
+    onLogoutClick: () -> Unit,
+    onUnregisterClick: () -> Unit
+) {
+    var showActionMenu by remember { mutableStateOf(false) }
+    
+    Text(
+        text = "로그아웃 / 회원탈퇴",
+        color = Color.White,
+        fontFamily = PaperlogyFontFamily,
+        fontSize = 14.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showActionMenu = true }
+            .padding(vertical = 20.dp),
+        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+    )
+    
+    if (showActionMenu) {
+        ActionMenuDialog(
+            onLogoutClick = {
+                showActionMenu = false
+                onLogoutClick()
+            },
+            onUnregisterClick = {
+                showActionMenu = false
+                onUnregisterClick()
+            },
+            onDismiss = { showActionMenu = false }
+        )
+    }
+}
+
+@Composable
+private fun ActionMenuDialog(
+    onLogoutClick: () -> Unit,
+    onUnregisterClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color.Black,
+        shape = RoundedCornerShape(20.dp),
+        title = {},
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0xFF2A2A2A), RoundedCornerShape(20.dp)),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "로그아웃",
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onLogoutClick() }
+                        .padding(vertical = 16.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                
+                Divider(
+                    color = Color(0xFF2A2A2A),
+                    thickness = 1.dp,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+                
+                Text(
+                    text = "회원탈퇴",
+                    color = Color(0xFFFF6B6B),
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 16.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onUnregisterClick() }
+                        .padding(vertical = 16.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {},
+        dismissButton = {}
+    )
+}
+
+@Composable
+private fun LogoutUnregisterModal(
+    title: String,
+    message: String,
+    confirmButtonText: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.7f))
+            .clickable { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.85f)
+                .clickable(enabled = false) {},
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.Black)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 제목
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                
+                // 메시지
+                Text(
+                    text = message,
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+                
+                // 버튼 영역
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // 돌아가기 버튼 (흰색 배경, 검은색 텍스트, 테두리)
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0))
+                    ) {
+                        Text(
+                            text = "돌아가기",
+                            color = Color.Black,
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
+                    // 확인 버튼 (빨간색 배경, 흰색 텍스트)
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFFF6B6B)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = confirmButtonText,
+                            color = Color.White,
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
