@@ -346,11 +346,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                         isPlaying = !isPlaying
                     }
 
-                },
-                onPlayPause = {
-                    isPlaying = !isPlaying
-                },
-                isPlaying = isPlaying
             )
 
 
@@ -372,9 +367,11 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
         }
     }
 }
+}
+
 
 @Preview
 @Composable
 fun MainPreivew() {
-    MainScreen(navController = rememberNavController())
+    MainScreen(navController = rememberNavController());
 }

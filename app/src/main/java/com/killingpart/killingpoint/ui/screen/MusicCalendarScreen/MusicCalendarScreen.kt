@@ -267,9 +267,6 @@ fun MusicCalendarScreen(
             }
             
             selectedDiaries.forEachIndexed { index, diary ->
-                if (index > 0) {
-                    Spacer(Modifier.height(12.dp))
-                }
                 DiaryEntryCard(
                     diary = diary, 
                     navController = navController,
