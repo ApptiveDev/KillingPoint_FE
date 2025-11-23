@@ -31,10 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Surface
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
+import android.net.Uri
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import com.killingpart.killingpoint.ui.viewmodel.UserUiState
@@ -44,7 +46,8 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 fun OuterBox(
     diaries: List<Diary>,
     modifier: Modifier = Modifier,
-    onProfileClick: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    navController: androidx.navigation.NavController? = null
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -227,8 +230,34 @@ fun OuterBox(
                             rowItems.forEach { diary ->
                                 DiaryCard(
                                     diary = diary,
-                                    modifier = Modifier
-                                        .weight(1f)
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        // DiaryDetailScreen으로 이동
+                                        navController?.let { nav ->
+                                            val diaryIdParam = diary.id?.let { "&diaryId=$it" } ?: ""
+                                            android.util.Log.d("OuterBox", "diary.totalDuration: ${diary.totalDuration}")
+                                            val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" } ?: ""
+                                            android.util.Log.d("OuterBox", "totalDurationParam: '$totalDurationParam'")
+                                            val scopeParam = "&scope=${diary.scope.name}"
+                                            
+                                            nav.navigate(
+                                                "diary_detail" +
+                                                        "?artist=${Uri.encode(diary.artist)}" +
+                                                        "&musicTitle=${Uri.encode(diary.musicTitle)}" +
+                                                        "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
+                                                        "&content=${Uri.encode(diary.content)}" +
+                                                        "&videoUrl=${Uri.encode(diary.videoUrl)}" +
+                                                        "&duration=${Uri.encode(diary.duration)}" +
+                                                        "&start=${Uri.encode(diary.start)}" +
+                                                        "&end=${Uri.encode(diary.end)}" +
+                                                        "&createDate=${Uri.encode(diary.createDate)}" +
+                                                        scopeParam +
+                                                        diaryIdParam +
+                                                        totalDurationParam +
+                                                        "&fromTab=profile"
+                                            )
+                                        }
+                                    }
                                 )
                             }
                             // 홀수 개일 경우 빈 공간 추가

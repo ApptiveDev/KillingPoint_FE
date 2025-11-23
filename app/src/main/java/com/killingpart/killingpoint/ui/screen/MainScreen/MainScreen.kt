@@ -76,7 +76,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     var selected by remember(initialTab) { 
         mutableStateOf(
             when (initialTab) {
-                "storage" -> MainTab.PROFILE
+                "play" -> MainTab.PLAY
+                "profile" -> MainTab.PROFILE
                 "calendar" -> MainTab.CALENDAR
                 else -> MainTab.PLAY
             }
@@ -220,6 +221,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                     ) {
                                         item {
                                             OuterBox(
+                                                navController = navController,
                                                 diaries = state.diaries,
                                                 onProfileClick = { showProfileSettings = true }
                                             )

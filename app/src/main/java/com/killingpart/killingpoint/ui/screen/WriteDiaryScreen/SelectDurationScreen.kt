@@ -304,12 +304,11 @@ fun SelectDurationScreen(
                             "?title=${Uri.encode(title)}" +
                             "&artist=${Uri.encode(artist)}" +
                             "&image=${Uri.encode(imageUrl)}" +
-
                             "&duration=${duration.toInt()}" +
                             "&start=${start.toInt()}" +
                             "&end=${end.toInt()}" +
-                            "&videoUrl=$encodedVideoUrl"
-
+                            "&videoUrl=$encodedVideoUrl" +
+                            "&totalDuration=$totalDuration"
                 )
             },
             modifier = Modifier

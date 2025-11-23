@@ -76,7 +76,8 @@ fun DiaryDetailScreen(
     selectedDate: String = "",
     scope: String = "",
     diaryId: Long? = null,
-    totalDuration: Int? = null // YouTube 비디오 전체 길이 (초 단위)
+    totalDuration: Int? = null, // YouTube 비디오 전체 길이 (초 단위)
+    fromTab: String = "" // 어느 탭에서 왔는지 (profile, calendar, play)
 ) {
     val context = LocalContext.current
     val userViewModel: UserViewModel = viewModel()
@@ -104,7 +105,16 @@ fun DiaryDetailScreen(
     // duration은 킬링파트의 길이(during), end는 킬링파트의 끝 시간
     val startSeconds = parseTimeToSeconds(start)
     val endSeconds = parseTimeToSeconds(end)
-    val duringSeconds = (endSeconds - startSeconds).coerceAtLeast(0)
+
+    // 디테일 페이지 진입 시 로그 출력
+    LaunchedEffect(startSeconds, endSeconds, duration, totalDuration) {
+        android.util.Log.d("DiaryDetailScreen", "=== DiaryDetailScreen 진입 ===")
+        android.util.Log.d("DiaryDetailScreen", "시작초: $startSeconds")
+        android.util.Log.d("DiaryDetailScreen", "끝초: $endSeconds")
+        android.util.Log.d("DiaryDetailScreen", "duration: $duration")
+        android.util.Log.d("DiaryDetailScreen", "totalDuration: $totalDuration")
+        android.util.Log.d("DiaryDetailScreen", "===========================")
+    }
 
     // 날짜 포맷팅 (2025.10.26 형식)
     val formattedDate = try {
@@ -128,11 +138,40 @@ fun DiaryDetailScreen(
             ) {
                 IconButton(
                     onClick = { 
-                        // MusicCalendarScreen으로 돌아가기 (CALENDAR 탭 선택 + 선택된 날짜 복원)
-                        val selectedDateParam = if (selectedDate.isNotEmpty()) "&selectedDate=${android.net.Uri.encode(selectedDate)}" else ""
-                        navController.navigate("main?tab=calendar$selectedDateParam") {
-                            // 현재 diary_detail을 스택에서 제거하고 main으로 이동
-                            popUpTo("main") { inclusive = false }
+                        // 어느 탭에서 왔는지에 따라 적절한 탭으로 돌아가기
+                        when (fromTab) {
+                            "profile" -> {
+                                // 내 프로필 탭으로 돌아가기
+                                navController.navigate("main?tab=profile") {
+                                    popUpTo("main") { inclusive = false }
+                                }
+                            }
+                            "calendar" -> {
+                                // MusicCalendarScreen으로 돌아가기 (CALENDAR 탭 선택 + 선택된 날짜 복원)
+                                val selectedDateParam = if (selectedDate.isNotEmpty()) "&selectedDate=${android.net.Uri.encode(selectedDate)}" else ""
+                                navController.navigate("main?tab=calendar$selectedDateParam") {
+                                    popUpTo("main") { inclusive = false }
+                                }
+                            }
+                            "play" -> {
+                                // 킬링파트 재생 탭으로 돌아가기
+                                navController.navigate("main?tab=play") {
+                                    popUpTo("main") { inclusive = false }
+                                }
+                            }
+                            else -> {
+                                // 기본값: selectedDate가 있으면 calendar, 없으면 profile
+                                if (selectedDate.isNotEmpty()) {
+                                    val selectedDateParam = "&selectedDate=${android.net.Uri.encode(selectedDate)}"
+                                    navController.navigate("main?tab=calendar$selectedDateParam") {
+                                        popUpTo("main") { inclusive = false }
+                                    }
+                                } else {
+                                    navController.navigate("main?tab=profile") {
+                                        popUpTo("main") { inclusive = false }
+                                    }
+                                }
+                            }
                         }
                     }
                 ) {
@@ -216,7 +255,7 @@ fun DiaryDetailScreen(
                             YouTubePlayerBox(
                                 diary = diary,
                                 startSeconds = startSeconds.toFloat(),
-                                durationSeconds = duringSeconds.toFloat()
+                                durationSeconds = duration.toFloat()
                             )
                             
                             Spacer(modifier = Modifier.height(24.dp))
@@ -282,7 +321,7 @@ fun DiaryDetailScreen(
                                             artist = artist,
                                             musicTitle = musicTitle,
                                             start = startSeconds,
-                                            during = duringSeconds,
+                                            during = duration.toInt(),
                                             totalDuration = diary.totalDuration
                                         )
                                     }

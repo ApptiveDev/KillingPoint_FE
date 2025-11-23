@@ -709,7 +709,8 @@ fun DiaryEntryCard(
                                 scopeParam +
                                 diaryIdParam +
                                 selectedDateParam +
-                                totalDurationParam
+                                totalDurationParam +
+                                "&fromTab=calendar"
                     )
                 }
             ) {

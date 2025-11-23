@@ -136,7 +136,7 @@ class AuthRepository(
                 // 디버깅: 받은 다이어리 데이터 로깅
                 android.util.Log.d("AuthRepository", "getMyDiaries 응답 - 총 ${result.content.size}개")
                 result.content.forEachIndexed { index, diary ->
-                    android.util.Log.d("AuthRepository", "Diary[$index]: id=${diary.id}, title=${diary.musicTitle}, artist=${diary.artist}")
+                    android.util.Log.d("AuthRepository", "Diary[$index]: id=${diary.id}, title=${diary.musicTitle}, artist=${diary.artist}, totalDuration=${diary.totalDuration}")
                 }
                 
                 result
