@@ -76,7 +76,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     var selected by remember(initialTab) { 
         mutableStateOf(
             when (initialTab) {
-                "play" -> MainTab.PLAY
                 "profile" -> MainTab.PROFILE
                 "calendar" -> MainTab.CALENDAR
                 else -> MainTab.PLAY
@@ -214,16 +213,17 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                         .weight(1f)
                                         .padding(horizontal = 16.dp)
                                 ) {
-                                    val musicListHeight = if (listExpanded) 260.dp else 80.dp
+                                    val musicListHeight = if (listExpanded) 260.dp else 50.dp
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(bottom = musicListHeight + MusicCueBtnHeight + MusicCueBtnGap + 16.dp)
+                                        contentPadding = PaddingValues(bottom = musicListHeight)
                                     ) {
                                         item {
                                             OuterBox(
                                                 navController = navController,
                                                 diaries = state.diaries,
-                                                onProfileClick = { showProfileSettings = true }
+                                                onProfileClick = { showProfileSettings = true },
+                                                modifier = Modifier.fillParentMaxHeight() // 가능한 최대 높이 사용
                                             )
                                         }
                                     }
@@ -241,8 +241,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                         )
                                     }
                                 }
-
-                                Spacer(modifier = Modifier.height(MusicCueBtnHeight + MusicCueBtnGap + 10.dp))
                             }
 
                             is DiaryUiState.Error -> {
@@ -325,30 +323,36 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 BottomBar(navController = navController)
             }
 
-            MusicCueBtn(
-                modifier = Modifier
-                    .align (Alignment.BottomCenter)
-                    .padding(bottom = BottomBarHeight + MusicCueBtnGap),
-                onPrevious = {
-                    if (currentIndex > 0) {
-                        currentIndex--
-                        isPlaying = true
-                        android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
-
+            // MusicCueBtn은 PLAY 탭에서만 표시
+            if (selected == MainTab.PLAY) {
+                MusicCueBtn(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = BottomBarHeight),
+                    onPrevious = {
+                        if (currentIndex > 0) {
+                            currentIndex--
+                            isPlaying = true
+                            android.util.Log.d("MainScreen", "Previous clicked, new index: $currentIndex")
+                        }
+                    },
+                    onNext = {
+                        if (currentIndex < diaries.size - 1) {
+                            currentIndex++
+                            isPlaying = true
+                        }
+                    },
+                    onPlayPause = {
+                        isPlaying = !isPlaying
                     }
-                },
-                onNext = {
-                    if (currentIndex < diaries.size - 1) {
-                        currentIndex++
-                        isPlaying = true
 
-                    }
                 },
                 onPlayPause = {
                     isPlaying = !isPlaying
                 },
                 isPlaying = isPlaying
             )
+
 
             if (showProfileSettings) {
                 val topOffset = topPillTabsBottomY + 15.dp

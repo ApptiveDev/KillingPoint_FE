@@ -60,216 +60,228 @@ fun OuterBox(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(color = Color.Black, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomEnd = 20.dp, bottomStart = 20.dp))
+            .fillMaxHeight() // 가능한 최대 높이 사용
             .padding(horizontal = 20.dp, vertical = 10.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight() // Column도 최대 높이 사용
         ) {
-            // 프로필 영역
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // 프로필 사진과 이름
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // 프로필 사진
-                    when (val s = userState) {
-                        is UserUiState.Success -> {
-                            AsyncImage(
-                                model = s.userInfo.profileImageUrl,
-                                contentDescription = "프로필 사진",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .border(3.dp, mainGreen, RoundedCornerShape(50)),
-                                placeholder = painterResource(id = R.drawable.default_profile),
-                                error = painterResource(id = R.drawable.default_profile)
-                            )
-                        }
-                        else -> {
-                            Image(
-                                painter = painterResource(id = R.drawable.default_profile),
-                                contentDescription = "프로필 사진",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(60.dp)
-                                    .clip(RoundedCornerShape(50))
-                                    .border(3.dp, mainGreen, RoundedCornerShape(50))
-                            )
-                        }
-                    }
-
-                    // username과 tag (클릭 가능)
-                    Column(
-                        modifier = Modifier.clickable { onProfileClick() }
+                    // 프로필 영역
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = when (val s = userState) {
-                                is UserUiState.Success -> s.userInfo.username
-                                is UserUiState.Loading -> "LOADING..."
-                                is UserUiState.Error -> "KILLING_PART"
-                            },
-                            fontFamily = PaperlogyFontFamily,
-                            fontWeight = FontWeight.W400,
-                            fontSize = 16.sp,
-                            color = mainGreen,
-                        )
-                        Text(
-                            text = when (val s = userState) {
-                                is UserUiState.Success -> "@${s.userInfo.tag}"
-                                is UserUiState.Loading -> "@LOADING"
-                                is UserUiState.Error -> "@KILLING_PART"
-                            },
-                            fontFamily = PaperlogyFontFamily,
-                            fontWeight = FontWeight.W400,
-                            fontSize = 14.sp,
-                            color = mainGreen,
-                        )
-                    }
-                }
-                
-                // 다이어리 개수 표시 (오른쪽에 배치)
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "${diaries.size}",
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.W400,
-                        fontSize = 16.sp,
-                        color = mainGreen,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                    Text(
-                        text = "킬링파트",
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.W400,
-                        fontSize = 10.sp,
-                        color = mainGreen,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                    )
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Button(
-                    onClick = { onProfileClick() },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(32.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF262626)
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-//                    border = androidx.compose.foundation.BorderStroke(1.dp, mainGreen),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "프로필 편집",
-                        tint = mainGreen,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "프로필 편집",
-                        color = mainGreen,
-                        fontFamily = PaperlogyFontFamily,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.W400
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 다이어리 그리드 (2x2가 한 화면에 보이도록 높이 계산)
-            val configuration = LocalConfiguration.current
-            val screenWidth = configuration.screenWidthDp.dp
-            val horizontalContainerPadding = 20.dp // Box padding
-            val interColumnSpacing = 12.dp
-            val rowSpacing = 20.dp
-            val itemSize = (screenWidth - horizontalContainerPadding * 2 - interColumnSpacing) / 2
-
-            val chunkedDiaries = diaries.chunked(2)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(itemSize * 2 + rowSpacing)
-            ) {
-                // 배경 로고
-                Image(
-                    painter = painterResource(id = R.drawable.killingpart_logo_gray),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(0.3f),
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center
-                )
-                
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(chunkedDiaries.size) { index ->
-                        val rowItems = chunkedDiaries[index]
+                        // 프로필 사진과 이름
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = rowSpacing),
+                            verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            rowItems.forEach { diary ->
-                                DiaryCard(
-                                    diary = diary,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        // DiaryDetailScreen으로 이동
-                                        navController?.let { nav ->
-                                            val diaryIdParam = diary.id?.let { "&diaryId=$it" } ?: ""
-                                            android.util.Log.d("OuterBox", "diary.totalDuration: ${diary.totalDuration}")
-                                            val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" } ?: ""
-                                            android.util.Log.d("OuterBox", "totalDurationParam: '$totalDurationParam'")
-                                            val scopeParam = "&scope=${diary.scope.name}"
-                                            
-                                            nav.navigate(
-                                                "diary_detail" +
-                                                        "?artist=${Uri.encode(diary.artist)}" +
-                                                        "&musicTitle=${Uri.encode(diary.musicTitle)}" +
-                                                        "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
-                                                        "&content=${Uri.encode(diary.content)}" +
-                                                        "&videoUrl=${Uri.encode(diary.videoUrl)}" +
-                                                        "&duration=${Uri.encode(diary.duration)}" +
-                                                        "&start=${Uri.encode(diary.start)}" +
-                                                        "&end=${Uri.encode(diary.end)}" +
-                                                        "&createDate=${Uri.encode(diary.createDate)}" +
-                                                        scopeParam +
-                                                        diaryIdParam +
-                                                        totalDurationParam +
-                                                        "&fromTab=profile"
-                                            )
-                                        }
-                                    }
+                            // 프로필 사진
+                            when (val s = userState) {
+                                is UserUiState.Success -> {
+                                    AsyncImage(
+                                        model = s.userInfo.profileImageUrl,
+                                        contentDescription = "프로필 사진",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(60.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .border(3.dp, mainGreen, RoundedCornerShape(50)),
+                                        placeholder = painterResource(id = R.drawable.default_profile),
+                                        error = painterResource(id = R.drawable.default_profile)
+                                    )
+                                }
+
+                                else -> {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.default_profile),
+                                        contentDescription = "프로필 사진",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(60.dp)
+                                            .clip(RoundedCornerShape(50))
+                                            .border(3.dp, mainGreen, RoundedCornerShape(50))
+                                    )
+                                }
+                            }
+
+                            // username과 tag (클릭 가능)
+                            Column(
+                                modifier = Modifier.clickable { onProfileClick() }
+                            ) {
+                                Text(
+                                    text = when (val s = userState) {
+                                        is UserUiState.Success -> s.userInfo.username
+                                        is UserUiState.Loading -> "LOADING..."
+                                        is UserUiState.Error -> "KILLING_PART"
+                                    },
+                                    fontFamily = PaperlogyFontFamily,
+                                    fontWeight = FontWeight.W400,
+                                    fontSize = 16.sp,
+                                    color = mainGreen,
+                                )
+                                Text(
+                                    text = when (val s = userState) {
+                                        is UserUiState.Success -> "@${s.userInfo.tag}"
+                                        is UserUiState.Loading -> "@LOADING"
+                                        is UserUiState.Error -> "@KILLING_PART"
+                                    },
+                                    fontFamily = PaperlogyFontFamily,
+                                    fontWeight = FontWeight.W400,
+                                    fontSize = 14.sp,
+                                    color = mainGreen,
                                 )
                             }
-                            // 홀수 개일 경우 빈 공간 추가
-                            if (rowItems.size == 1) {
-                                Spacer(modifier = Modifier.weight(1f))
+                        }
+
+                        // 다이어리 개수 표시 (오른쪽에 배치)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "${diaries.size}",
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.W400,
+                                fontSize = 16.sp,
+                                color = mainGreen,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                            Text(
+                                text = "킬링파트",
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.W400,
+                                fontSize = 10.sp,
+                                color = mainGreen,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = { onProfileClick() },
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .height(32.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF262626)
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "프로필 편집",
+                                tint = mainGreen,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "프로필 편집",
+                                color = mainGreen,
+                                fontFamily = PaperlogyFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.W400
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // 다이어리 그리드 (2x2가 한 화면에 보이도록 높이 계산)
+                    val configuration = LocalConfiguration.current
+                    val screenWidth = configuration.screenWidthDp.dp
+                    val horizontalContainerPadding = 20.dp // Box padding
+                    val interColumnSpacing = 12.dp
+                    val rowSpacing = 20.dp
+                    val itemSize =
+                        (screenWidth - horizontalContainerPadding * 2 - interColumnSpacing) / 2
+
+                    val chunkedDiaries = diaries.chunked(2)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f) // 남은 공간을 모두 차지
+                    ) {
+                        // 배경 로고
+                        Image(
+                            painter = painterResource(id = R.drawable.killingpart_logo_gray),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .alpha(0.3f),
+                            contentScale = ContentScale.Fit,
+                            alignment = Alignment.Center
+                        )
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(chunkedDiaries.size) { index ->
+                                val rowItems = chunkedDiaries[index]
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = rowSpacing),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    rowItems.forEach { diary ->
+                                        DiaryCard(
+                                            diary = diary,
+                                            modifier = Modifier.weight(1f),
+                                            onClick = {
+                                                // DiaryDetailScreen으로 이동
+                                                navController?.let { nav ->
+                                                    val diaryIdParam =
+                                                        diary.id?.let { "&diaryId=$it" } ?: ""
+                                                    android.util.Log.d(
+                                                        "OuterBox",
+                                                        "diary.totalDuration: ${diary.totalDuration}"
+                                                    )
+                                                    val totalDurationParam =
+                                                        diary.totalDuration?.let { "&totalDuration=$it" }
+                                                            ?: ""
+                                                    android.util.Log.d(
+                                                        "OuterBox",
+                                                        "totalDurationParam: '$totalDurationParam'"
+                                                    )
+                                                    val scopeParam = "&scope=${diary.scope.name}"
+
+                                                    nav.navigate(
+                                                        "diary_detail" +
+                                                                "?artist=${Uri.encode(diary.artist)}" +
+                                                                "&musicTitle=${Uri.encode(diary.musicTitle)}" +
+                                                                "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
+                                                                "&content=${Uri.encode(diary.content)}" +
+                                                                "&videoUrl=${Uri.encode(diary.videoUrl)}" +
+                                                                "&duration=${Uri.encode(diary.duration)}" +
+                                                                "&start=${Uri.encode(diary.start)}" +
+                                                                "&end=${Uri.encode(diary.end)}" +
+                                                                "&createDate=${Uri.encode(diary.createDate)}" +
+                                                                scopeParam +
+                                                                diaryIdParam +
+                                                                totalDurationParam +
+                                                                "&fromTab=profile"
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    }
+                                    // 홀수 개일 경우 빈 공간 추가
+                                    if (rowItems.size == 1) {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
-        }
-    }
 }
 
 @Preview(showBackground = true)
