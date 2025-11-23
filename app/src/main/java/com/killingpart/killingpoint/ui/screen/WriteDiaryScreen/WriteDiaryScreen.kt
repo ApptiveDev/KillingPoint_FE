@@ -124,9 +124,11 @@ fun WriteDiaryScreen(
 
             AlbumDiaryBoxWithoutContent(
                 track = SimpleTrack(
+                    id = "",
                     title = title,
                     artist = artist,
-                    albumImageUrl = imageUrl
+                    albumImageUrl = imageUrl,
+                    albumId = ""
                 )
             )
 

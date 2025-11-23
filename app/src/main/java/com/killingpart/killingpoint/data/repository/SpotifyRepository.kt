@@ -31,9 +31,11 @@ class SpotifyRepository(
             )
             res.tracks.items.map { item ->
                 SimpleTrack(
+                    id = item.id,
                     title = item.name,
                     artist = item.artists.joinToString(", ") { it.name },
-                    albumImageUrl = item.album.images.firstOrNull()?.url
+                    albumImageUrl = item.album.images.firstOrNull()?.url,
+                    albumId = item.album.id
                 )
             }
         }

@@ -25,6 +25,7 @@ interface ApiService {
     @GET("youtube")
     suspend fun searchVideos(
         @Header("Authorization") accessToken: String,
+        @Query("id") id: String,
         @Query("artist") artist: String,
         @Query("title") title: String
     ): List<YouTubeVideo>

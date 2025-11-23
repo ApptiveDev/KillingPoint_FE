@@ -101,7 +101,7 @@ fun RunMusicBox(
     LaunchedEffect(currentDiary?.musicTitle, currentDiary?.artist) {
         if (currentDiary != null && currentDiary.musicTitle.isNotEmpty() && currentDiary.artist.isNotEmpty()) {
             try {
-                val videos = repo.searchVideos(currentDiary.artist, currentDiary.musicTitle)
+                val videos = repo.searchVideos("", currentDiary.artist, currentDiary.musicTitle) // albumId는 DB에 없으므로 빈 문자열
                 val firstVideo = videos.firstOrNull()
                 firstVideo?.duration?.let { durationStr ->
                     val totalSeconds = parseDurationToSeconds(durationStr)
