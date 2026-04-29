@@ -90,10 +90,12 @@ fun FeedRunMusicBox(
     var likeCount by remember(feedDiary.diaryId) { mutableStateOf(feedDiary.likeCount) }
     var isStored by remember(feedDiary.diaryId) { mutableStateOf(feedDiary.isStored) }
     var showMenu by remember { mutableStateOf(false) }
+    var showBlockModal by remember { mutableStateOf(false) }
     var showReportModal by remember { mutableStateOf(false) }
     var showReportSuccessModal by remember { mutableStateOf(false) }
     var reportContent by remember { mutableStateOf("") }
     var isReporting by remember { mutableStateOf(false) }
+    var isBlocking by remember { mutableStateOf(false) }
     var currentUserId by remember { mutableStateOf<Long?>(null) }
     var showHeartOverlay by remember { mutableStateOf(false) }
     var heartFadeOut by remember { mutableStateOf(false) }
@@ -251,6 +253,14 @@ fun FeedRunMusicBox(
                                 shape = RoundedCornerShape(4.dp)
                             )
                     ) {
+                        FeedMenuItem(
+                            text = "차단하기",
+                            iconRes = R.drawable.ic_block
+                        ) {
+                            showMenu = false
+                            showBlockModal = true
+                        }
+
                         FeedMenuItem(
                             text = "신고하기",
                             iconRes = R.drawable.ic_report
@@ -475,6 +485,26 @@ fun FeedRunMusicBox(
             )
         }
 
+        if (showBlockModal) {
+            BlockUserModal(
+                onDismiss = { showBlockModal = false },
+                isLoading = isBlocking,
+                onBlock = {
+                    coroutineScope.launch {
+                        isBlocking = true
+                        try {
+                            authRepository.blockUser(feedDiary.userId).getOrThrow()
+                            showBlockModal = false
+                        } catch (e: Exception) {
+                            android.util.Log.e("FeedRunMusicBox", "유저 차단 실패: ${e.message}")
+                        } finally {
+                            isBlocking = false
+                        }
+                    }
+                }
+            )
+        }
+
         if (showReportSuccessModal) {
             ReportSuccessModal(onDismiss = { showReportSuccessModal = false })
         }
@@ -601,6 +631,80 @@ fun ReportDiaryModal(
                     enabled = reportContent.isNotBlank() && !isLoading
                 ) {
                     onSubmit()
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BlockUserModal(
+    onDismiss: () -> Unit,
+    isLoading: Boolean,
+    onBlock: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF111111),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "차단하시겠습니까?",
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 18.sp,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Text(
+                text = "님을 차단하면 픽과 팬덤 관계가 끊기고 서로 글",
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = Color.White
+            )
+            Text(
+                text = "을 볼 수 없어요.",
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = Color.White
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                ReportButton(
+                    text = "돌아가기",
+                    background = Color(0xFFFFFFFF),
+                    textColor = Color(0xFF181818),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    onDismiss()
+                }
+
+                ReportButton(
+                    text = if (isLoading) "처리 중..." else "차단하기",
+                    background = Color(0xFFFF5A5A),
+                    textColor = Color.White,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isLoading
+                ) {
+                    onBlock()
                 }
             }
 

@@ -26,19 +26,21 @@ import com.killingpart.killingpoint.ui.screen.SocialScreen.PickFandomListScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.killingpart.killingpoint.ui.screen.SearchScreen.SearchScreen
+import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = "home"
+    startDestination: String = "home",
+    loginViewModel: LoginViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable("home") { HelloScreen(navController) }
+        composable("home") { HelloScreen(navController, loginViewModel) }
         composable("onboarding_policy") { PolicyAgreementScreen(navController) }
         composable("onboarding_name") { OnboardingNameScreen(navController) }
         composable(

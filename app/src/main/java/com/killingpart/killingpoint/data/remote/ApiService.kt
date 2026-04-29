@@ -210,6 +210,12 @@ interface ApiService {
         @Body body: ReportDiaryRequest
     ): retrofit2.Response<Unit>
 
+    @POST("users/{blockedId}/blocks")
+    suspend fun blockUser(
+        @Header("Authorization") accessToken: String,
+        @Path("blockedId") blockedId: Long
+    ): retrofit2.Response<Unit>
+
     @GET("diaries/randoms")
     suspend fun getRandomDiaries(
         @Header("Authorization") accessToken: String

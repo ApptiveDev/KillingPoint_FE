@@ -760,6 +760,29 @@ class AuthRepository(
     }
 
     /**
+     * 특정 유저 차단
+     */
+    suspend fun blockUser(blockedId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.blockUser("Bearer $accessToken", blockedId)
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
      * 플레이리스트 순서 변경
      */
     suspend fun reorderDiaryOrder(diaryIds: List<Long>): Result<Unit> = withContext(Dispatchers.IO) {

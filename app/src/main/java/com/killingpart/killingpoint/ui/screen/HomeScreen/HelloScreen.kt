@@ -53,9 +53,11 @@ import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 
 @Composable
-fun HelloScreen(navController: NavController) {
+fun HelloScreen(
+    navController: NavController,
+    loginViewModel: LoginViewModel = viewModel()
+) {
     val context = LocalContext.current
-    val loginViewModel: LoginViewModel = viewModel()
 
     Box(
         modifier = Modifier.fillMaxSize()

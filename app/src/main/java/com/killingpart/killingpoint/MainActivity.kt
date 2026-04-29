@@ -153,7 +153,8 @@ class MainActivity : ComponentActivity() {
                         ) {
                             NavGraph(
                                 navController = navController,
-                                startDestination = startDestination
+                                startDestination = startDestination,
+                                loginViewModel = loginViewModel
                             )
                             if (BuildConfig.DEBUG && BuildConfig.SHOW_DEV_MENU) {
                                 Column(
