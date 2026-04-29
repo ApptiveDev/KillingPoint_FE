@@ -21,6 +21,7 @@ import com.killingpart.killingpoint.data.model.FeedResponse
 import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.LikeResponse
 import com.killingpart.killingpoint.data.model.StoreResponse
+import com.killingpart.killingpoint.data.model.SurveyRequest
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
@@ -187,6 +188,26 @@ class AuthRepository(
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
                 throw IllegalStateException("약관 동의 처리 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun submitSurvey(content: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.submitSurvey("Bearer $accessToken", SurveyRequest(content))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("문의 및 피드백 전송 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("문의 및 피드백 전송 실패 ($code): $msg")
             } else {
                 throw e
             }
@@ -813,6 +834,42 @@ class AuthRepository(
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
                 throw IllegalStateException("유저 차단 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun getBlockedUsers(page: Int = 0, size: Int = 5): Result<SubscribeResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getBlockedUsers("Bearer $accessToken", page, size)
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("차단 목록 조회 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun unblockUser(blockedId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.unblockUser("Bearer $accessToken", blockedId)
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 해제 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 해제 실패 ($code): $msg")
             } else {
                 throw e
             }

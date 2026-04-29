@@ -25,10 +25,13 @@ import com.killingpart.killingpoint.ui.screen.SocialScreen.FriendProfileScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.PickFandomListScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.BlockedUsersScreen
 import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeNameScreen
 import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeProfileImageScreen
 import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeTagScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.SettingsPolicyScreen
 import com.killingpart.killingpoint.ui.screen.ProfileScreen.SettingsScreen
+import com.killingpart.killingpoint.ui.screen.OnboardingScreen.OnboardingPolicyType
 import com.killingpart.killingpoint.ui.screen.SearchScreen.SearchScreen
 import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import java.net.URLDecoder
@@ -49,6 +52,13 @@ fun NavGraph(
         composable("settings/name") { ChangeNameScreen(navController) }
         composable("settings/tag") { ChangeTagScreen(navController) }
         composable("settings/profile-image") { ChangeProfileImageScreen(navController) }
+        composable("settings/blocks") { BlockedUsersScreen(navController) }
+        composable("settings/terms") {
+            SettingsPolicyScreen(navController, OnboardingPolicyType.SERVICE_TERMS)
+        }
+        composable("settings/privacy") {
+            SettingsPolicyScreen(navController, OnboardingPolicyType.PRIVACY)
+        }
         composable("onboarding_policy") { PolicyAgreementScreen(navController) }
         composable("onboarding_name") { OnboardingNameScreen(navController) }
         composable(

@@ -119,7 +119,7 @@ fun ChangeTagScreen(navController: NavController) {
                 },
                 keyboardType = KeyboardType.Text
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = "영문 소문자 4이상, 30자 이내, 특수문자 일부([.],[_])",
                 color = Color(0xFF8A8A8A),
@@ -166,7 +166,7 @@ private fun ChangeTagScreenPreview() {
                 onValueChange = {},
                 keyboardType = KeyboardType.Text
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = "영문 소문자 4이상, 30자 이내, 특수문자 일부([.],[_])",
                 color = Color(0xFF8A8A8A),

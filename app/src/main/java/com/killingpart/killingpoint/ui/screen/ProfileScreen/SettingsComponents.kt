@@ -2,11 +2,13 @@ package com.killingpart.killingpoint.ui.screen.ProfileScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,19 +17,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -141,6 +145,7 @@ internal fun SettingsListCard(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 internal fun SettingsTab(
     tabTitle: String,
+    detailText: String? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -158,10 +163,105 @@ internal fun SettingsTab(
             fontFamily = PaperlogyFontFamily,
             fontSize = 12.sp
         )
-        Image(
-            painter = painterResource(id = R.drawable.detail_right),
-            contentDescription = null,
-            modifier = Modifier.size(16.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (detailText != null) {
+                Text(
+                    text = detailText,
+                    color = Color(0xFF8E8E93),
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 11.sp
+                )
+            }
+            Image(
+                painter = painterResource(id = R.drawable.detail_right),
+                contentDescription = null,
+                modifier = Modifier.size(10.dp)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun SettingsValueRow(
+    tabTitle: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(horizontal = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = tabTitle,
+            color = Color(0xFFCCCCCC),
+            fontFamily = PaperlogyFontFamily,
+            fontSize = 12.sp
+        )
+        Text(
+            text = value,
+            color = Color(0xFF8E8E93),
+            fontFamily = PaperlogyFontFamily,
+            fontSize = 11.sp
+        )
+    }
+}
+
+@Composable
+internal fun SettingsSwitchRow(
+    tabTitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(horizontal = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = tabTitle,
+            color = Color(0xFFCCCCCC),
+            fontFamily = PaperlogyFontFamily,
+            fontSize = 12.sp
+        )
+        SettingsPushSwitch(
+            checked = checked,
+            onCheckedChange = onCheckedChange
+        )
+    }
+}
+
+@Composable
+private fun SettingsPushSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    val trackColor = if (checked) mainGreen else Color(0xFF4A4A4A)
+    val thumbOffset = if (checked) 18.dp else 2.dp
+
+    Box(
+        modifier = Modifier
+            .size(width = 38.dp, height = 22.dp)
+            .clip(RoundedCornerShape(100.dp))
+            .background(trackColor)
+            .clickable { onCheckedChange(!checked) }
+            .padding(2.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .offset(x = thumbOffset)
+                .size(18.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .background(Color.White)
         )
     }
 }
@@ -184,7 +284,7 @@ internal fun SettingsLabel(text: String) {
         color = Color(0xFF8A8A8A),
         fontFamily = PaperlogyFontFamily,
         fontSize = 11.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
+        modifier = Modifier.padding(bottom = 8.dp, start = 14.dp)
     )
 }
 
@@ -194,29 +294,32 @@ internal fun SettingsTextField(
     onValueChange: (String) -> Unit,
     keyboardType: KeyboardType
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(
-            color = Color.White,
-            fontFamily = PaperlogyFontFamily,
-            fontSize = 13.sp
-        ),
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = ImeAction.Done
-        ),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = mainGreen,
-            unfocusedBorderColor = mainGreen,
-            focusedContainerColor = Color(0xFF171717),
-            unfocusedContainerColor = Color(0xFF171717),
-            cursorColor = mainGreen
-        ),
-        shape = RoundedCornerShape(8.dp)
-    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .background(Color(0xFF171717), RoundedCornerShape(12.dp))
+            .border(1.dp, mainGreen, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            textStyle = TextStyle(
+                color = Color.White,
+                fontFamily = PaperlogyFontFamily,
+                fontSize = 13.sp
+            ),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = ImeAction.Done
+            ),
+            cursorBrush = SolidColor(mainGreen)
+        )
+    }
 }
 
 internal fun parseSettingsApiError(raw: String?): String? {

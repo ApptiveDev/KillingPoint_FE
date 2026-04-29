@@ -162,7 +162,7 @@ fun ChangeProfileImageScreen(navController: NavController) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(116.dp),
+                    .height(150.dp),
                 contentAlignment = Alignment.Center
             ) {
                 val profileImageUrl = (userState as? UserUiState.Success)?.userInfo?.profileImageUrl
@@ -171,7 +171,7 @@ fun ChangeProfileImageScreen(navController: NavController) {
                     contentDescription = "프로필 이미지",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(112.dp)
+                        .size(150.dp)
                         .clip(CircleShape),
                     placeholder = painterResource(id = R.drawable.default_profile),
                     error = painterResource(id = R.drawable.default_profile)

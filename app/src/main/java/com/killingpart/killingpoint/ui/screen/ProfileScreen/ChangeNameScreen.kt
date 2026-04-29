@@ -119,9 +119,9 @@ fun ChangeNameScreen(navController: NavController) {
                 },
                 keyboardType = KeyboardType.Text
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(14.dp))
             Text(
-                text = "1~20자, 영어/한글/숫자/공백 사용 가능",
+                text = "2~16자, 한글/영문 숫자 사용 가능",
                 color = Color(0xFF8A8A8A),
                 fontFamily = PaperlogyFontFamily,
                 fontSize = 11.sp
@@ -147,7 +147,7 @@ private fun ChangeNameScreenPreview() {
             modifier = Modifier
                 .fillMaxSize()
                 .background(SettingsBackground)
-                .padding(horizontal = 18.dp)
+                .padding(horizontal = 20.dp)
         ) {
             EditTopBar(
                 title = "이름 변경",

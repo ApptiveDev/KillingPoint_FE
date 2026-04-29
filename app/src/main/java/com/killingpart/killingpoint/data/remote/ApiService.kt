@@ -18,6 +18,7 @@ import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.UserStatistics
 import com.killingpart.killingpoint.data.model.LikeResponse
 import com.killingpart.killingpoint.data.model.StoreResponse
+import com.killingpart.killingpoint.data.model.SurveyRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -67,6 +68,12 @@ interface ApiService {
     suspend fun agreePolicies(
         @Header("Authorization") accessToken: String,
         @Body body: PolicyAgreementRequest
+    ): retrofit2.Response<Unit>
+
+    @POST("surveys")
+    suspend fun submitSurvey(
+        @Header("Authorization") accessToken: String,
+        @Body body: SurveyRequest
     ): retrofit2.Response<Unit>
 
     @POST("jwt/exchange")
@@ -224,6 +231,19 @@ interface ApiService {
 
     @POST("users/{blockedId}/blocks")
     suspend fun blockUser(
+        @Header("Authorization") accessToken: String,
+        @Path("blockedId") blockedId: Long
+    ): retrofit2.Response<Unit>
+
+    @GET("users/blocks")
+    suspend fun getBlockedUsers(
+        @Header("Authorization") accessToken: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 5
+    ): SubscribeResponse
+
+    @DELETE("users/{blockedId}/blocks")
+    suspend fun unblockUser(
         @Header("Authorization") accessToken: String,
         @Path("blockedId") blockedId: Long
     ): retrofit2.Response<Unit>
