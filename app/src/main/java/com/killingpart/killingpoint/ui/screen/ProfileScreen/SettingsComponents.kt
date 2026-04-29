@@ -1,5 +1,8 @@
 package com.killingpart.killingpoint.ui.screen.ProfileScreen
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,7 +67,8 @@ internal fun SettingsTopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
+            .height(68.dp)
+            .padding(top = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
@@ -97,7 +102,8 @@ internal fun EditTopBar(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
+            .height(68.dp)
+            .padding(top = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         IconButton(
@@ -172,7 +178,7 @@ internal fun SettingsTab(
                     text = detailText,
                     color = Color(0xFF8E8E93),
                     fontFamily = PaperlogyFontFamily,
-                    fontSize = 11.sp
+                    fontSize = 13.sp
                 )
             }
             Image(
@@ -244,8 +250,16 @@ private fun SettingsPushSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val trackColor = if (checked) mainGreen else Color(0xFF4A4A4A)
-    val thumbOffset = if (checked) 18.dp else 2.dp
+    val trackColor by animateColorAsState(
+        targetValue = if (checked) mainGreen else Color(0xFF4A4A4A),
+        animationSpec = tween(durationMillis = 180),
+        label = "settingsPushSwitchTrackColor"
+    )
+    val thumbOffset by animateDpAsState(
+        targetValue = if (checked) 18.dp else 2.dp,
+        animationSpec = tween(durationMillis = 180),
+        label = "settingsPushSwitchThumbOffset"
+    )
 
     Box(
         modifier = Modifier

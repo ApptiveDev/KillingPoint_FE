@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.ui.screen.ProfileScreen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,16 +51,18 @@ private fun SettingsPolicyContent(
         modifier = Modifier
             .fillMaxSize()
             .background(SettingsBackground)
-            .padding(horizontal = 16.dp)
     ) {
-        SettingsTopBar(
-            title = title,
-            onBack = onBack
-        )
+        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+            SettingsTopBar(
+                title = title,
+                onBack = onBack
+            )
+        }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(horizontal = 20.dp)
                 .padding(top = 10.dp, bottom = 24.dp)
         ) {
             items(splitPolicySections(body)) { section ->

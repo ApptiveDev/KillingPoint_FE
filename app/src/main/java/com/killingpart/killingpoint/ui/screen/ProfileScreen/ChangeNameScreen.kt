@@ -61,7 +61,7 @@ fun ChangeNameScreen(navController: NavController) {
         }
         val pattern = Pattern.compile("^[A-Za-z0-9가-힣 ]+$")
         if (!pattern.matcher(trimmed).matches()) {
-            return "이름은 영어, 한글, 숫자, 공백만 사용할 수 있습니다."
+            return "한글, 영문, 그리고 숫자로 조합해주세요"
         }
         return null
     }

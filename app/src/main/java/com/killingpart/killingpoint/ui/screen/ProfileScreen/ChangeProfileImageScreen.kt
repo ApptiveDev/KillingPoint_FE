@@ -49,6 +49,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 
+private const val DEFAULT_PROFILE_IMAGE_URL =
+    "https://killingpart-file.s3.ap-northeast-2.amazonaws.com/defaultImage/userDefaultImage.png"
+
 @Composable
 fun ChangeProfileImageScreen(navController: NavController) {
     val context = LocalContext.current
@@ -166,8 +169,13 @@ fun ChangeProfileImageScreen(navController: NavController) {
                 contentAlignment = Alignment.Center
             ) {
                 val profileImageUrl = (userState as? UserUiState.Success)?.userInfo?.profileImageUrl
+                val profileImageModel = if (profileImageUrl == DEFAULT_PROFILE_IMAGE_URL || profileImageUrl.isNullOrBlank()) {
+                    R.drawable.default_profile
+                } else {
+                    profileImageUrl
+                }
                 AsyncImage(
-                    model = profileImageUrl ?: R.drawable.default_profile,
+                    model = profileImageModel,
                     contentDescription = "프로필 이미지",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier

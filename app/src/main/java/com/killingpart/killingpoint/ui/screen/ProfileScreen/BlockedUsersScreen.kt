@@ -203,7 +203,7 @@ private fun BlockedUsersContent(
                     color = Color(0xFF8E8E93),
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(top = 20.dp)
+                    modifier = Modifier.padding(top = 20.dp, start = 20.dp)
                 )
             }
 
@@ -384,7 +384,7 @@ private fun UnblockUserModal(
                 color = Color(0xFF8E8E93),
                 fontFamily = PaperlogyFontFamily,
                 fontSize = 12.sp,
-                lineHeight = 4.sp
+                lineHeight = 14.sp
             )
             Spacer(modifier = Modifier.height(22.dp))
             Row(
@@ -405,7 +405,7 @@ private fun UnblockUserModal(
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
                 Text(
-                    text = if (isLoading) "처리 중..." else "삭제",
+                    text = if (isLoading) "처리 중..." else "해제",
                     color = Color.White,
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 12.sp,

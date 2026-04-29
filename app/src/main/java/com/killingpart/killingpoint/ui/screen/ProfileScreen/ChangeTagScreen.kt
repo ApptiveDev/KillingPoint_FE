@@ -57,11 +57,11 @@ fun ChangeTagScreen(navController: NavController) {
 
     fun validateTag(value: String): String? {
         if (value.length < 4 || value.length > 30) {
-            return "tag는 4자 이상 30자 이하이어야 합니다."
+            return "30자 이내의 영문과 숫자, 특수문자([.],[_]로 조합해주세요"
         }
         val pattern = Pattern.compile("^[a-z0-9_.]+$")
         if (!pattern.matcher(value).matches()) {
-            return "30자 이내의 영문과 숫자, 특수문자([.],[_])로 조합해주세요."
+            return "30자 이내의 영문과 숫자, 특수문자([.],[_]로 조합해주세요"
         }
         return null
     }

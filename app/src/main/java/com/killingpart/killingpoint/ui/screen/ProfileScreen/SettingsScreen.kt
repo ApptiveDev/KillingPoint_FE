@@ -310,19 +310,18 @@ private fun SettingsAccountActionCard(
             text = "로그아웃",
             color = Color(0xFFFF5A5A),
             fontFamily = PaperlogyFontFamily,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onLogoutClick() }
                 .padding(vertical = 16.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
-        SettingsDivider()
         Text(
             text = "회원 탈퇴",
-            color = Color(0xFF6A6A6A),
+            color = Color(0xFF555555),
             fontFamily = PaperlogyFontFamily,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { onUnregisterClick() }
@@ -350,14 +349,14 @@ private fun FeedbackModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 28.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "킬링파트 팀에게 문의사항이나 개선할 점을\n알려주세요!",
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.W600,
+                fontWeight = FontWeight.W500,
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -368,9 +367,9 @@ private fun FeedbackModal(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(176.dp)
-                    .background(Color(0xFF262626), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                    .padding(14.dp)
+                    .height(220.dp)
+                    .background(Color(0xFF282828), androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                    .padding(16.dp)
             ) {
                 BasicTextField(
                     value = content,
@@ -391,8 +390,8 @@ private fun FeedbackModal(
                     decorationBox = { innerTextField ->
                         if (content.isEmpty()) {
                             Text(
-                                text = "문의사항 및 피드백..",
-                                color = Color(0xFF8E8E93),
+                                text = "문의사항 및 피드백...",
+                                color = Color(0xFFA8A8A8),
                                 fontFamily = PaperlogyFontFamily,
                                 fontSize = 12.sp
                             )
@@ -418,28 +417,26 @@ private fun FeedbackModal(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text(
-                    text = "돌아가기",
-                    color = Color.Black,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 12.sp,
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(36.dp)
                         .background(Color.White, androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
-                        .clickable(enabled = !isSubmitting) { onDismiss() }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    text = if (isSubmitting) "보내는 중..." else "보내기",
-                    color = Color.Black,
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.W600,
-                    fontSize = 12.sp,
+                        .clickable(enabled = !isSubmitting) { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "돌아가기",
+                        color = Color.Black,
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 12.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(36.dp)
                         .background(mainGreen, androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
                         .clickable(enabled = !isSubmitting) {
                             val trimmed = content.trim()
@@ -454,10 +451,18 @@ private fun FeedbackModal(
                                     }
                                 }
                             }
-                        }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isSubmitting) "보내는 중..." else "보내기",
+                        color = Color.Black,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W400,
+                        fontSize = 12.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -480,7 +485,7 @@ private fun UnregisterConfirmModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 30.dp),
+                .padding(horizontal = 20.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -498,7 +503,7 @@ private fun UnregisterConfirmModal(
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W700,
-                fontSize = 14.sp
+                fontSize = 15.sp
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -508,7 +513,7 @@ private fun UnregisterConfirmModal(
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W500,
-                fontSize = 11.sp
+                fontSize = 12.sp
             )
 
             errorMessage?.let {
@@ -527,27 +532,25 @@ private fun UnregisterConfirmModal(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "← 돌아가기",
-                    color = Color.Black,
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.W600,
-                    fontSize = 12.sp,
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(44.dp)
                         .background(Color.White, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .clickable(enabled = !isSubmitting) { onDismiss() }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                        .clickable(enabled = !isSubmitting) { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "← 돌아가기",
+                        color = Color.Black,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W600,
+                        fontSize = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
 
-                Text(
-                    text = if (isSubmitting) "탈퇴 중..." else "탈퇴하기",
-                    color = Color.White,
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.W600,
-                    fontSize = 12.sp,
+                Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(44.dp)
@@ -559,10 +562,18 @@ private fun UnregisterConfirmModal(
                                 isSubmitting = false
                                 errorMessage = error
                             }
-                        }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isSubmitting) "탈퇴 중..." else "탈퇴하기",
+                        color = Color.White,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W600,
+                        fontSize = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -582,7 +593,7 @@ private fun WebsiteMoveModal(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 28.dp),
+                .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
@@ -590,46 +601,52 @@ private fun WebsiteMoveModal(
                 contentDescription = "웹사이트",
                 modifier = Modifier.size(30.dp)
             )
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(18.dp))
             Text(
-                text = "외부 웹사이트로 이동됩니다.",
+                text = "외부 웹사이트로 이동합니다.",
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W600,
-                fontSize = 13.sp
+                fontSize = 15.sp
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "취소",
-                    color = Color.White,
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 12.sp,
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(40.dp)
                         .background(Color(0xFF333333), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .clickable { onDismiss() }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    text = "이동하기",
-                    color = Color.Black,
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.W600,
-                    fontSize = 12.sp,
+                        .clickable { onDismiss() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "취소",
+                        color = Color.White,
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(44.dp)
+                        .height(40.dp)
                         .background(mainGreen, androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                        .clickable { onMove() }
-                        .padding(vertical = 14.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                        .clickable { onMove() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "이동하기",
+                        color = Color.Black,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.W600,
+                        fontSize = 13.sp,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
             }
         }
     }
@@ -682,7 +699,6 @@ private fun SettingsProfileCard(
                 )
             }
         }
-        SettingsDivider()
         SettingsTab(tabTitle = "이름 변경", onClick = onNameClick)
         SettingsDivider()
         SettingsTab(tabTitle = "태그 변경", onClick = onTagClick)
