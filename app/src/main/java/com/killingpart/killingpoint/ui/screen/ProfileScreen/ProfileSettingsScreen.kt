@@ -243,9 +243,6 @@ private fun ProfileSettingsContent(
         return url.split("?").first()
     }
     
-    // 기본 이미지 URL
-    val defaultProfileImageUrl = "https://killingpart-file.s3.ap-northeast-2.amazonaws.com/defaultImage/userDefaultImage.png"
-    
     // 기본 이미지로 설정
     fun resetToDefaultImage() {
         if (isUploadingImage) return
@@ -255,36 +252,14 @@ private fun ProfileSettingsContent(
         
         scope.launch {
             try {
-                // 기본 이미지의 경우도 presignedUrl 발급이 필요할 수 있지만,
-                // 이미 존재하는 파일이므로 기본 이미지 URL을 직접 사용
-                // 백엔드 API가 기본 이미지 URL을 직접 받을 수 있다면 이 방식으로,
-                // 그렇지 않다면 presignedUrl 발급 후 기본 이미지 URL을 업로드해야 함
-                
-                // 1. PresignedUrl 발급
-                val presignedUrlResult = repo.getPresignedUrl()
-                val presignedUrlResponse = presignedUrlResult.getOrElse {
-                    imageUploadError = it.message ?: "PresignedUrl 발급 실패"
-                    isUploadingImage = false
-                    return@launch
-                }
-                
-                // 2. 기본 이미지 URL을 presignedUrl로 업로드 (기본 이미지는 이미 S3에 있으므로 스킵 가능)
-                // 하지만 API 구조상 presignedUrl이 필요하므로, 기본 이미지 URL을 직접 전달
-                // 백엔드가 기본 이미지 URL을 처리할 수 있다면 이 방식으로
-                
-                // 3. 프로필 이미지를 기본 이미지 URL로 변경
-                // 기본 이미지 URL을 presignedUrl처럼 사용 (백엔드가 이를 처리할 수 있어야 함)
-                val updateResult = repo.updateProfileImage(
-                    presignedUrlResponse.id,
-                    defaultProfileImageUrl
-                )
+                val updateResult = repo.deleteProfileImage()
                 updateResult.getOrElse {
                     imageUploadError = it.message ?: "기본 이미지로 설정 실패"
                     isUploadingImage = false
                     return@launch
                 }
                 
-                // 4. 성공 - 사용자 정보 새로고침
+                // 성공 - 사용자 정보 새로고침
                 userViewModel.loadUserInfo(context)
                 onTagUpdateSuccess()
                 imageUploadError = null

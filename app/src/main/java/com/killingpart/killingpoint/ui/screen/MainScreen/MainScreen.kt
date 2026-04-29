@@ -48,9 +48,6 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +73,6 @@ import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
 import com.killingpart.killingpoint.ui.screen.MusicCalendarScreen.MusicCalendarScreen
-import com.killingpart.killingpoint.ui.screen.ProfileScreen.ProfileSettingsScreen
 import kotlinx.coroutines.launch
 
 enum class MainTab {
@@ -140,15 +136,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
             currentDiaryId = diaries[0].id
         }
     }
-
-
-
-    // 프로필 설정 화면 상태 관리 (최상위 레벨로 이동)
-    var showProfileSettings by remember { mutableStateOf(false) }
-    // TopPillTabs 위치 측정을 위한 상태
-    var topPillTabsBottomY by remember { mutableStateOf(0.dp) }
-    val configuration = LocalConfiguration.current
-    val screenHeight = configuration.screenHeightDp.dp
 
     when (diaryState) {
         is DiaryUiState.Loading -> {
@@ -234,11 +221,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 30.dp)
-                        .onGloballyPositioned { coordinates ->
-                            with(density) {
-                                topPillTabsBottomY = coordinates.positionInParent().y.toDp() + coordinates.size.height.toDp()
-                            }
-                        }
                 )
 
                 Spacer(modifier = Modifier.height(7.dp))
@@ -272,9 +254,8 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                                                 navController = navController,
                                                 diaries = state.diaries,
                                                 onProfileClick = {
-                                                    android.util.Log.d("MainScreen", "프로필 편집 버튼 클릭됨")
-                                                    showProfileSettings = true
-                                                    android.util.Log.d("MainScreen", "showProfileSettings: $showProfileSettings")
+                                                    android.util.Log.d("MainScreen", "설정 버튼 클릭됨")
+                                                    navController.navigate("settings")
                                                 },
                                                 modifier = Modifier.fillParentMaxHeight() // 가능한 최대 높이 사용
                                             )
@@ -410,32 +391,6 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                 )
                     }
         
-                    // ProfileSettingsScreen을 AppBackground 최상위에 배치하여 항상 표시되도록 함
-                    LaunchedEffect(showProfileSettings) {
-                        android.util.Log.d("MainScreen", "showProfileSettings 변경됨: $showProfileSettings")
-                    }
-                    
-                    if (showProfileSettings) {
-                        android.util.Log.d("MainScreen", "ProfileSettingsScreen 렌더링 시작")
-                        val topOffset = topPillTabsBottomY + 120.dp
-                        val maxHeight = screenHeight - topOffset - BottomBarHeight
-                        ProfileSettingsScreen(
-                            onDismiss = { 
-                                android.util.Log.d("MainScreen", "ProfileSettingsScreen 닫기")
-                                showProfileSettings = false 
-                            },
-                            topOffset = topOffset,
-                            maxHeight = maxHeight,
-                            onLogout = {
-                                // 로그아웃/회원탈퇴 후 로그인 화면으로 이동 - 모든 네비게이션 스택 정리
-                                navController.navigate("home") {
-                                    popUpTo(0) { inclusive = false }
-                                    launchSingleTop = true
-                                }
-                            },
-                            navController = navController
-                        )
-                    }
                 }
             }
         }

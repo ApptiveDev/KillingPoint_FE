@@ -25,6 +25,10 @@ import com.killingpart.killingpoint.ui.screen.SocialScreen.FriendProfileScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.PickFandomListScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeNameScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeProfileImageScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeTagScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.SettingsScreen
 import com.killingpart.killingpoint.ui.screen.SearchScreen.SearchScreen
 import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import java.net.URLDecoder
@@ -41,6 +45,10 @@ fun NavGraph(
         startDestination = startDestination
     ) {
         composable("home") { HelloScreen(navController, loginViewModel) }
+        composable("settings") { SettingsScreen(navController) }
+        composable("settings/name") { ChangeNameScreen(navController) }
+        composable("settings/tag") { ChangeTagScreen(navController) }
+        composable("settings/profile-image") { ChangeProfileImageScreen(navController) }
         composable("onboarding_policy") { PolicyAgreementScreen(navController) }
         composable("onboarding_name") { OnboardingNameScreen(navController) }
         composable(

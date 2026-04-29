@@ -14,6 +14,7 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.UpdateTagRequest
 import com.killingpart.killingpoint.data.model.PresignedUrlResponse
 import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
+import com.killingpart.killingpoint.data.model.UpdateUsernameRequest
 import com.killingpart.killingpoint.data.model.YoutubeVideoRequest
 import com.killingpart.killingpoint.data.model.SubscribeResponse
 import com.killingpart.killingpoint.data.model.FeedResponse
@@ -438,6 +439,22 @@ class AuthRepository(
         }
     }
 
+    suspend fun updateUsername(username: String): Result<UserInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.updateUsername("Bearer $accessToken", UpdateUsernameRequest(username))
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("이름 업데이트 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
     /**
      * PresignedUrl 발급
      */
@@ -496,6 +513,26 @@ class AuthRepository(
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
                 throw IllegalStateException("프로필 이미지 변경 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
+     * 프로필 이미지 삭제
+     * 백엔드에서 기본 이미지로 변경된 사용자 정보를 반환한다.
+     */
+    suspend fun deleteProfileImage(): Result<UserInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.deleteProfileImage("Bearer $accessToken")
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("프로필 이미지 삭제 실패 ($code): $msg")
             } else {
                 throw e
             }

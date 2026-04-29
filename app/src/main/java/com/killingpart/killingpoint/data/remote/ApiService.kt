@@ -33,6 +33,7 @@ import com.killingpart.killingpoint.data.model.RandomDiariesResponse
 import com.killingpart.killingpoint.data.model.StoredDiariesResponse
 import com.killingpart.killingpoint.data.model.DiaryLikesResponse
 import com.killingpart.killingpoint.data.model.PolicyAgreementRequest
+import com.killingpart.killingpoint.data.model.UpdateUsernameRequest
 import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
 
 interface ApiService {
@@ -105,6 +106,12 @@ interface ApiService {
         @Body body: UpdateTagRequest
     ): retrofit2.Response<Unit>
 
+    @PATCH("users/my/names")
+    suspend fun updateUsername(
+        @Header("Authorization") accessToken: String,
+        @Body body: UpdateUsernameRequest
+    ): UserInfo
+
     @GET("presigned-url")
     suspend fun getPresignedUrl(
         @Header("Authorization") accessToken: String
@@ -114,6 +121,11 @@ interface ApiService {
     suspend fun updateProfileImage(
         @Header("Authorization") accessToken: String,
         @Body body: UpdateProfileImageRequest
+    ): UserInfo
+
+    @DELETE("users/my/profile-image")
+    suspend fun deleteProfileImage(
+        @Header("Authorization") accessToken: String
     ): UserInfo
 
     @POST("users/logout")

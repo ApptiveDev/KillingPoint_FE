@@ -9,12 +9,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -363,7 +360,7 @@ fun OuterBox(
                 ) {
                     Button(
                         onClick = {
-                            android.util.Log.d("OuterBox", "프로필 편집 버튼 클릭")
+                            android.util.Log.d("OuterBox", "설정 버튼 클릭")
                             onProfileClick()
                             android.util.Log.d("OuterBox", "onProfileClick 호출 완료")
                         },
@@ -376,15 +373,8 @@ fun OuterBox(
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "프로필 편집",
-                            tint = mainGreen,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "프로필 편집",
+                            text = "설정",
                             color = mainGreen,
                             fontFamily = PaperlogyFontFamily,
                             fontSize = 12.sp,
