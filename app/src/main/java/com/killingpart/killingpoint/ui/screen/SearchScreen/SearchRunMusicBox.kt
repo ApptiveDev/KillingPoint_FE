@@ -471,6 +471,7 @@ fun SearchRunMusicBox(
 
         if (showBlockModal) {
             BlockUserModal(
+                username = feedDiary.username,
                 onDismiss = { showBlockModal = false },
                 isLoading = isBlocking,
                 onBlock = {
@@ -627,6 +628,7 @@ fun ReportDiaryModal(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BlockUserModal(
+    username: String,
     onDismiss: () -> Unit,
     isLoading: Boolean,
     onBlock: () -> Unit
@@ -640,38 +642,34 @@ fun BlockUserModal(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = "차단하시겠습니까?",
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 18.sp,
-                color = Color.White
-            )
+            Column (
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp)
+            ){
+                Text(
+                    text = "차단하시겠습니까?",
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
 
-            Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-            Text(
-                text = "님을 차단하면 픽과 팬덤 관계가 끊기고 서로 글",
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                color = Color.White
-            )
-            Text(
-                text = "을 볼 수 없어요.",
-                fontFamily = PaperlogyFontFamily,
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                color = Color.White
-            )
+                Text(
+                    text = "${username} 님을 차단하면 픽과 팬덤 관계가 끊기고\n서로 글을 볼 수 없어요.",
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+            }
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 ReportButton(
                     text = "돌아가기",
@@ -743,10 +741,10 @@ fun ReportButton(
 ) {
     Box(
         modifier = modifier
-            .height(48.dp)
+            .height(38.dp)
             .background(
                 color = if (enabled) background else background.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(8.dp)
             )
             .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center
