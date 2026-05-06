@@ -122,7 +122,7 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
                                 }
                             ),
                             contentDescription = "알림 목록 진입",
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(if (hasUnread) 24.dp else 18.dp)
                         )
                     }
                 }
