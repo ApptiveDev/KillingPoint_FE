@@ -31,7 +31,7 @@ enum class SocialTab {
 @Composable
 fun SocialScreen(navController: NavController, initialTab: String = "feed") {
     val alarmViewModel: AlarmViewModel = viewModel()
-    val hasAlarm by alarmViewModel.hasAlarm.collectAsState()
+    val hasUnread by alarmViewModel.hasUnread.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -115,7 +115,7 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
                     ) {
                         Image(
                             painter = painterResource(
-                                id = if (hasAlarm) {
+                                id = if (hasUnread) {
                                     R.drawable.ic_noti_true_without_bg
                                 } else {
                                     R.drawable.ic_bell

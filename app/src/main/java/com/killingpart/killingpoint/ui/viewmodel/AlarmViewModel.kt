@@ -23,8 +23,8 @@ class AlarmViewModel(
     private val _state = MutableStateFlow<AlarmUiState>(AlarmUiState.Loading)
     val state: StateFlow<AlarmUiState> = _state
 
-    private val _hasAlarm = MutableStateFlow(false)
-    val hasAlarm: StateFlow<Boolean> = _hasAlarm
+    private val _hasUnread = MutableStateFlow(false)
+    val hasUnread: StateFlow<Boolean> = _hasUnread
 
     fun loadAlarms(context: Context, size: Int = 20) {
         _state.value = AlarmUiState.Loading
@@ -32,7 +32,6 @@ class AlarmViewModel(
         viewModelScope.launch {
             loadAllAlarmPages(repo, size)
                 .onSuccess { alarms ->
-                    _hasAlarm.value = alarms.isNotEmpty()
                     _state.value = AlarmUiState.Success(alarms)
                 }
                 .onFailure { e ->
@@ -42,16 +41,8 @@ class AlarmViewModel(
     }
 
     fun refreshAlarmFlag(context: Context) {
-        val repo = repoFactory(context)
-        viewModelScope.launch {
-            repo.getAlarms(page = 0, size = 1)
-                .onSuccess { response ->
-                    _hasAlarm.value = response.page.totalElements > 0
-                }
-                .onFailure {
-                    _hasAlarm.value = false
-                }
-        }
+        // TODO: 백엔드 미확인 알림(hasUnread) API 연동 전까지는 항상 false 유지
+        _hasUnread.value = false
     }
 
     private suspend fun loadAllAlarmPages(
