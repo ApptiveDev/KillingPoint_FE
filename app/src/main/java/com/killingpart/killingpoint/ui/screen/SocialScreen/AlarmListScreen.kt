@@ -7,17 +7,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -152,51 +155,62 @@ fun AlarmListScreen(navController: NavController) {
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(top = 36.dp),
-                            verticalArrangement = Arrangement.spacedBy(26.dp)
+                            verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
-                            items(state.alarms, key = { it.alarmId }) { alarm ->
+                            itemsIndexed(state.alarms, key = { _, alarm -> alarm.alarmId }) { index, alarm ->
                                 val diaryId = parseDiaryIdFromDeepLink(alarm.deepLink)
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = diaryId != null && openingDiaryId == null) {
-                                            val id = diaryId ?: return@clickable
-                                            openingDiaryId = id
-                                            coroutineScope.launch {
-                                                repo.getDiaryById(id).fold(
-                                                    onSuccess = { diary ->
-                                                        navigateToDiaryDetail(navController, diary)
-                                                    },
-                                                    onFailure = { e ->
-                                                        Toast.makeText(
-                                                            context,
-                                                            e.message ?: "일기를 불러올 수 없습니다",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    }
-                                                )
-                                                openingDiaryId = null
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(enabled = diaryId != null && openingDiaryId == null) {
+                                                val id = diaryId ?: return@clickable
+                                                openingDiaryId = id
+                                                coroutineScope.launch {
+                                                    repo.getDiaryById(id).fold(
+                                                        onSuccess = { diary ->
+                                                            navigateToDiaryDetail(navController, diary)
+                                                        },
+                                                        onFailure = { e ->
+                                                            Toast.makeText(
+                                                                context,
+                                                                e.message ?: "일기를 불러올 수 없습니다",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    )
+                                                    openingDiaryId = null
+                                                }
                                             }
-                                        },
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = alarm.content,
-                                        color = Color.White,
-                                        fontFamily = PaperlogyFontFamily,
-                                        fontWeight = FontWeight.Normal,
-                                        fontSize = 14.sp,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Spacer(modifier = Modifier.size(12.dp))
-                                    Text(
-                                        text = formatAlarmDate(alarm.createDate),
-                                        color = Color(0xFFA4A4A6),
-                                        fontFamily = PaperlogyFontFamily,
-                                        fontWeight = FontWeight.Medium,
-                                        fontSize = 14.sp
-                                    )
+                                            .padding(vertical = 16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = alarm.content,
+                                            color = Color.White,
+                                            fontFamily = PaperlogyFontFamily,
+                                            fontWeight = FontWeight.Normal,
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        Spacer(modifier = Modifier.size(12.dp))
+                                        Text(
+                                            text = formatAlarmDate(alarm.createDate),
+                                            color = Color(0xFFA4A4A6),
+                                            fontFamily = PaperlogyFontFamily,
+                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+
+                                    if (index != state.alarms.lastIndex) {
+                                        HorizontalDivider(
+                                            thickness = 1.dp,
+                                            color = Color(0xFF2A2A2C),
+                                            modifier = Modifier.height(1.dp)
+                                        )
+                                    }
                                 }
                             }
                         }

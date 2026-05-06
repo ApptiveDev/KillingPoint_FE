@@ -30,10 +30,10 @@ class AlarmViewModel(
         _state.value = AlarmUiState.Loading
         val repo = repoFactory(context)
         viewModelScope.launch {
-            repo.getAlarms(page = 0, size = size)
-                .onSuccess { response ->
-                    _hasAlarm.value = response.content.isNotEmpty()
-                    _state.value = AlarmUiState.Success(response.content)
+            loadAllAlarmPages(repo, size)
+                .onSuccess { alarms ->
+                    _hasAlarm.value = alarms.isNotEmpty()
+                    _state.value = AlarmUiState.Success(alarms)
                 }
                 .onFailure { e ->
                     _state.value = AlarmUiState.Error(e.message ?: "알림 목록 조회 실패")
@@ -52,5 +52,24 @@ class AlarmViewModel(
                     _hasAlarm.value = false
                 }
         }
+    }
+
+    private suspend fun loadAllAlarmPages(
+        repo: AuthRepository,
+        size: Int
+    ): Result<List<AlarmItem>> {
+        val firstPageResult = repo.getAlarms(page = 0, size = size)
+        val firstPage = firstPageResult.getOrElse { return Result.failure(it) }
+
+        val totalPages = firstPage.page.totalPages.coerceAtLeast(1)
+        val merged = firstPage.content.toMutableList()
+
+        for (page in 1 until totalPages) {
+            val pageResult = repo.getAlarms(page = page, size = size)
+            val pageResponse = pageResult.getOrElse { return Result.failure(it) }
+            merged += pageResponse.content
+        }
+
+        return Result.success(merged)
     }
 }
