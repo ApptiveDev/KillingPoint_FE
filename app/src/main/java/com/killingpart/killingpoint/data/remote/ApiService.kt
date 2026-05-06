@@ -36,6 +36,10 @@ import com.killingpart.killingpoint.data.model.DiaryLikesResponse
 import com.killingpart.killingpoint.data.model.PolicyAgreementRequest
 import com.killingpart.killingpoint.data.model.UpdateUsernameRequest
 import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
+import com.killingpart.killingpoint.data.model.AlarmResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledRequest
+import com.killingpart.killingpoint.data.model.AlarmEnabledResponse
+import com.killingpart.killingpoint.data.model.FcmTokenRequest
 
 interface ApiService {
 
@@ -87,6 +91,12 @@ interface ApiService {
         @Query("page") page: Int = 0,
         @Query("size") size: Int
     ): MyDiaries
+
+    @GET("diaries/{diaryId}")
+    suspend fun getDiary(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long
+    ): Diary
 
     @POST("diaries")
     suspend fun createDiary(
@@ -266,4 +276,33 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: DiaryOrderRequest
     ): retrofit2.Response<Unit>
+
+    @POST("fcm/tokens")
+    suspend fun addDeviceToken(
+        @Header("Authorization") accessToken: String,
+        @Body body: FcmTokenRequest
+    ): retrofit2.Response<Unit>
+
+    @DELETE("fcm/tokens")
+    suspend fun deleteDeviceToken(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
+
+    @PATCH("users/my/notification-settings")
+    suspend fun updateAlarmEnabled(
+        @Header("Authorization") accessToken: String,
+        @Body body: AlarmEnabledRequest
+    ): retrofit2.Response<Unit>
+
+    @GET("users/my/notification-settings")
+    suspend fun getAlarmEnabled(
+        @Header("Authorization") accessToken: String
+    ): AlarmEnabledResponse
+
+    @GET("alarms")
+    suspend fun getAlarms(
+        @Header("Authorization") accessToken: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): AlarmResponse
 }

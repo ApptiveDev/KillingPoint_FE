@@ -1,12 +1,15 @@
 package com.killingpart.killingpoint
 
+import android.Manifest
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +33,7 @@ import com.killingpart.killingpoint.BuildConfig
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
 import com.killingpart.killingpoint.navigation.OnboardingProgressStore
+import com.killingpart.killingpoint.notification.FcmTokenSync
 import com.killingpart.killingpoint.ui.component.VideoSplashScreen
 import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import com.killingpart.killingpoint.ui.viewmodel.LoginUiState
@@ -45,6 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         KakaoSdk.init(this, getString(R.string.kakao_native_app_key))
+        requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         window.statusBarColor = AndroidColor.BLACK
         window.navigationBarColor = AndroidColor.BLACK
@@ -90,6 +95,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(loginState, context) {
                 when (val s = loginState) {
                     is LoginUiState.AutoLoginSuccess -> {
+                        FcmTokenSync.syncCurrentToken(context)
                         val repo = AuthRepository(context)
                         val start = repo.getUserInitSettings()
                             .getOrNull()
@@ -109,6 +115,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     is LoginUiState.Success -> {
+                        FcmTokenSync.syncCurrentToken(context)
                         resolvedStartDestination = "home"
                     }
 
@@ -189,5 +196,22 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (
+            ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+            1001
+        )
     }
 }

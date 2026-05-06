@@ -41,6 +41,10 @@ import com.killingpart.killingpoint.data.model.DiaryLikesResponse
 import com.killingpart.killingpoint.data.model.PolicyAgreementItem
 import com.killingpart.killingpoint.data.model.PolicyAgreementRequest
 import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledResponse
+import com.killingpart.killingpoint.data.model.AlarmResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledRequest
+import com.killingpart.killingpoint.data.model.FcmTokenRequest
 
 class AuthRepository(
     private val context: Context,
@@ -896,6 +900,69 @@ class AuthRepository(
             } else {
                 throw e
             }
+        }
+    }
+
+    suspend fun addDeviceToken(token: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.addDeviceToken("Bearer $accessToken", FcmTokenRequest(token))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("디바이스 토큰 등록 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun deleteDeviceToken(): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.deleteDeviceToken("Bearer $accessToken")
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("디바이스 토큰 삭제 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun updateAlarmEnabled(alarmEnabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateAlarmEnabled(
+                "Bearer $accessToken",
+                AlarmEnabledRequest(alarmEnabled)
+            )
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("알림 설정 변경 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun getAlarmEnabled(): Result<AlarmEnabledResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getAlarmEnabled("Bearer $accessToken")
+        }
+    }
+
+    suspend fun getDiaryById(diaryId: Long): Result<Diary> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getDiary("Bearer $accessToken", diaryId)
+        }
+    }
+
+    suspend fun getAlarms(page: Int = 0, size: Int = 20): Result<AlarmResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getAlarms("Bearer $accessToken", page = page, size = size)
         }
     }
 }

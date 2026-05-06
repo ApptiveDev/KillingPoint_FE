@@ -21,6 +21,7 @@ import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.SelectDurationScr
 import com.killingpart.killingpoint.ui.screen.DiaryDetailScreen.DiaryDetailScreen
 import com.killingpart.killingpoint.ui.screen.DiaryDetailScreen.DiaryDetailScreenForStored
 import com.killingpart.killingpoint.ui.screen.SocialScreen.SocialScreen
+import com.killingpart.killingpoint.ui.screen.SocialScreen.AlarmListScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.FriendProfileScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.PickFandomListScreen
 import androidx.navigation.navArgument
@@ -283,6 +284,10 @@ fun NavGraph(
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "feed"
             SocialScreen(navController, tab)
+        }
+
+        composable("alarm_list") {
+            AlarmListScreen(navController)
         }
 
         composable(

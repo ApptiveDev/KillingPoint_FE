@@ -71,12 +71,17 @@ fun SettingsScreen(navController: NavController) {
     var showFeedbackModal by remember { mutableStateOf(false) }
     var showUnregisterModal by remember { mutableStateOf(false) }
     var pushEnabled by remember { mutableStateOf(true) }
+    var isUpdatingPushSetting by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
         repo.getBlockedUsers(page = 0, size = 5)
             .onSuccess { blockedCount = it.page.totalElements }
             .onFailure { blockedCount = 0 }
+
+        repo.getAlarmEnabled()
+            .onSuccess { pushEnabled = it.alarmEnabled }
+            .onFailure { /* 실패 시 기본값 유지 */ }
     }
 
     SettingsBackgroundBox {
@@ -159,7 +164,20 @@ fun SettingsScreen(navController: NavController) {
                 SettingsSwitchRow(
                     tabTitle = "알림",
                     checked = pushEnabled,
-                    onCheckedChange = { pushEnabled = it }
+                    onCheckedChange = { checked ->
+                        if (isUpdatingPushSetting) return@SettingsSwitchRow
+                        val previous = pushEnabled
+                        pushEnabled = checked
+
+                        scope.launch {
+                            isUpdatingPushSetting = true
+                            repo.updateAlarmEnabled(checked)
+                                .onFailure {
+                                    pushEnabled = previous
+                                }
+                            isUpdatingPushSetting = false
+                        }
+                    }
                 )
             }
 
@@ -228,6 +246,7 @@ fun SettingsScreen(navController: NavController) {
             SettingsAccountActionCard(
                 onLogoutClick = {
                     scope.launch {
+                        repo.deleteDeviceToken()
                         repo.logout()
                         navController.navigate("home") {
                             popUpTo(0) { inclusive = false }
@@ -281,6 +300,7 @@ fun SettingsScreen(navController: NavController) {
                 onDismiss = { showUnregisterModal = false },
                 onConfirm = { onResult ->
                     scope.launch {
+                        repo.deleteDeviceToken()
                         repo.unregister()
                             .onSuccess {
                                 onResult(null)

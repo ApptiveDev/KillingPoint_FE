@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -12,8 +13,8 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 30
-        versionName = "2.2.1"
+        versionCode = 32
+        versionName = "2.2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -21,7 +22,7 @@ android {
     buildTypes {
         debug {
             // 필요할 때만 true 로 바꾸면 디버그 메뉴가 보입니다.
-            buildConfigField("Boolean", "SHOW_DEV_MENU", "true")
+            buildConfigField("Boolean", "SHOW_DEV_MENU", "false")
         }
         release {
             isMinifyEnabled = false
@@ -46,6 +47,9 @@ android {
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics")
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
