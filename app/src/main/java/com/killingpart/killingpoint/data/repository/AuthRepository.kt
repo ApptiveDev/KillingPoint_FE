@@ -153,14 +153,11 @@ class AuthRepository(
             }
         }
 
-    suspend fun getUserInitSettings(
-        clientType: String = "ANDROID",
-        clientVersion: String = "1.0.0"
-    ): Result<UserInitSettingsResponse> = withContext(Dispatchers.IO) {
+    suspend fun getUserInitSettings(): Result<UserInitSettingsResponse> = withContext(Dispatchers.IO) {
         runCatching {
             val accessToken = getAccessToken()
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")
-            api.getUserInitSettings("Bearer $accessToken", clientType, clientVersion)
+            api.getUserInitSettings("Bearer $accessToken")
         }.recoverCatching { e ->
             if (e is HttpException) {
                 val code = e.code()

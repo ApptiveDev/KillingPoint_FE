@@ -1,9 +1,13 @@
 package com.killingpart.killingpoint
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Color as AndroidColor
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -17,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
@@ -27,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
@@ -73,6 +79,9 @@ class MainActivity : ComponentActivity() {
             var resolvedStartDestination by rememberSaveable {
                 mutableStateOf<String?>(null)
             }
+            var showUpdateDialog by rememberSaveable {
+                mutableStateOf(false)
+            }
 
             LaunchedEffect(Unit) {
                 loginViewModel.tryAutoLogin(context)
@@ -100,6 +109,7 @@ class MainActivity : ComponentActivity() {
                         val start = repo.getUserInitSettings()
                             .getOrNull()
                             ?.let { init ->
+                                showUpdateDialog = !init.app.needsForceUpdate
                                 when {
                                     init.needsPolicyAgreement -> "onboarding_policy"
                                     init.needsTagSetup -> "onboarding_name"
@@ -112,15 +122,18 @@ class MainActivity : ComponentActivity() {
 
                     is LoginUiState.Idle, is LoginUiState.Error -> {
                         resolvedStartDestination = "home"
+                        showUpdateDialog = false
                     }
 
                     is LoginUiState.Success -> {
                         FcmTokenSync.syncCurrentToken(context)
                         resolvedStartDestination = "home"
+                        showUpdateDialog = false
                     }
 
                     is LoginUiState.Loading -> {
                         resolvedStartDestination = null
+                        showUpdateDialog = false
                     }
                 }
             }
@@ -142,6 +155,8 @@ class MainActivity : ComponentActivity() {
 
                     LaunchState.MAIN -> {
                         val navController = rememberNavController()
+                        val currentBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentRoute = currentBackStackEntry?.destination?.route
 
                         val startDestination = resolvedStartDestination ?: "home"
 
@@ -191,6 +206,16 @@ class MainActivity : ComponentActivity() {
                                     ) { Text("마지막 화면") }
                                 }
                             }
+
+                            if (showUpdateDialog && currentRoute?.startsWith("main") == true) {
+                                UpdateRequiredDialog(
+                                    onDismiss = { showUpdateDialog = false },
+                                    onUpdateClick = {
+                                        showUpdateDialog = false
+                                        openPlayStore(context)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -213,5 +238,48 @@ class MainActivity : ComponentActivity() {
             arrayOf(Manifest.permission.POST_NOTIFICATIONS),
             1001
         )
+    }
+}
+
+@Composable
+private fun UpdateRequiredDialog(
+    onDismiss: () -> Unit,
+    onUpdateClick: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(text = "업데이트가 필요합니다.")
+        },
+        text = {
+            Text(text = "최신 버전으로 업데이트한 뒤 더 안정적으로 킬링파트를 이용해 주세요.")
+        },
+        confirmButton = {
+            TextButton(onClick = onUpdateClick) {
+                Text(text = "업데이트")
+            }
+        }
+    )
+}
+
+private fun openPlayStore(context: Context) {
+    val packageName = context.packageName
+    val marketIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("market://details?id=$packageName")
+    ).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    val webIntent = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+    ).apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    try {
+        context.startActivity(marketIntent)
+    } catch (_: ActivityNotFoundException) {
+        context.startActivity(webIntent)
     }
 }
