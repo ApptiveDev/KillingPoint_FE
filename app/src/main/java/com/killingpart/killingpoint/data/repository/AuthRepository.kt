@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.data.repository
 
 import android.R
 import android.content.Context
+import com.killingpart.killingpoint.BuildConfig
 import com.killingpart.killingpoint.data.local.TokenStore
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
@@ -52,6 +53,10 @@ class AuthRepository(
     private val youtubeApi: ApiService = RetrofitClient.getYoutubeApi(),
     private val tokenStore: TokenStore = TokenStore(context.applicationContext)
 ) {
+    private companion object {
+        const val CLIENT_TYPE = "ANDROID"
+    }
+
     /**
      *  카카오 accessToken을 받아서:
      *   1) 우리 서버 /auth/kakao 로 교환
@@ -157,7 +162,11 @@ class AuthRepository(
         runCatching {
             val accessToken = getAccessToken()
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")
-            api.getUserInitSettings("Bearer $accessToken")
+            api.getUserInitSettings(
+                accessToken = "Bearer $accessToken",
+                clientVersion = BuildConfig.VERSION_NAME,
+                clientType = CLIENT_TYPE
+            )
         }.recoverCatching { e ->
             if (e is HttpException) {
                 val code = e.code()
