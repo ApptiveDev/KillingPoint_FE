@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -157,7 +156,9 @@ fun AlarmListScreen(navController: NavController) {
                                 .padding(top = 36.dp),
                             verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
-                            itemsIndexed(state.alarms, key = { _, alarm -> alarm.alarmId }) { index, alarm ->
+                            itemsIndexed(state.alarms, key = { _, item -> item.alarm.alarmId }) { index, item ->
+                                val alarm = item.alarm
+                                val textColor = if (item.isRead) Color(0xFFA4A4A6) else Color.White
                                 val diaryId = parseDiaryIdFromDeepLink(alarm.deepLink)
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Row(
@@ -188,7 +189,7 @@ fun AlarmListScreen(navController: NavController) {
                                     ) {
                                         Text(
                                             text = alarm.content,
-                                            color = Color.White,
+                                            color = textColor,
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Normal,
                                             fontSize = 14.sp,

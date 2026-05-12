@@ -3,6 +3,7 @@ package com.killingpart.killingpoint.ui.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.killingpart.killingpoint.data.local.AlarmReadStore
 import com.killingpart.killingpoint.data.model.AlarmItem
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -11,9 +12,14 @@ import kotlinx.coroutines.launch
 
 sealed interface AlarmUiState {
     data object Loading : AlarmUiState
-    data class Success(val alarms: List<AlarmItem>) : AlarmUiState
+    data class Success(val alarms: List<AlarmUiItem>) : AlarmUiState
     data class Error(val message: String) : AlarmUiState
 }
+
+data class AlarmUiItem(
+    val alarm: AlarmItem,
+    val isRead: Boolean
+)
 
 class AlarmViewModel(
     private val repoFactory: (Context) -> AuthRepository = { ctx ->
@@ -32,7 +38,16 @@ class AlarmViewModel(
         viewModelScope.launch {
             loadAllAlarmPages(repo, size)
                 .onSuccess { alarms ->
-                    _state.value = AlarmUiState.Success(alarms)
+                    val readIds = AlarmReadStore.getReadAlarmIds(context)
+                    val uiItems = alarms.map { alarm ->
+                        AlarmUiItem(
+                            alarm = alarm,
+                            isRead = alarm.alarmId in readIds
+                        )
+                    }
+                    _state.value = AlarmUiState.Success(uiItems)
+                    AlarmReadStore.markAlarmsRead(context, alarms.map { it.alarmId })
+                    _hasUnread.value = false
                 }
                 .onFailure { e ->
                     _state.value = AlarmUiState.Error(e.message ?: "알림 목록 조회 실패")
@@ -41,8 +56,19 @@ class AlarmViewModel(
     }
 
     fun refreshAlarmFlag(context: Context) {
-        // TODO: 백엔드 미확인 알림(hasUnread) API 연동 전까지는 항상 false 유지
-        _hasUnread.value = false
+        val repo = repoFactory(context)
+        viewModelScope.launch {
+            repo.getAlarms(page = 0, size = 20)
+                .onSuccess { response ->
+                    _hasUnread.value = AlarmReadStore.hasUnread(
+                        context,
+                        response.content.map { it.alarmId }
+                    )
+                }
+                .onFailure {
+                    _hasUnread.value = AlarmReadStore.hasLocalUnread(context)
+                }
+        }
     }
 
     private suspend fun loadAllAlarmPages(

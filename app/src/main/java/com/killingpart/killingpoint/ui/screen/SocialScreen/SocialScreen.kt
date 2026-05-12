@@ -3,6 +3,7 @@ package com.killingpart.killingpoint.ui.screen.SocialScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -114,16 +115,19 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(
-                                id = if (hasUnread) {
-                                    R.drawable.ic_noti_true_without_bg
-                                } else {
-                                    R.drawable.ic_bell
-                                }
-                            ),
+                            painter = painterResource(id = R.drawable.ic_bell),
                             contentDescription = "알림 목록 진입",
-                            modifier = Modifier.size(if (hasUnread) 24.dp else 18.dp)
+                            modifier = Modifier.size(18.dp)
                         )
+                        if (hasUnread) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset(x = 8.dp, y = (-8).dp)
+                                    .size(7.dp)
+                                    .background(Color(0xFFFF3B30), CircleShape)
+                            )
+                        }
                     }
                 }
 
