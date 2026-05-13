@@ -211,7 +211,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = Color.White,
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Normal,
-                                            fontSize = 14.sp,
+                                            fontSize = 13.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         Spacer(modifier = Modifier.size(12.dp))
@@ -220,7 +220,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = Color(0xFFA4A4A6),
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Medium,
-                                            fontSize = 14.sp
+                                            fontSize = 10.sp
                                         )
                                     }
 
