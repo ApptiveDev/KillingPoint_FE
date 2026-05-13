@@ -29,13 +29,22 @@ enum class SocialTab {
 }
 
 @Composable
-fun SocialScreen(navController: NavController, initialTab: String = "feed") {
+fun SocialScreen(
+    navController: NavController,
+    initialTab: String = "feed",
+    initialFriendListTab: String = "picks"
+) {
     val alarmViewModel: AlarmViewModel = viewModel()
     val hasUnread by alarmViewModel.hasUnread.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var selectedTab by rememberSaveable(initialTab) { 
+    val initialFriendTabEnum = when (initialFriendListTab.lowercase()) {
+        "fans", "fandom" -> FriendTab.FANS
+        else -> FriendTab.PICKS
+    }
+
+    var selectedTab by rememberSaveable(initialTab) {
         mutableStateOf(
             when (initialTab) {
                 "friend" -> SocialTab.FRIEND
@@ -136,7 +145,10 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
                 ) {
                     when (selectedTab) {
                         SocialTab.FEED -> FeedScreen(navController)
-                        SocialTab.FRIEND -> FriendScreen(navController)
+                        SocialTab.FRIEND -> FriendScreen(
+                            navController = navController,
+                            initialListTab = initialFriendTabEnum
+                        )
                     }
                 }
 

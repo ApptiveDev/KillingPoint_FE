@@ -52,10 +52,17 @@ enum class FriendTab {
 }
 
 @Composable
-fun FriendScreen(navController: NavController) {
+fun FriendScreen(
+    navController: NavController,
+    initialListTab: FriendTab = FriendTab.PICKS
+) {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf<FriendTab?>(FriendTab.PICKS) }
+    var selectedTab by remember { mutableStateOf<FriendTab?>(initialListTab) }
+
+    LaunchedEffect(initialListTab) {
+        selectedTab = initialListTab
+    }
     
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
