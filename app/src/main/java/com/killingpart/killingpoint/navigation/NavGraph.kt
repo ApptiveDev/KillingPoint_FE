@@ -277,13 +277,15 @@ fun NavGraph(
         }
 
         composable(
-            route = "social?tab={tab}",
+            route = "social?tab={tab}&friendListTab={friendListTab}",
             arguments = listOf(
-                navArgument("tab") { type = NavType.StringType; defaultValue = "feed" }
+                navArgument("tab") { type = NavType.StringType; defaultValue = "feed" },
+                navArgument("friendListTab") { type = NavType.StringType; defaultValue = "picks" }
             )
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "feed"
-            SocialScreen(navController, tab)
+            val friendListTab = backStackEntry.arguments?.getString("friendListTab") ?: "picks"
+            SocialScreen(navController, initialTab = tab, initialFriendListTab = friendListTab)
         }
 
         composable("alarm_list") {

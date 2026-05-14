@@ -96,7 +96,7 @@ interface ApiService {
     suspend fun getDiary(
         @Header("Authorization") accessToken: String,
         @Path("diaryId") diaryId: Long
-    ): Diary
+    ): FeedDiary
 
     @POST("diaries")
     suspend fun createDiary(

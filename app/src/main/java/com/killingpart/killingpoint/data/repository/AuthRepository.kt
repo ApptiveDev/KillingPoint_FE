@@ -950,7 +950,7 @@ class AuthRepository(
         }
     }
 
-    suspend fun getDiaryById(diaryId: Long): Result<Diary> = withContext(Dispatchers.IO) {
+    suspend fun getDiaryById(diaryId: Long): Result<FeedDiary> = withContext(Dispatchers.IO) {
         runCatching {
             val accessToken = getAccessToken()
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")

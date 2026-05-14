@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -45,7 +44,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.killingpart.killingpoint.data.model.Diary
+import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
@@ -64,7 +63,7 @@ fun AlarmListScreen(navController: NavController) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val repo = remember { AuthRepository(context) }
     val coroutineScope = rememberCoroutineScope()
-    var openingDiaryId by remember { mutableStateOf<Long?>(null) }
+    var opening by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         alarmViewModel.loadAlarms(context)
@@ -158,28 +157,49 @@ fun AlarmListScreen(navController: NavController) {
                             verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
                             itemsIndexed(state.alarms, key = { _, alarm -> alarm.alarmId }) { index, alarm ->
-                                val diaryId = parseDiaryIdFromDeepLink(alarm.deepLink)
+                                val navTarget = remember(alarm.alarmId, alarm.deepLink) {
+                                    parseAlarmNavTarget(alarm.deepLink)
+                                }
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(enabled = diaryId != null && openingDiaryId == null) {
-                                                val id = diaryId ?: return@clickable
-                                                openingDiaryId = id
+                                            .clickable(enabled = navTarget != null && !opening) {
+                                                val target = navTarget ?: return@clickable
+                                                opening = true
                                                 coroutineScope.launch {
-                                                    repo.getDiaryById(id).fold(
-                                                        onSuccess = { diary ->
-                                                            navigateToDiaryDetail(navController, diary)
-                                                        },
-                                                        onFailure = { e ->
-                                                            Toast.makeText(
-                                                                context,
-                                                                e.message ?: "일기를 불러올 수 없습니다",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
+                                                    try {
+                                                        when (target) {
+                                                            is AlarmNavTarget.Diary -> {
+                                                                repo.getDiaryById(target.id).fold(
+                                                                    onSuccess = { feed ->
+                                                                        val myUserId = repo.getUserIdFromToken()
+                                                                        navigateToDiaryDetail(
+                                                                            navController,
+                                                                            feed,
+                                                                            myUserId
+                                                                        )
+                                                                    },
+                                                                    onFailure = { e ->
+                                                                        Toast.makeText(
+                                                                            context,
+                                                                            e.message
+                                                                                ?: "일기를 불러올 수 없습니다",
+                                                                            Toast.LENGTH_SHORT
+                                                                        ).show()
+                                                                    }
+                                                                )
+                                                            }
+
+                                                            is AlarmNavTarget.SocialFriendFans -> {
+                                                                navController.navigate(
+                                                                    "social?tab=friend&friendListTab=fans"
+                                                                )
+                                                            }
                                                         }
-                                                    )
-                                                    openingDiaryId = null
+                                                    } finally {
+                                                        opening = false
+                                                    }
                                                 }
                                             }
                                             .padding(vertical = 16.dp),
@@ -191,7 +211,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = Color.White,
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Normal,
-                                            fontSize = 14.sp,
+                                            fontSize = 13.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         Spacer(modifier = Modifier.size(12.dp))
@@ -200,7 +220,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = Color(0xFFA4A4A6),
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Medium,
-                                            fontSize = 14.sp
+                                            fontSize = 10.sp
                                         )
                                     }
 
@@ -221,13 +241,40 @@ fun AlarmListScreen(navController: NavController) {
     }
 }
 
+private sealed interface AlarmNavTarget {
+    data class Diary(val id: Long) : AlarmNavTarget
+    data object SocialFriendFans : AlarmNavTarget
+}
+
+private fun parseAlarmNavTarget(deepLink: String): AlarmNavTarget? {
+    if (parseSubscribesFansDeepLink(deepLink)) return AlarmNavTarget.SocialFriendFans
+    parseDiaryIdFromDeepLink(deepLink)?.let { return AlarmNavTarget.Diary(it) }
+    return null
+}
+
+/** 예: `/api/subscribes/8/fans` */
+private fun parseSubscribesFansDeepLink(deepLink: String): Boolean =
+    deepLink.isNotBlank() && Regex("""subscribes/\d+/fans""").containsMatchIn(deepLink)
+
 private fun parseDiaryIdFromDeepLink(deepLink: String): Long? {
     if (deepLink.isBlank()) return null
     val match = Regex("""diaries/(\d+)""").find(deepLink) ?: return null
     return match.groupValues[1].toLongOrNull()
 }
 
-private fun navigateToDiaryDetail(navController: NavController, diary: Diary) {
+private fun navigateToDiaryDetail(
+    navController: NavController,
+    feed: FeedDiary,
+    myUserId: Long?
+) {
+    val diary = feed.toDiary
+    val isOwnDiary = myUserId != null && feed.userId == myUserId
+    val authorParams =
+        if (!isOwnDiary && feed.username.isNotBlank() && feed.tag.isNotBlank()) {
+            "&authorUsername=${Uri.encode(feed.username)}&authorTag=${Uri.encode(feed.tag)}"
+        } else {
+            ""
+        }
     val diaryIdParam = diary.id?.let { "&diaryId=$it" }.orEmpty()
     val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" }.orEmpty()
     val scopeParam = "&scope=${diary.scope.name}"
@@ -247,7 +294,8 @@ private fun navigateToDiaryDetail(navController: NavController, diary: Diary) {
             scopeParam +
             diaryIdParam +
             totalDurationParam +
-            "&fromTab=social"
+            "&fromTab=social" +
+            authorParams
     )
 }
 
