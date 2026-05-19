@@ -13,8 +13,8 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 33
-        versionName = "2.2.4"
+        versionCode = 34
+        versionName = "2.2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -22,7 +22,7 @@ android {
     buildTypes {
         debug {
             // 필요할 때만 true 로 바꾸면 디버그 메뉴가 보입니다.
-            buildConfigField("Boolean", "SHOW_DEV_MENU", "true")
+            buildConfigField("Boolean", "SHOW_DEV_MENU", "false")
         }
         release {
             isMinifyEnabled = false
