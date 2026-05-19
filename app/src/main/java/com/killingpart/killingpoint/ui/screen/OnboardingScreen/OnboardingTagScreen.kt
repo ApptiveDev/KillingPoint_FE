@@ -103,16 +103,7 @@ fun OnboardingTagScreen(
                     fontFamily = PaperlogyFontFamily,
                     fontSize = 12.sp
                 )
-                if (displayName.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "이름: $displayName",
-                        color = Color(0xFF5C5D60),
-                        fontFamily = PaperlogyFontFamily,
-                        fontSize = 11.sp
-                    )
-                }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 OutlinedTextField(
                     value = tagInput,
                     onValueChange = {
@@ -152,13 +143,6 @@ fun OnboardingTagScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "예약어(admin / support)는 사용할 수 없습니다.",
-                    color = Color(0xFF5C5D60),
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp
-                )
             }
 
             Button(
