@@ -44,7 +44,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.killingpart.killingpoint.data.model.FeedDiary
+import com.killingpart.killingpoint.data.model.AlarmDeepLink
+import com.killingpart.killingpoint.data.model.DiaryDetail
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
@@ -157,26 +158,25 @@ fun AlarmListScreen(navController: NavController) {
                             verticalArrangement = Arrangement.spacedBy(0.dp)
                         ) {
                             itemsIndexed(state.alarms, key = { _, alarm -> alarm.alarmId }) { index, alarm ->
-                                val navTarget = remember(alarm.alarmId, alarm.deepLink) {
-                                    parseAlarmNavTarget(alarm.deepLink)
+                                val isNavigable = remember(alarm.alarmId, alarm.type, alarm.deepLink) {
+                                    AlarmDeepLink.isNavigable(alarm.type, alarm.deepLink)
                                 }
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(enabled = navTarget != null && !opening) {
-                                                val target = navTarget ?: return@clickable
+                                            .clickable(enabled = isNavigable && !opening) {
                                                 opening = true
                                                 coroutineScope.launch {
                                                     try {
-                                                        when (target) {
-                                                            is AlarmNavTarget.Diary -> {
-                                                                repo.getDiaryById(target.id).fold(
-                                                                    onSuccess = { feed ->
+                                                        when (alarm.type) {
+                                                            "LIKE_ALARM", "DIARY_ALARM" -> {
+                                                                repo.getDiaryDetailByAlarmDeepLink(alarm.deepLink).fold(
+                                                                    onSuccess = { detail ->
                                                                         val myUserId = repo.getUserIdFromToken()
                                                                         navigateToDiaryDetail(
                                                                             navController,
-                                                                            feed,
+                                                                            detail,
                                                                             myUserId
                                                                         )
                                                                     },
@@ -191,9 +191,10 @@ fun AlarmListScreen(navController: NavController) {
                                                                 )
                                                             }
 
-                                                            is AlarmNavTarget.SocialFriendFans -> {
-                                                                navController.navigate(
-                                                                    "social?tab=friend&friendListTab=fans"
+                                                            "SUBSCRIBE_ALARM" -> {
+                                                                navigateFromSubscribeDeepLink(
+                                                                    navController,
+                                                                    alarm.deepLink
                                                                 )
                                                             }
                                                         }
@@ -241,37 +242,22 @@ fun AlarmListScreen(navController: NavController) {
     }
 }
 
-private sealed interface AlarmNavTarget {
-    data class Diary(val id: Long) : AlarmNavTarget
-    data object SocialFriendFans : AlarmNavTarget
-}
-
-private fun parseAlarmNavTarget(deepLink: String): AlarmNavTarget? {
-    if (parseSubscribesFansDeepLink(deepLink)) return AlarmNavTarget.SocialFriendFans
-    parseDiaryIdFromDeepLink(deepLink)?.let { return AlarmNavTarget.Diary(it) }
-    return null
-}
-
-/** 예: `/api/subscribes/8/fans` */
-private fun parseSubscribesFansDeepLink(deepLink: String): Boolean =
-    deepLink.isNotBlank() && Regex("""subscribes/\d+/fans""").containsMatchIn(deepLink)
-
-private fun parseDiaryIdFromDeepLink(deepLink: String): Long? {
-    if (deepLink.isBlank()) return null
-    val match = Regex("""diaries/(\d+)""").find(deepLink) ?: return null
-    return match.groupValues[1].toLongOrNull()
+/** `/api/subscribes/{userId}/fans` deepLink → 소셜 > 친구 > 팬덤 */
+private fun navigateFromSubscribeDeepLink(navController: NavController, deepLink: String) {
+    if (!AlarmDeepLink.isSubscribeFansDeepLink(deepLink)) return
+    navController.navigate("social?tab=friend&friendListTab=fans")
 }
 
 private fun navigateToDiaryDetail(
     navController: NavController,
-    feed: FeedDiary,
+    detail: DiaryDetail,
     myUserId: Long?
 ) {
-    val diary = feed.toDiary
-    val isOwnDiary = myUserId != null && feed.userId == myUserId
+    val diary = detail.toDiary()
+    val isOwnDiary = myUserId != null && detail.userId == myUserId
     val authorParams =
-        if (!isOwnDiary && feed.username.isNotBlank() && feed.tag.isNotBlank()) {
-            "&authorUsername=${Uri.encode(feed.username)}&authorTag=${Uri.encode(feed.tag)}"
+        if (!isOwnDiary && detail.username.isNotBlank() && detail.tag.isNotBlank()) {
+            "&authorUsername=${Uri.encode(detail.username)}&authorTag=${Uri.encode(detail.tag)}"
         } else {
             ""
         }
