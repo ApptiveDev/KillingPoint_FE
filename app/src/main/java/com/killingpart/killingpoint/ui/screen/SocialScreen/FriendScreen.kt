@@ -325,19 +325,13 @@ fun FriendScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         items(friends) { user ->
-                            // 검색 결과인 경우와 일반 목록인 경우를 구분
-                            val isSearchResult = state.searchResults != null && searchText.isNotBlank()
+
                             FriendItemCard(
                                 user = user,
                                 navController = navController,
                                 currentUserId = currentUserId,
-                                isPickTab = if (isSearchResult) {
-                                    // 검색 결과에서는 user.isMyPick만 확인
-                                    user.isMyPick
-                                } else {
-                                    // 일반 목록에서는 탭이 PICKS이거나 이미 나의 픽인 경우
-                                    selectedTab == FriendTab.PICKS || user.isMyPick
-                                },
+                                // 현재 선택된 상단 탭 (픽 / 팬덤). user.isMyPick 과 혼동하지 않음
+                                isPickTab = selectedTab == FriendTab.PICKS,
                                 onSubscribeClick = {
 
                                     // friendViewModel.addSubscribe(context, user.userId, currentUserId)
@@ -453,8 +447,8 @@ fun FriendItemCard(
                         fontSize = 12.sp,
                         color = Color.White
                     )
-                    // 나의 픽 표시 (이미 구독한 경우에만)
-                    if ( user.isMyPick ) {
+                    // 팬덤 탭에서만: 나를 팔로우한 사람 중 내가 이미 픽한 경우
+                    if (!isPickTab && user.isMyPick) {
                         Text(
                             text = "나의 픽",
                             fontFamily = PaperlogyFontFamily,
