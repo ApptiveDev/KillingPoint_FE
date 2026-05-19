@@ -160,7 +160,7 @@ fun OnboardingHomePreviewScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 24.dp)
         ) {
             IconButton(
                 onClick = { navController.popBackStack() },
@@ -184,7 +184,6 @@ fun OnboardingHomePreviewScreen(navController: NavController) {
                 )
             }
         }
-        Spacer(modifier = Modifier.height(14.dp))
         Text(
             text = "추가한 킬링파트는\n여기서 다시 볼 수 있어요.",
             color = Color.White,
@@ -270,7 +269,7 @@ fun OnboardingFeedDemoScreen(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
