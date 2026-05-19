@@ -44,6 +44,8 @@ import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
 import com.killingpart.killingpoint.data.model.AlarmEnabledResponse
 import com.killingpart.killingpoint.data.model.AlarmResponse
 import com.killingpart.killingpoint.data.model.AlarmEnabledRequest
+import com.killingpart.killingpoint.data.model.AlarmDeepLink
+import com.killingpart.killingpoint.data.model.DiaryDetail
 import com.killingpart.killingpoint.data.model.FcmTokenRequest
 
 class AuthRepository(
@@ -950,12 +952,22 @@ class AuthRepository(
         }
     }
 
-    suspend fun getDiaryById(diaryId: Long): Result<FeedDiary> = withContext(Dispatchers.IO) {
+    /** GET /api/diaries/{diaryId} */
+    suspend fun getDiaryDetail(diaryId: Long): Result<DiaryDetail> = withContext(Dispatchers.IO) {
         runCatching {
             val accessToken = getAccessToken()
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")
-            api.getDiary("Bearer $accessToken", diaryId)
+            api.getDiaryDetail("Bearer $accessToken", diaryId)
         }
+    }
+
+    /** 알림 deepLink(`/api/diaries/{id}`) → 단건 조회 */
+    suspend fun getDiaryDetailByAlarmDeepLink(deepLink: String): Result<DiaryDetail> = withContext(Dispatchers.IO) {
+        val diaryId = AlarmDeepLink.diaryId(deepLink)
+            ?: return@withContext Result.failure(
+                IllegalArgumentException("일기 deepLink가 올바르지 않습니다: $deepLink")
+            )
+        getDiaryDetail(diaryId)
     }
 
     suspend fun getAlarms(page: Int = 0, size: Int = 20): Result<AlarmResponse> = withContext(Dispatchers.IO) {
