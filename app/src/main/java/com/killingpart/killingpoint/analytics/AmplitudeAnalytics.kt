@@ -1,16 +1,13 @@
 package com.killingpart.killingpoint.analytics
 
-import android.content.Context
-import com.killingpart.killingpoint.KillingPointApplication
+import com.amplitude.android.Amplitude
+import com.amplitude.android.events.Identify
 
 object AmplitudeAnalytics {
-    private var appContext: Context? = null
+    private var amplitude: Amplitude? = null
 
-    private val amplitude
-        get() = (appContext?.applicationContext as? KillingPointApplication)?.amplitude
-
-    fun init(context: Context) {
-        appContext = context.applicationContext
+    fun init(amplitudeInstance: Amplitude) {
+        amplitude = amplitudeInstance
     }
 
     fun track(event: String, properties: Map<String, Any?> = emptyMap()) {
@@ -19,5 +16,9 @@ object AmplitudeAnalytics {
         } else {
             amplitude?.track(event, properties)
         }
+    }
+
+    fun incrementUserProperty(property: String, by: Double = 1.0) {
+        amplitude?.identify(Identify().add(property, by))
     }
 }

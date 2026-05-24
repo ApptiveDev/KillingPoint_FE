@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.OnboardingProgressStore
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.parseSettingsApiError
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -155,7 +156,19 @@ fun OnboardingTagScreen(
                     loading = true
                     scope.launch {
                         try {
+                            val trimmedName = displayName.trim()
+                            if (trimmedName.isEmpty()) {
+                                error = "이름을 다시 입력해주세요."
+                                return@launch
+                            }
                             val tag = tagInput.trim().removePrefix("@")
+
+                            repo.updateUsername(trimmedName)
+                                .onFailure { e ->
+                                    error = parseSettingsApiError(e.message) ?: "이름 설정에 실패했습니다."
+                                    return@launch
+                                }
+
                             repo.updateTag(tag)
                                 .onSuccess {
                                     if (continueTutorial) {

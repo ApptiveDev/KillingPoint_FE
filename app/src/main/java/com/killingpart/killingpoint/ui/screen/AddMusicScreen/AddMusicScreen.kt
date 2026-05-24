@@ -50,6 +50,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.font.FontWeight
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
@@ -60,6 +61,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import java.util.regex.Pattern
 
@@ -106,6 +108,10 @@ fun AddMusicScreen(
 ) {
     var globalLoading by remember { mutableStateOf(false) }
     val bg = if (tutorialMode) Color.Black else Color(0xFF1D1E20)
+
+    LaunchedEffect(Unit) {
+        KillingPartCutAnalytics.killingpartCutStarted()
+    }
     
     Box(
         modifier = Modifier
@@ -246,6 +252,8 @@ private fun TrackRowWithVideoSearch(
 
     TrackRow(track, onClick = {
         if (isLoading) return@TrackRow
+
+        KillingPartCutAnalytics.trackSelected(track.id)
         
         isLoading = true
         onLoadingChange(true)
@@ -321,9 +329,23 @@ private fun TrackRow(track: SimpleTrack, onClick: () -> Unit = {}, isLoading: Bo
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = track.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = track.title,
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = track.artist, color = Color(0xFFA4A4A6), maxLines = 1)
+                Text(
+                    text = track.artist,
+                    color = Color(0xFFA4A4A6),
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

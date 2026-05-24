@@ -54,6 +54,7 @@ import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.AlbumDiaryBoxWith
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.component.BottomBar
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import androidx.compose.material3.TextButton
@@ -171,6 +172,8 @@ fun SelectDurationScreen(
 
     val scrollState = rememberScrollState()
     val navigateNext: () -> Unit = {
+        KillingPartCutAnalytics.cutCompleted()
+
         val encodedVideoUrl = Uri.encode(currentVideoUrl ?: "")
         val tutorialArg = if (tutorialMode) "true" else "false"
 
@@ -363,6 +366,9 @@ fun SelectDurationScreen(
                                 start = s
                                 end = e
                                 duration = d
+                            },
+                            onHandleAdjusted = { handleSide ->
+                                KillingPartCutAnalytics.cutHandleAdjusted(handleSide)
                             }
                         )
                     }

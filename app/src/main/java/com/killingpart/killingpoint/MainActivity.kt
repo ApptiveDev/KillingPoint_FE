@@ -30,7 +30,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
-import com.killingpart.killingpoint.analytics.AmplitudeAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
@@ -51,7 +50,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         KakaoSdk.init(this, getString(R.string.kakao_native_app_key))
-        AmplitudeAnalytics.init(applicationContext)
         OnboardingAnalytics.appOpened()
         requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
