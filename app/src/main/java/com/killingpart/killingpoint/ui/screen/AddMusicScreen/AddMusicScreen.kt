@@ -50,6 +50,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.font.FontWeight
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -138,7 +139,9 @@ fun AddMusicScreen(
                             .padding(horizontal = 12.dp, vertical = 24.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = { navController.navigateToMainClearingStack() }) {
+                        TextButton(onClick = {
+                            navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_TRACK_SEARCH)
+                        }) {
                             Text(
                                 "건너뛰기",
                                 color = Color.White,

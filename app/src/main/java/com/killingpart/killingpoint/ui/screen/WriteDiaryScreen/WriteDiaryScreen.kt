@@ -44,6 +44,7 @@ import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.component.BottomBar
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import androidx.compose.material3.TextButton
@@ -129,7 +130,9 @@ fun WriteDiaryScreen(
                 }
                 if (tutorialMode) {
                     TextButton(
-                        onClick = { navController.navigateToMainClearingStack() },
+                        onClick = {
+                            navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_DIARY_DETAIL)
+                        },
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Text(

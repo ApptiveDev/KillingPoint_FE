@@ -30,6 +30,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
+import com.killingpart.killingpoint.analytics.AmplitudeAnalytics
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
 import com.killingpart.killingpoint.navigation.OnboardingProgressStore
@@ -49,6 +51,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         KakaoSdk.init(this, getString(R.string.kakao_native_app_key))
+        AmplitudeAnalytics.init(applicationContext)
+        OnboardingAnalytics.appOpened()
         requestNotificationPermissionIfNeeded()
         enableEdgeToEdge()
         window.statusBarColor = AndroidColor.BLACK
@@ -74,6 +78,10 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf<String?>(null)
             }
 
+            var previousLoginState by remember {
+                mutableStateOf<LoginUiState?>(null)
+            }
+
             LaunchedEffect(Unit) {
                 loginViewModel.tryAutoLogin(context)
             }
@@ -95,6 +103,12 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(loginState, context) {
                 when (val s = loginState) {
                     is LoginUiState.AutoLoginSuccess -> {
+                        if (previousLoginState !is LoginUiState.AutoLoginSuccess) {
+                            OnboardingAnalytics.authCompleted(
+                                provider = s.provider,
+                                isNewUser = s.isNew
+                            )
+                        }
                         FcmTokenSync.syncCurrentToken(context)
                         val repo = AuthRepository(context)
                         val start = repo.getUserInitSettings()
@@ -123,6 +137,7 @@ class MainActivity : ComponentActivity() {
                         resolvedStartDestination = null
                     }
                 }
+                previousLoginState = loginState
             }
 
             Box(

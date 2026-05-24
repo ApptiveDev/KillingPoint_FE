@@ -13,8 +13,10 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 34
-        versionName = "2.2.5"
+        versionCode = 35
+        versionName = "2.2.6"
+
+        buildConfigField("String", "AMPLITUDE_API_KEY", "\"fcb84a98b48f87f85e7112a1587976fd\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -87,4 +89,6 @@ dependencies {
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender:0.32")
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media3:media3-ui:1.2.1")
+    implementation("com.amplitude:analytics-android:1.+")
+    implementation("com.amplitude:plugin-session-replay-android:0.20.14")
 }
