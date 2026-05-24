@@ -16,7 +16,7 @@ sealed interface LoginUiState {
     data object Loading : LoginUiState
     data object Success : LoginUiState
     data class Error(val message: String) : LoginUiState
-    data class AutoLoginSuccess(val isNew: Boolean) : LoginUiState // 자동 로그인 성공 (isNew 포함)
+    data class AutoLoginSuccess(val isNew: Boolean, val provider: String) : LoginUiState
 }
 
 class LoginViewModel(
@@ -46,7 +46,7 @@ class LoginViewModel(
         viewModelScope.launch {
             repo.exchangeKakaoAccessToken(kakaoAccessToken)
                 .onSuccess { isNew ->
-                    _state.value = LoginUiState.AutoLoginSuccess(isNew)
+                    _state.value = LoginUiState.AutoLoginSuccess(isNew = isNew, provider = "kakao")
                 }
                 .onFailure { _state.value = LoginUiState.Error(it.message ?: "로그인 실패") }
         }
@@ -58,7 +58,7 @@ class LoginViewModel(
         viewModelScope.launch {
             repo.loginWithTest()
                 .onSuccess { isNew ->
-                    _state.value = LoginUiState.AutoLoginSuccess(isNew)
+                    _state.value = LoginUiState.AutoLoginSuccess(isNew = isNew, provider = "test")
                 }
                 .onFailure { _state.value = LoginUiState.Error(it.message ?: "테스터 로그인 실패") }
         }
@@ -75,7 +75,7 @@ class LoginViewModel(
                 repo.refreshAccessToken()
                     .onSuccess { isNew ->
                         android.util.Log.d("LoginViewModel", "자동 로그인 성공: isNew=$isNew")
-                        _state.value = LoginUiState.AutoLoginSuccess(isNew)
+                        _state.value = LoginUiState.AutoLoginSuccess(isNew = isNew, provider = "session")
                     }
                     .onFailure { e ->
                         android.util.Log.e("LoginViewModel", "자동 로그인 실패: ${e.message}")
