@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.screen.MainScreen.TopPillTabs
@@ -54,6 +55,7 @@ fun SocialScreen(
     }
 
     LaunchedEffect(Unit) {
+        EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.SOCIAL)
         alarmViewModel.refreshAlarmFlag(context)
     }
 

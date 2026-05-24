@@ -60,6 +60,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.component.LoadingVideo
@@ -117,6 +118,7 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     val context = androidx.compose.ui.platform.LocalContext.current
 
     LaunchedEffect(Unit) {
+        EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.MY)
         diaryViewModel.loadDiaries(context)
         userViewModel.loadUserInfo(context)
         

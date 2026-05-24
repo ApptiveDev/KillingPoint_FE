@@ -50,6 +50,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.font.FontWeight
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
 import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
@@ -109,8 +110,11 @@ fun AddMusicScreen(
     var globalLoading by remember { mutableStateOf(false) }
     val bg = if (tutorialMode) Color.Black else Color(0xFF1D1E20)
 
-    LaunchedEffect(Unit) {
-        KillingPartCutAnalytics.killingpartCutStarted()
+    LaunchedEffect(tutorialMode) {
+        if (!tutorialMode) {
+            EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.ADD)
+            KillingPartCutAnalytics.killingpartCutStarted()
+        }
     }
     
     Box(

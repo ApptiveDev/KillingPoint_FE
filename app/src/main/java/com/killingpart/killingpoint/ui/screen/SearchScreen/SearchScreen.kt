@@ -31,6 +31,7 @@ import androidx.navigation.NavController
 import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.DiaryLikeUser
 import com.killingpart.killingpoint.ui.component.AppBackground
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.component.LikesModal
 import com.killingpart.killingpoint.ui.screen.MainScreen.MusicTimeBar
@@ -59,8 +60,11 @@ fun SearchScreen(navController: NavController) {
     var likesError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
+        EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.EXPLORE)
         searchViewModel.loadRandomDiaries(context)
     }
+
+    val viewedFeedDiaryIds = remember { mutableSetOf<Long>() }
 
     // 탐색 탭 좋아요 목록 데이터 로드
     LaunchedEffect(likesDiaryId) {
@@ -94,6 +98,22 @@ fun SearchScreen(navController: NavController) {
     }
 
     val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+
+    LaunchedEffect(currentItemIndex.value, searchState) {
+        val state = searchState as? SearchUiState.Success ?: return@LaunchedEffect
+        val index = currentItemIndex.value
+        if (index >= state.diaries.size) return@LaunchedEffect
+
+        val feedDiary = state.diaries[index]
+        val diaryId = feedDiary.diaryId ?: return@LaunchedEffect
+        if (diaryId in viewedFeedDiaryIds) return@LaunchedEffect
+
+        delay(300)
+        if (currentItemIndex.value != index) return@LaunchedEffect
+
+        viewedFeedDiaryIds.add(diaryId)
+        EngagementAnalytics.exploreFeedCardViewed(index)
+    }
 
     AppBackground {
         Column(

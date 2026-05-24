@@ -30,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
@@ -160,6 +161,9 @@ class MainActivity : ComponentActivity() {
 
                         LaunchedEffect(startDestination, resolvedStartDestination) {
                             if (resolvedStartDestination != null && startDestination != "home") {
+                                if (startDestination == "main" || startDestination.startsWith("main?")) {
+                                    EngagementAnalytics.markAppOpenedOnMyTab()
+                                }
                                 navController.navigate(startDestination) {
                                     popUpTo(0) { inclusive = true }
                                 }
