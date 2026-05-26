@@ -435,30 +435,15 @@ fun KillingPartSelector(
                             },
                             onDragEnd = {
                                 if (dragAccumulatedPx == 0f) return@detectDragGestures
-
-                                val beforeStart = lastCommittedStart
-                                val beforeEnd = lastCommittedEnd
-                                val beforeDuration = lastCommittedDuration
-                                val newStart = latestMiniMapTargetStartSec
-                                val newEnd =
-                                    (latestMiniMapTargetStartSec + latestMiniMapTargetDurationSec)
-                                        .coerceAtMost(totalDuration.toFloat())
-                                val newDuration = latestMiniMapTargetDurationSec
-
-                                onStartChange(newStart, newEnd, newDuration)
-                                lastCommittedStart = newStart
-                                lastCommittedEnd = newEnd
-                                lastCommittedDuration = newDuration
-
-                                val changed =
-                                    beforeStart != lastCommittedStart ||
-                                        beforeEnd != lastCommittedEnd ||
-                                        beforeDuration != lastCommittedDuration
-                                if (changed) {
-                                    latestOnHandleAdjusted?.invoke("spectrum_bar")
-                                }
+                                endHandleDrag("spectrum_bar")
                             },
-                            onDragCancel = { commitSelectionIfNeeded() }
+                            onDragCancel = {
+                                if (dragAccumulatedPx != 0f) {
+                                    endHandleDrag("spectrum_bar")
+                                } else {
+                                    commitSelectionIfNeeded()
+                                }
+                            }
                         ) { change, drag ->
                             change.consume()
                             dragAccumulatedPx += drag.x

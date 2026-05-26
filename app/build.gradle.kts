@@ -13,11 +13,10 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 35
-        versionName = "2.2.6"
+        versionCode = 37
+        versionName = "2.2.8"
 
         buildConfigField("String", "AMPLITUDE_API_KEY", "\"fcb84a98b48f87f85e7112a1587976fd\"")
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
