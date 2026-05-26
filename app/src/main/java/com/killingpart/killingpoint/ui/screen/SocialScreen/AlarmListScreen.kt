@@ -183,8 +183,10 @@ fun AlarmListScreen(navController: NavController) {
                                                                     onFailure = { e ->
                                                                         Toast.makeText(
                                                                             context,
-                                                                            e.message
-                                                                                ?: "일기를 불러올 수 없습니다",
+                                                                            mapAlarmNavigationErrorMessage(
+                                                                                alarmType = alarm.type,
+                                                                                rawMessage = e.message
+                                                                            ),
                                                                             Toast.LENGTH_SHORT
                                                                         ).show()
                                                                     }
@@ -294,5 +296,20 @@ private fun formatAlarmDate(raw: String?): String {
             "$month.$day"
         }
         else -> raw
+    }
+}
+
+private fun mapAlarmNavigationErrorMessage(
+    alarmType: String,
+    rawMessage: String?
+): String {
+    val message = rawMessage.orEmpty()
+    val isNotFound = message.contains("404") || message.contains("HTTP 404", ignoreCase = true)
+    if (!isNotFound) return rawMessage ?: "페이지를 불러오지 못했습니다."
+
+    return when (alarmType) {
+        "LIKE_ALARM", "DIARY_ALARM" -> "삭제되었거나 존재하지 않는 일기입니다."
+        "SUBSCRIBE_ALARM" -> "탈퇴했거나 존재하지 않는 회원입니다."
+        else -> "요청한 정보를 찾을 수 없습니다."
     }
 }
