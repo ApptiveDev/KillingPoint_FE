@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.ui.screen.ArchiveScreen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
+import com.killingpart.killingpoint.ui.theme.mainGreen
 import androidx.compose.material3.Surface
 
 @Composable
@@ -59,59 +61,20 @@ fun DiaryCard(
             .fillMaxWidth()
             .then(clickableModifier)
     ) {
-        // 상단: authorTag 있으면 @{tag}, 없으면 좋아요 + 공개 범위 아이콘
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp)
-                .padding(horizontal = 3.dp),
-            horizontalArrangement = if (authorTag != null) Arrangement.Start else Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (authorTag != null) {
-                Text(
-                    text = "@$authorTag",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            } else {
-                // 좋아요 수
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onLikeClick?.invoke() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = "Likes",
-                        tint = Color(0xFFCCFF33),
-                        modifier = Modifier.size(15.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "${diary.likeCount}",
-                        color = Color.White,
-                        fontSize = 10.sp,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                // 공개 범위 아이콘
-                Icon(
-                    imageVector = when (diary.scope) {
-                        Scope.PUBLIC -> Icons.Filled.Language
-                        Scope.PRIVATE -> Icons.Filled.Lock
-                        Scope.KILLING_PART -> Icons.Filled.MusicNote
-                    },
-                    contentDescription = "Scope",
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp)
-                )
-            }
+        if (authorTag != null) {
+            Text(
+                text = "@$authorTag",
+                color = Color.White,
+                fontSize = 10.sp,
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp)
+                    .padding(horizontal = 3.dp)
+            )
         }
         
         Box(
@@ -139,6 +102,59 @@ fun DiaryCard(
                     )
             )
 
+            val likeBadgeShape = RoundedCornerShape(50)
+            val isLiked = diary.isLiked
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(6.dp)
+                    .then(
+                        if (isLiked) {
+                            Modifier
+                                .background(mainGreen.copy(alpha = 0.25f), likeBadgeShape)
+                                .border(1.dp, mainGreen, likeBadgeShape)
+                        } else {
+                            Modifier
+                                .background(Color(0xFF1A1A1A), likeBadgeShape)
+                                .border(1.dp, Color.White.copy(alpha = 0.4f), likeBadgeShape)
+                        }
+                    )
+                    .clickable { onLikeClick?.invoke() }
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Favorite,
+                    contentDescription = "Likes",
+                    tint = if (isLiked) mainGreen else Color.White,
+                    modifier = Modifier.size(10.dp)
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+                Text(
+                    text = "${diary.likeCount}",
+                    color = if (isLiked) mainGreen else Color.White,
+                    fontSize = 10.sp,
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            if (authorTag == null) {
+                Icon(
+                    imageVector = when (diary.scope) {
+                        Scope.PUBLIC -> Icons.Filled.Language
+                        Scope.PRIVATE -> Icons.Filled.Lock
+                        Scope.KILLING_PART -> Icons.Filled.MusicNote
+                    },
+                    contentDescription = "Scope",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(15.dp)
+                )
+            }
         }
         
         // 하단 텍스트 정보 (이미지 아래)
@@ -209,12 +225,27 @@ fun DiaryCardPreview() {
                 start = "string",
                 end = "string",
                 createDate = "1999.12.12",
-                updateDate = "string"
+                updateDate = "string",
+                isLiked = true,
+                likeCount = 12
+            )
+
+            val mockDiaryNotLiked = mockDiary.copy(
+                musicTitle = "Another Song",
+                isLiked = false,
+                likeCount = 125
             )
             
-            DiaryCard(
-                diary = mockDiary
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                DiaryCard(
+                    diary = mockDiary,
+                    modifier = Modifier.weight(1f)
+                )
+                DiaryCard(
+                    diary = mockDiaryNotLiked,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }

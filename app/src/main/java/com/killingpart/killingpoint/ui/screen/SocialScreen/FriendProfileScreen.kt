@@ -383,9 +383,9 @@ fun FriendProfileScreen(
                                                         .height(32.dp)
                                                         .background(
                                                             color = if (currentIsMyPick) Color(
-                                                                0xFFCEFF43
-                                                            ) else Color(
                                                                 0xFF262626
+                                                            ) else Color(
+                                                                0xFFCEFF43
                                                             ),
                                                             shape = RoundedCornerShape(10.dp)
                                                         )
@@ -480,24 +480,13 @@ fun FriendProfileScreen(
                                                                 }
                                                             }
                                                         }
-                                                        .then(
-                                                            if (currentIsMyPick) {
-                                                                Modifier.border(
-                                                                    1.dp,
-                                                                    mainGreen,
-                                                                    RoundedCornerShape(10.dp)
-                                                                )
-                                                            } else {
-                                                                Modifier
-                                                            }
-                                                        ),
-                                                    contentAlignment = Alignment.Center
+                                                    , contentAlignment = Alignment.Center
                                                 ) {
                                                     Text(
                                                         text = if (currentIsMyPick) "나의 PICK!" else "나의 픽으로 추가",
                                                         color = if (currentIsMyPick) Color(
-                                                            0xFF000000
-                                                        ) else Color(0xFFCEFF43),
+                                                            0xFFCEFF43
+                                                        ) else Color(0xFF000000),
                                                         fontFamily = PaperlogyFontFamily,
                                                         fontSize = 10.sp,
                                                         fontWeight = FontWeight.W400
