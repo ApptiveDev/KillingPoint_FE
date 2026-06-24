@@ -94,7 +94,7 @@ fun LikesModal(
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.W500,
-                fontSize = 16.sp,
+                fontSize = 12.sp,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -179,45 +179,45 @@ fun LikesModal(
                     }
 
                     LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 280.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         items(filteredUsers.size) { index ->
                             val user = filteredUsers[index]
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(8.dp))
                                     .background(Color(0xFF090909))
                                     .clickable { onUserClick(user) }
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .padding(horizontal = 10.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 AsyncImage(
                                     model = user.profileImageUrl,
                                     contentDescription = user.username,
                                     modifier = Modifier
-                                        .size(40.dp)
+                                        .size(32.dp)
                                         .clip(RoundedCornerShape(50))
-                                        .border(2.dp, mainGreen, RoundedCornerShape(50)),
+                                        .border(1.5.dp, mainGreen, RoundedCornerShape(50)),
                                     contentScale = ContentScale.Crop,
                                     placeholder = painterResource(id = R.drawable.default_profile),
                                     error = painterResource(id = R.drawable.default_profile)
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                                     Text(
                                         text = user.username,
                                         color = Color.White,
                                         fontFamily = PaperlogyFontFamily,
                                         fontWeight = FontWeight.W500,
-                                        fontSize = 14.sp
+                                        fontSize = 12.sp
                                     )
                                     Text(
                                         text = "@${user.tag}",
                                         color = Color(0xFF888888),
                                         fontFamily = PaperlogyFontFamily,
-                                        fontSize = 11.sp
+                                        fontSize = 9.sp
                                     )
                                 }
                             }

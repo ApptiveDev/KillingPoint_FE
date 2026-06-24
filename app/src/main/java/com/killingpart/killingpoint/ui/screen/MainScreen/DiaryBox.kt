@@ -29,7 +29,7 @@ fun DiaryBox(diary: Diary?) {
             text = "킬링파트 일기",
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Medium,
-            fontSize = 13.sp,
+            fontSize = 12.sp,
             color = Color(0xFFA4A4A6)
         )
 
@@ -40,7 +40,7 @@ fun DiaryBox(diary: Diary?) {
                 text = diaryContent,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Normal,
-                fontSize = 14.sp,
+                fontSize = 11.sp,
                 color = Color.White
             )
         }

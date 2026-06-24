@@ -35,7 +35,8 @@ fun YouTubePlayerBox(
     onVideoReady: () -> Unit = {},
     isPlayingState: Boolean? = null,
     onVideoEnd: () -> Unit = {},
-    shouldLoop: Boolean = false
+    shouldLoop: Boolean = false,
+    showTrackInfo: Boolean = true
 ) {
     val context = LocalContext.current
     
@@ -217,35 +218,37 @@ fun YouTubePlayerBox(
                 }
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            if (showTrackInfo) {
+                Spacer(modifier = Modifier.height(10.dp))
 
-            diary.musicTitle?.let { title ->
-                ScrollableText(
-                    text = title,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.White,
-                    centerAlign = true
-                )
+                diary.musicTitle?.let { title ->
+                    ScrollableText(
+                        text = title,
+                        modifier = Modifier.fillMaxWidth(),
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = Color.White,
+                        centerAlign = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                diary.artist?.let { artist ->
+                    ScrollableText(
+                        text = artist,
+                        modifier = Modifier.fillMaxWidth(),
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.Light,
+                        fontSize = 12.sp,
+                        color = Color.White,
+                        centerAlign = true
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            diary.artist?.let { artist ->
-                ScrollableText(
-                    text = artist,
-                    modifier = Modifier.fillMaxWidth(),
-                    fontFamily = PaperlogyFontFamily,
-                    fontWeight = FontWeight.Light,
-                    fontSize = 16.sp,
-                    color = Color.White,
-                    centerAlign = true
-                )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
 
         }
     }

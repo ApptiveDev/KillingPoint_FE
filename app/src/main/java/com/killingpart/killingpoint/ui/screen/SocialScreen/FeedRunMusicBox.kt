@@ -300,12 +300,12 @@ fun FeedRunMusicBox(
                                     modifier = Modifier.fillMaxWidth(),
                                     fontFamily = PaperlogyFontFamily,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 17.sp,
+                                    fontSize = 14.sp,
                                     color = Color.White
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
 
                             diary.artist?.let { artist ->
                                 ScrollableText(
@@ -313,24 +313,24 @@ fun FeedRunMusicBox(
                                     modifier = Modifier.fillMaxWidth(),
                                     fontFamily = PaperlogyFontFamily,
                                     fontWeight = FontWeight.Light,
-                                    fontSize = 14.sp,
+                                    fontSize = 11.sp,
                                     color = Color.White
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.Center,
                                 modifier = Modifier
-                                    .size(49.dp, 24.dp)
+                                    .size(40.dp, 20.dp)
                                     .background(
                                         color = if (isLiked) mainGreen else Color(0xFF2C2C2C),
-                                        RoundedCornerShape(8.dp)
+                                        RoundedCornerShape(6.dp)
                                     )
                                     .pointerInput(Unit) {
                                         detectTapGestures(
@@ -348,14 +348,14 @@ fun FeedRunMusicBox(
                                     imageVector = Icons.Filled.Favorite,
                                     contentDescription = "좋아요",
                                     tint = if (isLiked) Color.Black else mainGreen,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(12.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
                                 Text(
                                     text = likeCount.toString(),
                                     fontFamily = PaperlogyFontFamily,
                                     fontWeight = FontWeight.Medium,
-                                    fontSize = 12.sp,
+                                    fontSize = 10.sp,
                                     color = if (isLiked) Color.Black else Color.White
                                 )
                             }
@@ -365,7 +365,7 @@ fun FeedRunMusicBox(
                                 ),
                                 contentDescription = if (isStored) "보관됨" else "보관하기",
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(20.dp)
                                     .clickable {
                                         onStoreClick?.invoke()
                                     }
@@ -389,7 +389,8 @@ fun FeedRunMusicBox(
                                 isPlayingState = null,
                                 onVideoEnd = {
                                     onVideoEnd?.invoke()
-                                }
+                                },
+                                showTrackInfo = false
                             )
                         } else {
                             Box(
@@ -399,10 +400,10 @@ fun FeedRunMusicBox(
                                     .background(Color.Black.copy(alpha = 0.3f))
                             )
                         }
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Column(
                         modifier = Modifier.fillMaxWidth()
