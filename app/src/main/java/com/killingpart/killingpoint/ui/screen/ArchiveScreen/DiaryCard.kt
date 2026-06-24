@@ -133,7 +133,8 @@ fun DiaryCard(
                 Spacer(modifier = Modifier.width(3.dp))
                 Text(
                     text = "${diary.likeCount}",
-                    color = if (isLiked) mainGreen else Color.White,
+                    // color = if (isLiked) mainGreen else Color.White,
+                    color = Color.White,
                     fontSize = 10.sp,
                     fontFamily = PaperlogyFontFamily,
                     fontWeight = FontWeight.Medium

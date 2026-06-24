@@ -254,18 +254,18 @@ fun FriendProfileScreen(
                                                             text = username.ifEmpty { "사용자" },
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 14.sp,
+                                                            fontSize = 12.sp,
                                                             color = mainGreen,
                                                             maxLines = 1,
                                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                         )
-                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                        Spacer(modifier = Modifier.height(4.dp))
 
                                                         Text(
                                                             text = "@${tag.ifEmpty { "unknown" }}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 12.sp,
+                                                            fontSize = 10.sp,
                                                             color = mainGreen,
                                                             maxLines = 1,
                                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -288,7 +288,7 @@ fun FriendProfileScreen(
                                                             text = "${state.diaries?.content?.size ?: 0}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -297,7 +297,7 @@ fun FriendProfileScreen(
                                                             text = "킬링파트",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -320,7 +320,7 @@ fun FriendProfileScreen(
                                                             text = "${state.fansCount}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -329,7 +329,7 @@ fun FriendProfileScreen(
                                                             text = "팬덤",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -352,7 +352,7 @@ fun FriendProfileScreen(
                                                             text = "${state.picksCount}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -362,7 +362,7 @@ fun FriendProfileScreen(
                                                             text = "PICKS",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )

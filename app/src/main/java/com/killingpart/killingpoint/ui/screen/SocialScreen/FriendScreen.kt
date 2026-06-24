@@ -221,7 +221,7 @@ fun FriendScreen(
                 text = "나의 픽 ",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.PICKS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.PICKS) Color.White else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.PICKS
@@ -235,7 +235,7 @@ fun FriendScreen(
                     }}",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.PICKS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.PICKS) Color(0xFFCEFF43) else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.PICKS
@@ -249,7 +249,7 @@ fun FriendScreen(
                 text = "나의 팬덤 ",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.FANS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.FANS) Color.White else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.FANS
@@ -263,7 +263,7 @@ fun FriendScreen(
                 }}",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.FANS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.FANS) Color(0xFFCEFF43) else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.FANS
@@ -322,7 +322,7 @@ fun FriendScreen(
                             .fillMaxSize()
                             .weight(1f)
                             .padding(bottom = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(friends) { user ->
 
@@ -378,7 +378,6 @@ fun FriendItemCard(
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(10.dp)
-            .padding(end=12.dp)
             .clickable {
                 // 픽/팬덤 리스트에서 진입한 경우: 내 프로필이든 친구 프로필이든 friend_profile + 뒤로가기만 표시
                 if (fromPickFandomList) {
@@ -423,7 +422,7 @@ fun FriendItemCard(
             // 프로필 이미지
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .border(2.dp, mainGreen, CircleShape)
             ) {
@@ -444,7 +443,7 @@ fun FriendItemCard(
                         text = user.username,
                         fontFamily = PaperlogyFontFamily,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         color = Color.White
                     )
                     // 팬덤 탭에서만: 나를 팔로우한 사람 중 내가 이미 픽한 경우
@@ -453,7 +452,7 @@ fun FriendItemCard(
                             text = "나의 픽",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.Medium,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = mainGreen
                         )
                     }
@@ -463,7 +462,7 @@ fun FriendItemCard(
                     text = "@${user.tag}",
                     fontFamily = PaperlogyFontFamily,
                     fontWeight = FontWeight.Light,
-                    fontSize = 10.sp,
+                    fontSize = 9.sp,
                     color = Color(0xFFFFFFFF)
                 )
             }
