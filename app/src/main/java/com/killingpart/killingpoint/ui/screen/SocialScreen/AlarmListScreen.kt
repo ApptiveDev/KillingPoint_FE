@@ -1,6 +1,5 @@
 package com.killingpart.killingpoint.ui.screen.SocialScreen
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,10 +44,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.killingpart.killingpoint.data.model.AlarmDeepLink
-import com.killingpart.killingpoint.data.model.DiaryDetail
-import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.navigation.handleAlarmNavigation
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -169,37 +167,15 @@ fun AlarmListScreen(navController: NavController) {
                                                 opening = true
                                                 coroutineScope.launch {
                                                     try {
-                                                        when (alarm.type) {
-                                                            "LIKE_ALARM", "DIARY_ALARM" -> {
-                                                                repo.getDiaryDetailByAlarmDeepLink(alarm.deepLink).fold(
-                                                                    onSuccess = { detail ->
-                                                                        val myUserId = repo.getUserIdFromToken()
-                                                                        navigateToDiaryDetail(
-                                                                            navController,
-                                                                            detail,
-                                                                            myUserId
-                                                                        )
-                                                                    },
-                                                                    onFailure = { e ->
-                                                                        Toast.makeText(
-                                                                            context,
-                                                                            mapAlarmNavigationErrorMessage(
-                                                                                alarmType = alarm.type,
-                                                                                rawMessage = e.message
-                                                                            ),
-                                                                            Toast.LENGTH_SHORT
-                                                                        ).show()
-                                                                    }
-                                                                )
+                                                        handleAlarmNavigation(
+                                                            navController = navController,
+                                                            type = alarm.type,
+                                                            deepLink = alarm.deepLink,
+                                                            repo = repo,
+                                                            onError = { msg ->
+                                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                                             }
-
-                                                            "SUBSCRIBE_ALARM" -> {
-                                                                navigateFromSubscribeDeepLink(
-                                                                    navController,
-                                                                    alarm.deepLink
-                                                                )
-                                                            }
-                                                        }
+                                                        )
                                                     } finally {
                                                         opening = false
                                                     }
@@ -244,49 +220,6 @@ fun AlarmListScreen(navController: NavController) {
     }
 }
 
-/** `/api/subscribes/{userId}/fans` deepLink → 소셜 > 친구 > 팬덤 */
-private fun navigateFromSubscribeDeepLink(navController: NavController, deepLink: String) {
-    if (!AlarmDeepLink.isSubscribeFansDeepLink(deepLink)) return
-    navController.navigate("social?tab=friend&friendListTab=fans")
-}
-
-private fun navigateToDiaryDetail(
-    navController: NavController,
-    detail: DiaryDetail,
-    myUserId: Long?
-) {
-    val diary = detail.toDiary()
-    val isOwnDiary = myUserId != null && detail.userId == myUserId
-    val authorParams =
-        if (!isOwnDiary && detail.username.isNotBlank() && detail.tag.isNotBlank()) {
-            "&authorUsername=${Uri.encode(detail.username)}&authorTag=${Uri.encode(detail.tag)}"
-        } else {
-            ""
-        }
-    val diaryIdParam = diary.id?.let { "&diaryId=$it" }.orEmpty()
-    val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" }.orEmpty()
-    val scopeParam = "&scope=${diary.scope.name}"
-    val displayContent =
-        if (diary.scope == Scope.PRIVATE) "비공개 일기입니다." else diary.content
-    navController.navigate(
-        "diary_detail" +
-            "?artist=${Uri.encode(diary.artist)}" +
-            "&musicTitle=${Uri.encode(diary.musicTitle)}" +
-            "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
-            "&content=${Uri.encode(displayContent)}" +
-            "&videoUrl=${Uri.encode(diary.videoUrl)}" +
-            "&duration=${Uri.encode(diary.duration)}" +
-            "&start=${Uri.encode(diary.start)}" +
-            "&end=${Uri.encode(diary.end)}" +
-            "&createDate=${Uri.encode(diary.createDate)}" +
-            scopeParam +
-            diaryIdParam +
-            totalDurationParam +
-            "&fromTab=social" +
-            authorParams
-    )
-}
-
 private fun formatAlarmDate(raw: String?): String {
     if (raw.isNullOrBlank()) return ""
     return when {
@@ -299,17 +232,3 @@ private fun formatAlarmDate(raw: String?): String {
     }
 }
 
-private fun mapAlarmNavigationErrorMessage(
-    alarmType: String,
-    rawMessage: String?
-): String {
-    val message = rawMessage.orEmpty()
-    val isNotFound = message.contains("404") || message.contains("HTTP 404", ignoreCase = true)
-    if (!isNotFound) return rawMessage ?: "페이지를 불러오지 못했습니다."
-
-    return when (alarmType) {
-        "LIKE_ALARM", "DIARY_ALARM" -> "삭제되었거나 존재하지 않는 일기입니다."
-        "SUBSCRIBE_ALARM" -> "탈퇴했거나 존재하지 않는 회원입니다."
-        else -> "요청한 정보를 찾을 수 없습니다."
-    }
-}

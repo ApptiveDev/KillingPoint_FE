@@ -10,6 +10,8 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.killingpart.killingpoint.MainActivity
@@ -18,6 +20,7 @@ import com.killingpart.killingpoint.data.repository.AuthRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Collections
 
 class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
@@ -32,6 +35,20 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(message)
         createNotificationChannel()
 
+        // 같은 메시지가 두 번 배달되는 경우(FCM 재전송 or 토큰 중복) 무시
+        val messageId = message.messageId
+        if (messageId != null) {
+            if (!processedMessageIds.add(messageId)) return
+            if (processedMessageIds.size > 30) {
+                processedMessageIds.iterator().let { it.next(); it.remove() }
+            }
+        }
+
+        // notification payload가 있고 앱이 백그라운드이면 시스템이 이미 알림을 표시했으므로 건너뜀
+        val isInForeground = ProcessLifecycleOwner.get()
+            .lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        if (!isInForeground && message.notification != null) return
+
         val title = message.notification?.title
             ?: message.data["title"]
             ?: "킬링파트"
@@ -40,12 +57,17 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
             ?: message.data["body"]
             ?: ""
 
+        val deepLink = message.data["deepLink"].orEmpty()
+        val alarmType = message.data["type"].orEmpty()
+        val notificationId = System.currentTimeMillis().toInt()
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (deepLink.isNotBlank()) putExtra("deepLink", deepLink)
+            if (alarmType.isNotBlank()) putExtra("type", alarmType)
         }
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            notificationId,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -68,7 +90,7 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
         ) {
             return
         }
-        NotificationManagerCompat.from(this).notify(System.currentTimeMillis().toInt(), notification)
+        NotificationManagerCompat.from(this).notify(notificationId, notification)
     }
 
     private fun createNotificationChannel() {
@@ -88,5 +110,9 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
         private const val CHANNEL_ID = "killingpoint_notifications"
         private const val CHANNEL_NAME = "킬링파트 알림"
         private const val CHANNEL_DESCRIPTION = "좋아요, 댓글, 소셜 활동 알림"
+
+        // 같은 메시지 ID가 두 번 배달되는 경우(FCM 재전송 or 토큰 중복)를 막기 위한 중복 방지 세트
+        private val processedMessageIds =
+            Collections.synchronizedSet(LinkedHashSet<String>())
     }
 }
