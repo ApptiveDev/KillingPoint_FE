@@ -1,12 +1,24 @@
 package com.killingpart.killingpoint.ui.screen.DiaryDetailScreen
 
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
+import android.view.ViewGroup
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.android.awaitFrame
+import java.io.File
+import java.io.FileOutputStream
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -330,5 +342,88 @@ object DiaryShareImage {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * 카드 비트맵을 캐시에 저장한 뒤 FileProvider URI 로 네이티브 공유 시트를 띄운다.
+     * 이미지 + 딥링크 URL(텍스트)을 함께 공유한다.
+     */
+    suspend fun shareImageNative(
+        context: Context,
+        bitmap: Bitmap,
+        linkUrl: String
+    ): Result<Unit> {
+        return try {
+            val uri = withContext(Dispatchers.IO) {
+                val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+                val file = File(dir, "diary_share_${bitmap.hashCode()}.png")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }
+
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_TEXT, linkUrl)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(sendIntent, "공유하기"))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+
+/** ContextWrapper 를 풀어 Activity 를 찾는다. */
+fun Context.findActivity(): Activity? {
+    var ctx: Context = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
+
+/**
+ * Compose 콘텐츠를 화면과 무관하게 오프스크린 ComposeView 로 렌더링해 Bitmap 으로 반환한다.
+ * view.draw(canvas) 는 동기 소프트웨어 렌더링이라 유튜브 영상 재생/정지 상태와 무관하게 동작한다.
+ */
+suspend fun renderComposableToBitmap(
+    activity: Activity,
+    content: @androidx.compose.runtime.Composable () -> Unit
+): Bitmap {
+    val root = activity.window.decorView as ViewGroup
+    val composeView = ComposeView(activity).apply {
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+        visibility = View.INVISIBLE
+        setContent(content)
+    }
+    root.addView(
+        composeView,
+        ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+    )
+
+    return try {
+        // 컴포지션/레이아웃이 끝나도록 몇 프레임 대기 (Choreographer 기반이라 화면 상태와 무관)
+        awaitFrame()
+        awaitFrame()
+
+        val unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        composeView.measure(unspecified, unspecified)
+        val width = composeView.measuredWidth.coerceAtLeast(1)
+        val height = composeView.measuredHeight.coerceAtLeast(1)
+        composeView.layout(0, 0, width, height)
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        composeView.draw(Canvas(bitmap))
+        bitmap
+    } finally {
+        root.removeView(composeView)
     }
 }

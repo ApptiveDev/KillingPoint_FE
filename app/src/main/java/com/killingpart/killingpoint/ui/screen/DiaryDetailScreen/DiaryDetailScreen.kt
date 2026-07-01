@@ -74,13 +74,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.activity.compose.BackHandler
 import android.widget.Toast
-import android.graphics.Bitmap
-import androidx.compose.runtime.withFrameNanos
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 
 @Composable
 fun DiaryDetailScreen(
@@ -116,11 +109,8 @@ fun DiaryDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
 
-    // 이미지 저장(공유 카드 캡처) 상태
+    // 이미지 저장/공유 진행 상태
     var isSaving by remember { mutableStateOf(false) }
-    var shareArtwork by remember { mutableStateOf<ImageBitmap?>(null) }
-    var captureRequested by remember { mutableStateOf(false) }
-    val shareGraphicsLayer = rememberGraphicsLayer()
 
     val isOtherPersonDiary = diaryId != null &&
         authorUsername.isNotEmpty() &&
@@ -386,9 +376,43 @@ fun DiaryDetailScreen(
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(enabled = !isSaving) {
                                     coroutineScope.launch {
-                                        isSaving = true
-                                        shareArtwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
-                                        captureRequested = true
+                                        try {
+                                            isSaving = true
+                                            val activity = context.findActivity()
+                                            if (activity == null) {
+                                                Toast.makeText(context, "저장 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
+                                                return@launch
+                                            }
+                                            val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                            val bitmap = renderComposableToBitmap(activity) {
+                                                DiaryShareCard(
+                                                    artwork = artwork,
+                                                    musicTitle = musicTitle,
+                                                    artist = artist,
+                                                    content = currentContent,
+                                                    dateText = formattedDate,
+                                                    tagText = shareTag,
+                                                    startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                                                    endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                                                    startProgress = shareStartProgress,
+                                                    endProgress = shareEndProgress
+                                                )
+                                            }
+                                            DiaryShareImage.saveToGallery(
+                                                context = context,
+                                                bitmap = bitmap,
+                                                displayName = "killingpart_diary_${diaryId ?: 0}_${System.currentTimeMillis()}"
+                                            ).fold(
+                                                onSuccess = {
+                                                    Toast.makeText(context, "이미지를 저장했어요", Toast.LENGTH_SHORT).show()
+                                                },
+                                                onFailure = {
+                                                    Toast.makeText(context, "저장 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            )
+                                        } finally {
+                                            isSaving = false
+                                        }
                                     }
                                 }
                         )
@@ -400,7 +424,39 @@ fun DiaryDetailScreen(
                                 .height(38.dp)
                                 .aspectRatio(96f / 164f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { /* TODO: 공유 기능 */ }
+                                .clickable(enabled = !isSaving) {
+                                    coroutineScope.launch {
+                                        try {
+                                            isSaving = true
+                                            val activity = context.findActivity()
+                                            if (activity == null) {
+                                                Toast.makeText(context, "공유 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
+                                                return@launch
+                                            }
+                                            val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                            val bitmap = renderComposableToBitmap(activity) {
+                                                DiaryShareCard(
+                                                    artwork = artwork,
+                                                    musicTitle = musicTitle,
+                                                    artist = artist,
+                                                    content = currentContent,
+                                                    dateText = formattedDate,
+                                                    tagText = shareTag,
+                                                    startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                                                    endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                                                    startProgress = shareStartProgress,
+                                                    endProgress = shareEndProgress
+                                                )
+                                            }
+                                            val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
+                                            DiaryShareImage.shareImageNative(context, bitmap, link).onFailure {
+                                                Toast.makeText(context, "공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        } finally {
+                                            isSaving = false
+                                        }
+                                    }
+                                }
                         )
                         Image(
                             painter = painterResource(id = R.drawable.fixing),
@@ -742,62 +798,6 @@ fun DiaryDetailScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             BottomBar(navController = navController)
-        }
-
-        // 저장/공유용 카드 렌더링 & 캡처
-        // alpha 로 화면엔 거의 안 보이게 하되, drawLayer 를 호출해 레이어가 확실히 realize 되도록 함
-        // (영상 일시정지 등 화면이 재-invalidate 되지 않는 상황에서도 빈 캡처가 나오지 않게)
-        if (captureRequested) {
-            Box(
-                modifier = Modifier
-                    .alpha(0.02f)
-                    .drawWithContent {
-                        shareGraphicsLayer.record { this@drawWithContent.drawContent() }
-                        drawLayer(shareGraphicsLayer)
-                    }
-            ) {
-                DiaryShareCard(
-                    artwork = shareArtwork,
-                    musicTitle = musicTitle,
-                    artist = artist,
-                    content = currentContent,
-                    dateText = formattedDate,
-                    tagText = shareTag,
-                    startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
-                    endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
-                    startProgress = shareStartProgress,
-                    endProgress = shareEndProgress
-                )
-            }
-
-            LaunchedEffect(captureRequested) {
-                // 측정/그리기(record + drawLayer) 완료를 위해 몇 프레임 대기
-                withFrameNanos { }
-                withFrameNanos { }
-                withFrameNanos { }
-                val result = runCatching {
-                    val bitmap: Bitmap = shareGraphicsLayer.toImageBitmap().asAndroidBitmap()
-                    DiaryShareImage.saveToGallery(
-                        context = context,
-                        bitmap = bitmap,
-                        displayName = "killingpart_diary_${diaryId ?: 0}_${System.currentTimeMillis()}"
-                    ).getOrThrow()
-                }
-                result.fold(
-                    onSuccess = {
-                        Toast.makeText(context, "이미지를 저장했어요", Toast.LENGTH_SHORT).show()
-                    },
-                    onFailure = {
-                        Toast.makeText(
-                            context,
-                            "저장 실패: ${it.message ?: "알 수 없는 오류"}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                )
-                captureRequested = false
-                isSaving = false
-            }
         }
 
         if (showDeleteDialog) {
