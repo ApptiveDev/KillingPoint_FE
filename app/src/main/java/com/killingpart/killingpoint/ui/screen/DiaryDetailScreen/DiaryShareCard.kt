@@ -435,7 +435,8 @@ object DiaryShareImage {
         bitmap: Bitmap,
         title: String,
         description: String,
-        linkUrl: String
+        linkUrl: String,
+        diaryId: Long
     ): Result<Unit> {
         return try {
             if (!ShareClient.instance.isKakaoTalkSharingAvailable(context)) {
@@ -461,7 +462,18 @@ object DiaryShareImage {
             }
 
             // 2) FeedTemplate 구성 후 공유
-            val link = Link(webUrl = linkUrl, mobileWebUrl = linkUrl)
+            // androidExecutionParams: 카드 탭 시 앱 설치자는 kakao{앱키}://kakaolink?route=diary&diaryId=... 로 앱이 열림
+            val executionParams = if (diaryId > 0) {
+                mapOf("route" to "diary", "diaryId" to diaryId.toString())
+            } else {
+                emptyMap()
+            }
+            val link = Link(
+                webUrl = linkUrl,
+                mobileWebUrl = linkUrl,
+                androidExecutionParams = executionParams,
+                iosExecutionParams = executionParams
+            )
             val template = FeedTemplate(
                 content = Content(
                     title = title,
@@ -470,7 +482,7 @@ object DiaryShareImage {
                     description = description
                 ),
                 buttons = listOf(
-                    Button(title = "킬링파트에서 보기", link = link)
+                    Button(title = "킬링파트 보러가기", link = link)
                 )
             )
 

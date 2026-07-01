@@ -66,6 +66,22 @@ class MainActivity : ComponentActivity() {
             _pendingAlarmType.value = type
             _pendingDeepLink.value = deepLink
         }
+        handleKakaoLinkIntent(intent)
+    }
+
+    /**
+     * 카카오톡 공유 카드(실행 파라미터)로 앱이 열렸을 때 처리한다.
+     * data 예: kakao{앱키}://kakaolink?route=diary&diaryId=123
+     */
+    private fun handleKakaoLinkIntent(intent: Intent) {
+        val data = intent.data ?: return
+        if (data.host != "kakaolink") return
+        val route = data.getQueryParameter("route")
+        val diaryId = data.getQueryParameter("diaryId")
+        if (route == "diary" && !diaryId.isNullOrBlank()) {
+            _pendingAlarmType.value = "DIARY_ALARM"
+            _pendingDeepLink.value = "/api/diaries/$diaryId"
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -81,6 +97,7 @@ class MainActivity : ComponentActivity() {
                 _pendingAlarmType.value = type
                 _pendingDeepLink.value = deepLink
             }
+            handleKakaoLinkIntent(intent)
         }
         enableEdgeToEdge()
         window.statusBarColor = AndroidColor.BLACK

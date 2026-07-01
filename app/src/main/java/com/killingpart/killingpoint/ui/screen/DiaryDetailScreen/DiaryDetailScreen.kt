@@ -875,7 +875,7 @@ fun DiaryDetailScreen(
                                 val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
                                 val title = if (artist.isNotBlank()) "$musicTitle - $artist" else musicTitle
                                 val description = shareCardContent.ifBlank { "킬링파트에서 다이어리를 확인해 보세요." }
-                                DiaryShareImage.shareKakao(context, bitmap, title, description, link).onFailure {
+                                DiaryShareImage.shareKakao(context, bitmap, title, description, link, diaryId ?: 0L).onFailure {
                                     Toast.makeText(context, "카카오톡 공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
                                 }
                             } finally {
