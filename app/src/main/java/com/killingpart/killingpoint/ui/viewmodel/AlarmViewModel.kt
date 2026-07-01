@@ -32,14 +32,23 @@ class AlarmViewModel(
     private val _hasUnread = MutableStateFlow(false)
     val hasUnread: StateFlow<Boolean> = _hasUnread
 
+    // 선택(삭제) 모드
+    private val _isSelectionMode = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionMode
+
+    private val _selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedIds: StateFlow<Set<Long>> = _selectedIds
+
     fun loadAlarms(context: Context, size: Int = 20) {
         _state.value = AlarmUiState.Loading
         val repo = repoFactory(context)
         viewModelScope.launch {
             loadAllAlarmPages(repo, size)
                 .onSuccess { alarms ->
+                    val deletedIds = AlarmReadStore.getDeletedAlarmIds(context)
+                    val visibleAlarms = alarms.filterNot { it.alarmId in deletedIds }
                     val readIds = AlarmReadStore.getReadAlarmIds(context)
-                    val uiItems = alarms.map { alarm ->
+                    val uiItems = visibleAlarms.map { alarm ->
                         AlarmUiItem(
                             alarm = alarm,
                             isRead = alarm.alarmId in readIds
@@ -47,13 +56,60 @@ class AlarmViewModel(
                     }
                     _state.value = AlarmUiState.Success(uiItems)
                     // 목록에 보여진 알림은 "봤음"으로만 저장 -> 레드닷만 끄고 텍스트 색은 그대로 유지
-                    AlarmReadStore.markAlarmsSeen(context, alarms.map { it.alarmId })
+                    AlarmReadStore.markAlarmsSeen(context, visibleAlarms.map { it.alarmId })
                     _hasUnread.value = false
                 }
                 .onFailure { e ->
                     _state.value = AlarmUiState.Error(e.message ?: "알림 목록 조회 실패")
                 }
         }
+    }
+
+    fun setSelectionMode(enabled: Boolean) {
+        _isSelectionMode.value = enabled
+        if (!enabled) _selectedIds.value = emptySet()
+    }
+
+    fun toggleSelection(alarmId: Long) {
+        val current = _selectedIds.value
+        _selectedIds.value = if (alarmId in current) current - alarmId else current + alarmId
+    }
+
+    /** 전체 선택 <-> 전체 해제 토글 */
+    fun toggleSelectAll() {
+        val allIds = (_state.value as? AlarmUiState.Success)
+            ?.alarms
+            ?.map { it.alarm.alarmId }
+            ?.toSet()
+            .orEmpty()
+        _selectedIds.value = if (allIds.isNotEmpty() && _selectedIds.value.size == allIds.size) {
+            emptySet()
+        } else {
+            allIds
+        }
+    }
+
+    fun deleteSelected(context: Context) {
+        val ids = _selectedIds.value
+        if (ids.isEmpty()) return
+        AlarmReadStore.markAlarmsDeleted(context, ids)
+        val current = _state.value
+        if (current is AlarmUiState.Success) {
+            _state.value = AlarmUiState.Success(
+                current.alarms.filterNot { it.alarm.alarmId in ids }
+            )
+        }
+        setSelectionMode(false)
+    }
+
+    fun deleteAll(context: Context) {
+        val current = _state.value as? AlarmUiState.Success ?: return
+        val allIds = current.alarms.map { it.alarm.alarmId }.toSet()
+        if (allIds.isEmpty()) return
+        AlarmReadStore.markAlarmsDeleted(context, allIds)
+        _state.value = AlarmUiState.Success(emptyList())
+        _hasUnread.value = false
+        setSelectionMode(false)
     }
 
     /** 개별 알림을 탭했을 때 호출: 해당 알림만 읽음(회색) 처리하고 화면에 즉시 반영한다. */
