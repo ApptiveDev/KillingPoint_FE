@@ -72,6 +72,13 @@ import java.net.URLDecoder
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import androidx.activity.compose.BackHandler
+import android.widget.Toast
+import android.graphics.Bitmap
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 
 @Composable
 fun DiaryDetailScreen(
@@ -106,6 +113,12 @@ fun DiaryDetailScreen(
     var isLoading by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+
+    // 이미지 저장(공유 카드 캡처) 상태
+    var isSaving by remember { mutableStateOf(false) }
+    var shareArtwork by remember { mutableStateOf<ImageBitmap?>(null) }
+    var captureRequested by remember { mutableStateOf(false) }
+    val shareGraphicsLayer = rememberGraphicsLayer()
 
     val isOtherPersonDiary = diaryId != null &&
         authorUsername.isNotEmpty() &&
@@ -162,6 +175,19 @@ fun DiaryDetailScreen(
     } catch (e: Exception) {
         createDate.split("T")[0]
     }
+
+    // 공유 카드용 값
+    val shareTag = if (authorTag.isNotEmpty()) {
+        "@$authorTag"
+    } else {
+        when (val s = userState) {
+            is UserUiState.Success -> "@${s.userInfo.tag}"
+            else -> "@KILLINGPART"
+        }
+    }
+    val shareTotalDuration = (totalDuration ?: 0).coerceAtLeast(1)
+    val shareStartProgress = (startSeconds.toFloat() / shareTotalDuration).coerceIn(0f, 1f)
+    val shareEndProgress = (endSeconds.toFloat() / shareTotalDuration).coerceIn(0f, 1f)
 
     // 시스템 뒤로가기 처리 - 네비게이션 스택 확인
     BackHandler {
@@ -347,24 +373,30 @@ fun DiaryDetailScreen(
                     if (diaryId != null && !isOtherPersonDiary) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.storing),
                                 contentDescription = "저장",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
-                                    .height(40.dp)
+                                    .height(38.dp)
                                     .aspectRatio(96f / 164f)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .clickable { /* TODO: 이미지 저장 기능 */ }
+                                    .clickable(enabled = !isSaving) {
+                                        coroutineScope.launch {
+                                            isSaving = true
+                                            shareArtwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                            captureRequested = true
+                                        }
+                                    }
                             )
                             Image(
                                 painter = painterResource(id = R.drawable.sharing),
                                 contentDescription = "공유",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
-                                    .height(40.dp)
+                                    .height(38.dp)
                                     .aspectRatio(96f / 164f)
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { /* TODO: 공유 기능 */ }
@@ -374,7 +406,7 @@ fun DiaryDetailScreen(
                                 contentDescription = "수정",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
-                                    .height(40.dp)
+                                    .height(38.dp)
                                     .aspectRatio(96f / 164f)
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { isEditing = true }
@@ -384,7 +416,7 @@ fun DiaryDetailScreen(
                                 contentDescription = "삭제",
                                 contentScale = ContentScale.Fit,
                                 modifier = Modifier
-                                    .height(40.dp)
+                                    .height(38.dp)
                                     .aspectRatio(96f / 164f)
                                     .clip(RoundedCornerShape(8.dp))
                                     .clickable { showDeleteDialog = true }
@@ -713,6 +745,58 @@ fun DiaryDetailScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             BottomBar(navController = navController)
+        }
+
+        // 저장/공유용 카드 오프스크린 렌더링 & 캡처
+        // record 로 GraphicsLayer 에만 기록하고 drawLayer 는 호출하지 않아 화면에는 보이지 않음
+        if (captureRequested) {
+            Box(
+                modifier = Modifier
+                    .drawWithContent {
+                        shareGraphicsLayer.record { this@drawWithContent.drawContent() }
+                    }
+            ) {
+                DiaryShareCard(
+                    artwork = shareArtwork,
+                    musicTitle = musicTitle,
+                    artist = artist,
+                    content = currentContent,
+                    dateText = formattedDate,
+                    tagText = shareTag,
+                    startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                    endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                    startProgress = shareStartProgress,
+                    endProgress = shareEndProgress
+                )
+            }
+
+            LaunchedEffect(captureRequested) {
+                // 측정/그리기(record) 완료를 위해 몇 프레임 대기
+                withFrameNanos { }
+                withFrameNanos { }
+                val result = runCatching {
+                    val bitmap: Bitmap = shareGraphicsLayer.toImageBitmap().asAndroidBitmap()
+                    DiaryShareImage.saveToGallery(
+                        context = context,
+                        bitmap = bitmap,
+                        displayName = "killingpart_diary_${diaryId ?: 0}_${System.currentTimeMillis()}"
+                    ).getOrThrow()
+                }
+                result.fold(
+                    onSuccess = {
+                        Toast.makeText(context, "이미지를 저장했어요", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = {
+                        Toast.makeText(
+                            context,
+                            "저장 실패: ${it.message ?: "알 수 없는 오류"}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                )
+                captureRequested = false
+                isSaving = false
+            }
         }
 
         if (showDeleteDialog) {
