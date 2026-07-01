@@ -15,10 +15,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -347,25 +345,50 @@ fun DiaryDetailScreen(
 
                 if (!isEditing) {
                     if (diaryId != null && !isOtherPersonDiary) {
-                        Row {
-                            IconButton(
-                                onClick = { showDeleteDialog = true }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "삭제",
-                                    tint = Color.White
-                                )
-                            }
-                            IconButton(
-                                onClick = { isEditing = true }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "편집",
-                                    tint = Color.White
-                                )
-                            }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.storing),
+                                contentDescription = "저장",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .aspectRatio(96f / 164f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { /* TODO: 이미지 저장 기능 */ }
+                            )
+                            Image(
+                                painter = painterResource(id = R.drawable.sharing),
+                                contentDescription = "공유",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .aspectRatio(96f / 164f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { /* TODO: 공유 기능 */ }
+                            )
+                            Image(
+                                painter = painterResource(id = R.drawable.fixing),
+                                contentDescription = "수정",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .aspectRatio(96f / 164f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { isEditing = true }
+                            )
+                            Image(
+                                painter = painterResource(id = R.drawable.deleting),
+                                contentDescription = "삭제",
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .height(40.dp)
+                                    .aspectRatio(96f / 164f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showDeleteDialog = true }
+                            )
                         }
                     } else if (isOtherPersonDiary) {
                         Spacer(modifier = Modifier.width(48.dp))
