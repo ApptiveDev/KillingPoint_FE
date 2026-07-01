@@ -19,6 +19,15 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 카카오톡 공유(패키지 가시성, Android 11+) -->
+    <queries>
+        <package android:name="com.kakao.talk" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="kakaolink" />
+        </intent>
+    </queries>
+
     <application
         android:name=".KillingPointApplication"
         android:usesCleartextTraffic="true"

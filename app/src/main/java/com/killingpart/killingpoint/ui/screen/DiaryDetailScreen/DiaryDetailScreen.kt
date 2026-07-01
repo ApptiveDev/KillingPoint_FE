@@ -25,6 +25,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -75,6 +78,7 @@ import java.time.format.DateTimeFormatter
 import androidx.activity.compose.BackHandler
 import android.widget.Toast
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiaryDetailScreen(
     navController: NavController,
@@ -111,6 +115,10 @@ fun DiaryDetailScreen(
 
     // 이미지 저장/공유 진행 상태
     var isSaving by remember { mutableStateOf(false) }
+
+    // 공유 방식 선택 바텀시트
+    var showShareSheet by remember { mutableStateOf(false) }
+    val shareSheetState = rememberModalBottomSheetState()
 
     val isOtherPersonDiary = diaryId != null &&
         authorUsername.isNotEmpty() &&
@@ -424,39 +432,7 @@ fun DiaryDetailScreen(
                                 .height(38.dp)
                                 .aspectRatio(96f / 164f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable(enabled = !isSaving) {
-                                    coroutineScope.launch {
-                                        try {
-                                            isSaving = true
-                                            val activity = context.findActivity()
-                                            if (activity == null) {
-                                                Toast.makeText(context, "공유 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
-                                                return@launch
-                                            }
-                                            val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
-                                            val bitmap = renderComposableToBitmap(activity) {
-                                                DiaryShareCard(
-                                                    artwork = artwork,
-                                                    musicTitle = musicTitle,
-                                                    artist = artist,
-                                                    content = currentContent,
-                                                    dateText = formattedDate,
-                                                    tagText = shareTag,
-                                                    startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
-                                                    endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
-                                                    startProgress = shareStartProgress,
-                                                    endProgress = shareEndProgress
-                                                )
-                                            }
-                                            val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
-                                            DiaryShareImage.shareImageNative(context, bitmap, link).onFailure {
-                                                Toast.makeText(context, "공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        } finally {
-                                            isSaving = false
-                                        }
-                                    }
-                                }
+                                .clickable(enabled = !isSaving) { showShareSheet = true }
                         )
                         Image(
                             painter = painterResource(id = R.drawable.fixing),
@@ -800,6 +776,107 @@ fun DiaryDetailScreen(
             BottomBar(navController = navController)
         }
 
+        if (showShareSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showShareSheet = false },
+                sheetState = shareSheetState,
+                containerColor = Color(0xFF1A1A1A)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .padding(bottom = 24.dp)
+                ) {
+                    Text(
+                        text = "공유하기",
+                        color = Color.White,
+                        fontFamily = PaperlogyFontFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "공유할 방식을 선택해 주세요.",
+                        color = Color(0xFFAAAAAA),
+                        fontFamily = PaperlogyFontFamily,
+                        fontSize = 12.sp
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ShareOptionItem(text = "공유") {
+                        showShareSheet = false
+                        coroutineScope.launch {
+                            try {
+                                isSaving = true
+                                val activity = context.findActivity()
+                                if (activity == null) {
+                                    Toast.makeText(context, "공유 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+                                val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                val bitmap = renderComposableToBitmap(activity) {
+                                    DiaryShareCard(
+                                        artwork = artwork,
+                                        musicTitle = musicTitle,
+                                        artist = artist,
+                                        content = currentContent,
+                                        dateText = formattedDate,
+                                        tagText = shareTag,
+                                        startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                                        endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                                        startProgress = shareStartProgress,
+                                        endProgress = shareEndProgress
+                                    )
+                                }
+                                val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
+                                DiaryShareImage.shareImageNative(context, bitmap, link).onFailure {
+                                    Toast.makeText(context, "공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
+                                }
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    }
+                    ShareOptionItem(text = "카카오톡 공유") {
+                        showShareSheet = false
+                        coroutineScope.launch {
+                            try {
+                                isSaving = true
+                                val activity = context.findActivity()
+                                if (activity == null) {
+                                    Toast.makeText(context, "공유 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+                                val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                val bitmap = renderComposableToBitmap(activity) {
+                                    DiaryShareCard(
+                                        artwork = artwork,
+                                        musicTitle = musicTitle,
+                                        artist = artist,
+                                        content = currentContent,
+                                        dateText = formattedDate,
+                                        tagText = shareTag,
+                                        startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                                        endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                                        startProgress = shareStartProgress,
+                                        endProgress = shareEndProgress
+                                    )
+                                }
+                                val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
+                                val title = if (artist.isNotBlank()) "$musicTitle - $artist" else musicTitle
+                                val description = currentContent.ifBlank { "킬링파트에서 다이어리를 확인해 보세요." }
+                                DiaryShareImage.shareKakao(context, bitmap, title, description, link).onFailure {
+                                    Toast.makeText(context, "카카오톡 공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
+                                }
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         if (showDeleteDialog) {
             AlertDialog(
                         onDismissRequest = {
@@ -962,6 +1039,22 @@ private fun parseTimeToSeconds(timeStr: String): Int {
     } catch (e: Exception) {
         0
     }
+}
+
+@Composable
+private fun ShareOptionItem(text: String, onClick: () -> Unit) {
+    Text(
+        text = text,
+        color = Color.White,
+        fontFamily = PaperlogyFontFamily,
+        fontWeight = FontWeight.Medium,
+        fontSize = 15.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(vertical = 16.dp, horizontal = 4.dp)
+    )
 }
 
 @Preview

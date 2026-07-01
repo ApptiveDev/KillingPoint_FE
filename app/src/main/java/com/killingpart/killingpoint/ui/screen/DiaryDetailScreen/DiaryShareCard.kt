@@ -16,9 +16,17 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.FileProvider
+import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.template.model.Button
+import com.kakao.sdk.template.model.Content
+import com.kakao.sdk.template.model.FeedTemplate
+import com.kakao.sdk.template.model.Link
 import kotlinx.coroutines.android.awaitFrame
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -370,6 +378,73 @@ object DiaryShareImage {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             context.startActivity(Intent.createChooser(sendIntent, "공유하기"))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 카카오 SDK FeedTemplate 로 카톡 리치 카드(이미지+제목+설명+버튼)를 공유한다.
+     * 카드 이미지는 카카오 이미지 서버에 업로드하므로 별도 백엔드가 필요 없다.
+     */
+    suspend fun shareKakao(
+        context: Context,
+        bitmap: Bitmap,
+        title: String,
+        description: String,
+        linkUrl: String
+    ): Result<Unit> {
+        return try {
+            if (!ShareClient.instance.isKakaoTalkSharingAvailable(context)) {
+                return Result.failure(IllegalStateException("카카오톡이 설치되어 있지 않아요."))
+            }
+
+            val file = withContext(Dispatchers.IO) {
+                val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+                val f = File(dir, "kakao_share_${bitmap.hashCode()}.png")
+                FileOutputStream(f).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+                f
+            }
+
+            // 1) 카드 이미지를 카카오 서버에 업로드
+            val imageUrl = suspendCancellableCoroutine<String> { cont ->
+                ShareClient.instance.uploadImage(file) { result, error ->
+                    when {
+                        error != null -> cont.resumeWithException(error)
+                        result != null -> cont.resume(result.infos.original.url)
+                        else -> cont.resumeWithException(IllegalStateException("이미지 업로드에 실패했어요."))
+                    }
+                }
+            }
+
+            // 2) FeedTemplate 구성 후 공유
+            val link = Link(webUrl = linkUrl, mobileWebUrl = linkUrl)
+            val template = FeedTemplate(
+                content = Content(
+                    title = title,
+                    imageUrl = imageUrl,
+                    link = link,
+                    description = description
+                ),
+                buttons = listOf(
+                    Button(title = "킬링파트에서 보기", link = link)
+                )
+            )
+
+            suspendCancellableCoroutine<Unit> { cont ->
+                ShareClient.instance.shareDefault(context, template) { sharingResult, error ->
+                    when {
+                        error != null -> cont.resumeWithException(error)
+                        sharingResult != null -> {
+                            context.startActivity(sharingResult.intent)
+                            cont.resume(Unit)
+                        }
+                        else -> cont.resumeWithException(IllegalStateException("카카오톡 공유에 실패했어요."))
+                    }
+                }
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
