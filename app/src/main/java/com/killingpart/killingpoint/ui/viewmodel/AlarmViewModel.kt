@@ -46,12 +46,30 @@ class AlarmViewModel(
                         )
                     }
                     _state.value = AlarmUiState.Success(uiItems)
-                    AlarmReadStore.markAlarmsRead(context, alarms.map { it.alarmId })
+                    // 목록에 보여진 알림은 "봤음"으로만 저장 -> 레드닷만 끄고 텍스트 색은 그대로 유지
+                    AlarmReadStore.markAlarmsSeen(context, alarms.map { it.alarmId })
                     _hasUnread.value = false
                 }
                 .onFailure { e ->
                     _state.value = AlarmUiState.Error(e.message ?: "알림 목록 조회 실패")
                 }
+        }
+    }
+
+    /** 개별 알림을 탭했을 때 호출: 해당 알림만 읽음(회색) 처리하고 화면에 즉시 반영한다. */
+    fun markAlarmRead(context: Context, alarmId: Long) {
+        AlarmReadStore.markAlarmRead(context, alarmId)
+        val current = _state.value
+        if (current is AlarmUiState.Success) {
+            _state.value = AlarmUiState.Success(
+                current.alarms.map { item ->
+                    if (item.alarm.alarmId == alarmId && !item.isRead) {
+                        item.copy(isRead = true)
+                    } else {
+                        item
+                    }
+                }
+            )
         }
     }
 

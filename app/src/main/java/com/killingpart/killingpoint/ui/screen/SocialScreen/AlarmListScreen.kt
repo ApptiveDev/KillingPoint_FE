@@ -165,21 +165,26 @@ fun AlarmListScreen(navController: NavController) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(enabled = isNavigable && !opening) {
-                                                opening = true
-                                                coroutineScope.launch {
-                                                    try {
-                                                        handleAlarmNavigation(
-                                                            navController = navController,
-                                                            type = alarm.type,
-                                                            deepLink = alarm.deepLink,
-                                                            repo = repo,
-                                                            onError = { msg ->
-                                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                                                            }
-                                                        )
-                                                    } finally {
-                                                        opening = false
+                                            .clickable(enabled = !opening) {
+                                                // 탭하면 이동 가능 여부와 무관하게 항상 읽음(회색) 처리
+                                                alarmViewModel.markAlarmRead(context, alarm.alarmId)
+                                                // 이동은 딥링크가 유효한 알림에서만
+                                                if (isNavigable) {
+                                                    opening = true
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            handleAlarmNavigation(
+                                                                navController = navController,
+                                                                type = alarm.type,
+                                                                deepLink = alarm.deepLink,
+                                                                repo = repo,
+                                                                onError = { msg ->
+                                                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            )
+                                                        } finally {
+                                                            opening = false
+                                                        }
                                                     }
                                                 }
                                             }
