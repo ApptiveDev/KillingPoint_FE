@@ -7,6 +7,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -119,7 +120,15 @@ fun SearchScreen(navController: NavController) {
         }
     }
 
-    val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    // 한 번의 스와이프에 한 아이템만 이동하도록: 플링의 approach 이동을 없애 가장 가까운 아이템으로만 스냅
+    val snapFlingBehavior = rememberSnapFlingBehavior(
+        remember(listState) {
+            val base = SnapLayoutInfoProvider(listState)
+            object : SnapLayoutInfoProvider by base {
+                override fun calculateApproachOffset(velocity: Float, decayOffset: Float): Float = 0f
+            }
+        }
+    )
 
     LaunchedEffect(currentItemIndex.value, searchState) {
         val state = searchState as? SearchUiState.Success ?: return@LaunchedEffect
