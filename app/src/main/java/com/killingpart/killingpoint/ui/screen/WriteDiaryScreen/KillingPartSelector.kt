@@ -62,7 +62,8 @@ fun KillingPartSelector(
     /** 첫 레이아웃 시 선택 구간 (다른 영상으로 바꿀 때 부모에서 넘김) */
     initialStartSec: Float = 0f,
     initialDurationSec: Float = 10f,
-    onStartChange: (start: Float, end: Float, duration: Float) -> Unit
+    onStartChange: (start: Float, end: Float, duration: Float) -> Unit,
+    onHandleAdjusted: ((handleSide: String) -> Unit)? = null
 ) {
     val scrollState = rememberScrollState()
     val density = LocalDensity.current
@@ -139,18 +140,42 @@ fun KillingPartSelector(
     val durationSec = (endTime - startTime).coerceAtLeast(0f)
     var miniMapWidthPx by remember { mutableStateOf(0f) }
     var wasScrolling by remember { mutableStateOf(false) }
+    val latestOnHandleAdjusted by rememberUpdatedState(onHandleAdjusted)
+
+    fun currentSelection(): Triple<Float, Float, Float> {
+        val sx = scrollState.value.toFloat()
+        val s = ((sx + leftHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+        val e = ((sx + rightHandleX) / pxPerSecond).coerceIn(0f, totalDuration.toFloat())
+        val d = (e - s).coerceAtLeast(0f)
+        return Triple(s, e, d)
+    }
 
     fun commitSelectionIfNeeded() {
+        val (s, e, d) = currentSelection()
         val changed =
-            startTime != lastCommittedStart ||
-                endTime != lastCommittedEnd ||
-                durationSec != lastCommittedDuration
+            s != lastCommittedStart ||
+                e != lastCommittedEnd ||
+                d != lastCommittedDuration
 
         if (changed) {
-            onStartChange(startTime, endTime, durationSec)
-            lastCommittedStart = startTime
-            lastCommittedEnd = endTime
-            lastCommittedDuration = durationSec
+            onStartChange(s, e, d)
+            lastCommittedStart = s
+            lastCommittedEnd = e
+            lastCommittedDuration = d
+        }
+    }
+
+    fun endHandleDrag(handleSide: String) {
+        val beforeStart = lastCommittedStart
+        val beforeEnd = lastCommittedEnd
+        val beforeDuration = lastCommittedDuration
+        commitSelectionIfNeeded()
+        val changed =
+            beforeStart != lastCommittedStart ||
+                beforeEnd != lastCommittedEnd ||
+                beforeDuration != lastCommittedDuration
+        if (changed) {
+            latestOnHandleAdjusted?.invoke(handleSide)
         }
     }
 
@@ -215,8 +240,8 @@ fun KillingPartSelector(
                     .offset { IntOffset(leftHandleX.roundToInt(), handleYOffsetPx) }
                     .pointerInput(Unit) {
                         detectDragGestures(
-                            onDragEnd = { commitSelectionIfNeeded() },
-                            onDragCancel = { commitSelectionIfNeeded() }
+                            onDragEnd = { endHandleDrag("left") },
+                            onDragCancel = { endHandleDrag("left") }
                         ) { change, drag ->
                             change.consume()
 
@@ -277,8 +302,8 @@ fun KillingPartSelector(
                     .offset { IntOffset(rightHandleX.roundToInt(), handleYOffsetPx) }
                     .pointerInput(Unit) {
                         detectDragGestures(
-                            onDragEnd = { commitSelectionIfNeeded() },
-                            onDragCancel = { commitSelectionIfNeeded() }
+                            onDragEnd = { endHandleDrag("right") },
+                            onDragCancel = { endHandleDrag("right") }
                         ) { change, drag ->
                             change.consume()
 
@@ -409,19 +434,16 @@ fun KillingPartSelector(
                                     .coerceAtMost(maxDurationSec)
                             },
                             onDragEnd = {
-                                onStartChange(
-                                    latestMiniMapTargetStartSec,
-                                    (latestMiniMapTargetStartSec + latestMiniMapTargetDurationSec)
-                                        .coerceAtMost(totalDuration.toFloat()),
-                                    latestMiniMapTargetDurationSec
-                                )
-                                lastCommittedStart = latestMiniMapTargetStartSec
-                                lastCommittedEnd =
-                                    (latestMiniMapTargetStartSec + latestMiniMapTargetDurationSec)
-                                        .coerceAtMost(totalDuration.toFloat())
-                                lastCommittedDuration = latestMiniMapTargetDurationSec
+                                if (dragAccumulatedPx == 0f) return@detectDragGestures
+                                endHandleDrag("spectrum_bar")
                             },
-                            onDragCancel = { commitSelectionIfNeeded() }
+                            onDragCancel = {
+                                if (dragAccumulatedPx != 0f) {
+                                    endHandleDrag("spectrum_bar")
+                                } else {
+                                    commitSelectionIfNeeded()
+                                }
+                            }
                         ) { change, drag ->
                             change.consume()
                             dragAccumulatedPx += drag.x

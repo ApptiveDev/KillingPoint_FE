@@ -14,6 +14,7 @@ import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import com.killingpart.killingpoint.data.model.YoutubeVideoRequest
 import com.killingpart.killingpoint.data.model.SubscribeResponse
 import com.killingpart.killingpoint.data.model.FeedResponse
+import com.killingpart.killingpoint.data.model.DiaryDetail
 import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.UserStatistics
 import com.killingpart.killingpoint.data.model.LikeResponse
@@ -92,11 +93,12 @@ interface ApiService {
         @Query("size") size: Int
     ): MyDiaries
 
+    /** GET /api/diaries/{diaryId} — 일기 단건 조회 */
     @GET("diaries/{diaryId}")
-    suspend fun getDiary(
+    suspend fun getDiaryDetail(
         @Header("Authorization") accessToken: String,
         @Path("diaryId") diaryId: Long
-    ): Diary
+    ): DiaryDetail
 
     @POST("diaries")
     suspend fun createDiary(

@@ -46,7 +46,7 @@ fun NextSongList(
     ) {
         Text(
             text = label,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Light,
             color = mainGreen
@@ -56,7 +56,7 @@ fun NextSongList(
 
         Text(
             text = title ?: "",
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.Light,
             color = Color.White,
@@ -70,7 +70,7 @@ fun NextSongList(
         if (expanded) {
             Text(
                 text = if (isEditMode) "완료" else "편집",
-                fontSize = 14.sp,
+                fontSize = 12.sp,
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Light,
                 color = mainGreen,

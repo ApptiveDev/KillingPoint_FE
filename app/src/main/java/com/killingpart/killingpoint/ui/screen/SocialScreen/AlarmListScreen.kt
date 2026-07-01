@@ -1,6 +1,5 @@
 package com.killingpart.killingpoint.ui.screen.SocialScreen
 
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,10 +43,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.killingpart.killingpoint.data.model.Diary
-import com.killingpart.killingpoint.data.model.Scope
+import com.killingpart.killingpoint.data.model.AlarmDeepLink
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.navigation.handleAlarmNavigation
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -63,7 +62,7 @@ fun AlarmListScreen(navController: NavController) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val repo = remember { AuthRepository(context) }
     val coroutineScope = rememberCoroutineScope()
-    var openingDiaryId by remember { mutableStateOf<Long?>(null) }
+    var opening by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         alarmViewModel.loadAlarms(context)
@@ -159,28 +158,29 @@ fun AlarmListScreen(navController: NavController) {
                             itemsIndexed(state.alarms, key = { _, item -> item.alarm.alarmId }) { index, item ->
                                 val alarm = item.alarm
                                 val textColor = if (item.isRead) Color(0xFFA4A4A6) else Color.White
-                                val diaryId = parseDiaryIdFromDeepLink(alarm.deepLink)
+                                val isNavigable = remember(alarm.alarmId, alarm.type, alarm.deepLink) {
+                                    AlarmDeepLink.isNavigable(alarm.type, alarm.deepLink)
+                                }
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable(enabled = diaryId != null && openingDiaryId == null) {
-                                                val id = diaryId ?: return@clickable
-                                                openingDiaryId = id
+                                            .clickable(enabled = isNavigable && !opening) {
+                                                opening = true
                                                 coroutineScope.launch {
-                                                    repo.getDiaryById(id).fold(
-                                                        onSuccess = { diary ->
-                                                            navigateToDiaryDetail(navController, diary)
-                                                        },
-                                                        onFailure = { e ->
-                                                            Toast.makeText(
-                                                                context,
-                                                                e.message ?: "일기를 불러올 수 없습니다",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
-                                                    )
-                                                    openingDiaryId = null
+                                                    try {
+                                                        handleAlarmNavigation(
+                                                            navController = navController,
+                                                            type = alarm.type,
+                                                            deepLink = alarm.deepLink,
+                                                            repo = repo,
+                                                            onError = { msg ->
+                                                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        )
+                                                    } finally {
+                                                        opening = false
+                                                    }
                                                 }
                                             }
                                             .padding(vertical = 16.dp),
@@ -192,7 +192,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = textColor,
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Normal,
-                                            fontSize = 14.sp,
+                                            fontSize = 13.sp,
                                             modifier = Modifier.weight(1f)
                                         )
                                         Spacer(modifier = Modifier.size(12.dp))
@@ -201,7 +201,7 @@ fun AlarmListScreen(navController: NavController) {
                                             color = Color(0xFFA4A4A6),
                                             fontFamily = PaperlogyFontFamily,
                                             fontWeight = FontWeight.Medium,
-                                            fontSize = 14.sp
+                                            fontSize = 10.sp
                                         )
                                     }
 
@@ -222,36 +222,6 @@ fun AlarmListScreen(navController: NavController) {
     }
 }
 
-private fun parseDiaryIdFromDeepLink(deepLink: String): Long? {
-    if (deepLink.isBlank()) return null
-    val match = Regex("""diaries/(\d+)""").find(deepLink) ?: return null
-    return match.groupValues[1].toLongOrNull()
-}
-
-private fun navigateToDiaryDetail(navController: NavController, diary: Diary) {
-    val diaryIdParam = diary.id?.let { "&diaryId=$it" }.orEmpty()
-    val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" }.orEmpty()
-    val scopeParam = "&scope=${diary.scope.name}"
-    val displayContent =
-        if (diary.scope == Scope.PRIVATE) "비공개 일기입니다." else diary.content
-    navController.navigate(
-        "diary_detail" +
-            "?artist=${Uri.encode(diary.artist)}" +
-            "&musicTitle=${Uri.encode(diary.musicTitle)}" +
-            "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
-            "&content=${Uri.encode(displayContent)}" +
-            "&videoUrl=${Uri.encode(diary.videoUrl)}" +
-            "&duration=${Uri.encode(diary.duration)}" +
-            "&start=${Uri.encode(diary.start)}" +
-            "&end=${Uri.encode(diary.end)}" +
-            "&createDate=${Uri.encode(diary.createDate)}" +
-            scopeParam +
-            diaryIdParam +
-            totalDurationParam +
-            "&fromTab=social"
-    )
-}
-
 private fun formatAlarmDate(raw: String?): String {
     if (raw.isNullOrBlank()) return ""
     return when {
@@ -263,3 +233,4 @@ private fun formatAlarmDate(raw: String?): String {
         else -> raw
     }
 }
+

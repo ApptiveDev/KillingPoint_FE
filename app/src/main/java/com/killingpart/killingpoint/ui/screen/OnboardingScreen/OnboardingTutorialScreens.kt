@@ -56,6 +56,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.repository.AuthRepository
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
+import com.killingpart.killingpoint.navigation.finishOnboardingAndGoMain
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.screen.ArchiveScreen.OuterBox
 import com.killingpart.killingpoint.ui.screen.MainScreen.TopPillTabs
@@ -119,7 +121,7 @@ fun OnboardingKpIntroScreen(navController: NavController) {
                     )
                 }
                 Button(
-                    onClick = { navController.navigateToMainClearingStack() },
+                    onClick = { navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_CHOICE) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(54.dp),
@@ -160,7 +162,7 @@ fun OnboardingHomePreviewScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 24.dp)
         ) {
             IconButton(
                 onClick = { navController.popBackStack() },
@@ -173,7 +175,7 @@ fun OnboardingHomePreviewScreen(navController: NavController) {
                 )
             }
             TextButton(
-                onClick = { navController.navigateToMainClearingStack() },
+                onClick = { navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_HOME) },
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 Text(
@@ -184,7 +186,6 @@ fun OnboardingHomePreviewScreen(navController: NavController) {
                 )
             }
         }
-        Spacer(modifier = Modifier.height(14.dp))
         Text(
             text = "추가한 킬링파트는\n여기서 다시 볼 수 있어요.",
             color = Color.White,
@@ -270,7 +271,7 @@ fun OnboardingFeedDemoScreen(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -287,7 +288,11 @@ fun OnboardingFeedDemoScreen(navController: NavController) {
                 color = Color.White,
                 fontFamily = PaperlogyFontFamily,
                 textDecoration = TextDecoration.Underline,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clickable {
+                        navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_NOTIFICATION)
+                    }
             )
         }
         Column(
@@ -628,7 +633,10 @@ fun OnboardingFinishScreen(navController: NavController) {
                 textAlign = TextAlign.Center
             )
             Button(
-                onClick = { navController.navigateToMainClearingStack() },
+                onClick = {
+                    OnboardingAnalytics.onboardCompleted()
+                    navController.finishOnboardingAndGoMain()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),

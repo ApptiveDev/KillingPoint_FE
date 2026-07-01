@@ -2,8 +2,10 @@ package com.killingpart.killingpoint.ui.screen.DiaryDetailScreen
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -11,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
@@ -49,6 +52,8 @@ import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
+import com.killingpart.killingpoint.ui.component.LikesModal
+import com.killingpart.killingpoint.data.model.DiaryLikeUser
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.repository.AuthRepository
@@ -61,6 +66,8 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.Alignment
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import java.net.URLDecoder
@@ -102,8 +109,43 @@ fun DiaryDetailScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
 
+    val isOtherPersonDiary = diaryId != null &&
+        authorUsername.isNotEmpty() &&
+        authorTag.isNotEmpty()
+
+    var isLiked by remember { mutableStateOf(false) }
+    var likeCount by remember { mutableStateOf(0) }
+    var isStored by remember { mutableStateOf(false) }
+    var likesDiaryId by remember { mutableStateOf<Long?>(null) }
+    var likesUsers by remember { mutableStateOf<List<DiaryLikeUser>>(emptyList()) }
+    var isLoadingLikes by remember { mutableStateOf(false) }
+    var likesError by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+    }
+
+    LaunchedEffect(diaryId, isOtherPersonDiary) {
+        if (!isOtherPersonDiary || diaryId == null) return@LaunchedEffect
+        repo.getDiaryDetail(diaryId).onSuccess { detail ->
+            isLiked = detail.isLiked
+            likeCount = detail.likeCount
+            isStored = detail.isStored
+        }
+    }
+
+    LaunchedEffect(likesDiaryId) {
+        val targetDiaryId = likesDiaryId ?: return@LaunchedEffect
+        isLoadingLikes = true
+        likesError = null
+        repo.getDiaryLikes(diaryId = targetDiaryId, page = 0, size = 50, searchCond = null)
+            .onSuccess { response ->
+                likesUsers = response.content
+            }
+            .onFailure { e ->
+                likesError = e.message
+            }
+        isLoadingLikes = false
     }
     
     // content가 변경되면 currentContent와 editedContent도 업데이트
@@ -218,10 +260,12 @@ fun DiaryDetailScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            Spacer(modifier = Modifier.height(35.dp))
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -302,8 +346,7 @@ fun DiaryDetailScreen(
                 }
 
                 if (!isEditing) {
-                    val isFriendProfile = authorUsername.isNotEmpty() && authorTag.isNotEmpty()
-                    if (diaryId != null && !isFriendProfile) {
+                    if (diaryId != null && !isOtherPersonDiary) {
                         Row {
                             IconButton(
                                 onClick = { showDeleteDialog = true }
@@ -324,6 +367,8 @@ fun DiaryDetailScreen(
                                 )
                             }
                         }
+                    } else if (isOtherPersonDiary) {
+                        Spacer(modifier = Modifier.width(48.dp))
                     } else {
                         Spacer(modifier = Modifier.width(48.dp))
                     }
@@ -332,7 +377,111 @@ fun DiaryDetailScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if (isOtherPersonDiary && !isEditing) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        val likeBadgeShape = RoundedCornerShape(50)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .then(
+                                    if (isLiked) {
+                                        Modifier
+                                            .background(mainGreen.copy(alpha = 0.25f), likeBadgeShape)
+                                            .border(1.dp, mainGreen, likeBadgeShape)
+                                    } else {
+                                        Modifier
+                                            .background(Color(0xFF1A1A1A), likeBadgeShape)
+                                            .border(1.dp, Color.White.copy(alpha = 0.4f), likeBadgeShape)
+                                    }
+                                )
+                                .pointerInput(diaryId) {
+                                    detectTapGestures(
+                                        onTap = {
+                                            val id = diaryId ?: return@detectTapGestures
+                                            val previousIsLiked = isLiked
+                                            val previousLikeCount = likeCount
+                                            isLiked = !isLiked
+                                            likeCount = if (!previousIsLiked) {
+                                                likeCount + 1
+                                            } else {
+                                                (likeCount - 1).coerceAtLeast(0)
+                                            }
+                                            coroutineScope.launch {
+                                                repo.toggleLike(id).fold(
+                                                    onSuccess = { response ->
+                                                        isLiked = response.isLiked
+                                                    },
+                                                    onFailure = {
+                                                        isLiked = previousIsLiked
+                                                        likeCount = previousLikeCount
+                                                    }
+                                                )
+                                            }
+                                        },
+                                        onLongPress = {
+                                            diaryId?.let { likesDiaryId = it }
+                                        }
+                                    )
+                                }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Favorite,
+                                contentDescription = "좋아요",
+                                tint = if (isLiked) mainGreen else Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = likeCount.toString(),
+                                fontFamily = PaperlogyFontFamily,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 12.sp,
+                                // color = if (isLiked) mainGreen else Color.White
+                                color = Color.White
+                            )
+                        }
+
+                        Image(
+                            painter = painterResource(
+                                id = if (isStored) R.drawable.is_stored else R.drawable.is_not_stored
+                            ),
+                            contentDescription = if (isStored) "보관됨" else "보관하기",
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clickable {
+                                    val id = diaryId ?: return@clickable
+                                    val previousIsStored = isStored
+                                    isStored = !isStored
+                                    coroutineScope.launch {
+                                        repo.toggleStore(id).fold(
+                                            onSuccess = { response ->
+                                                isStored = response.isStored
+                                            },
+                                            onFailure = {
+                                                isStored = previousIsStored
+                                            }
+                                        )
+                                    }
+                                }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(5.dp))
+            } else {
+                Spacer(modifier = Modifier.height(6.dp))
+            }
 
             Column(
                 modifier = Modifier
@@ -341,22 +490,18 @@ fun DiaryDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Box(
-                    modifier = Modifier.size(250.dp, 150.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
                 ) {
-//                    YouTubePlayerBox(
-//                        diary = diary,
-//                        startSeconds = startSeconds.toFloat(),
-//                        durationSeconds = duringSeconds.toFloat()
-//                    )
                     YouTubePlayerBox(
                         diary = diary,
                         startSeconds = startSeconds.toFloat(),
                         durationSeconds = duringSeconds.toFloat(),
-                        shouldLoop = true
+                        shouldLoop = true,
+                        showTrackInfo = false
                     )
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
 
                 AlbumDiaryBoxWithTimeBar(
                     track = SimpleTrack(
@@ -652,6 +797,42 @@ fun DiaryDetailScreen(
                 titleContentColor = Color.White,
                 textContentColor = Color.White
             )
+        }
+
+        if (likesDiaryId != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .zIndex(10f)
+            ) {
+                LikesModal(
+                    isLoading = isLoadingLikes,
+                    error = likesError,
+                    users = likesUsers,
+                    onDismiss = {
+                        likesDiaryId = null
+                        likesUsers = emptyList()
+                        likesError = null
+                    },
+                    onUserClick = { user ->
+                        likesDiaryId = null
+                        likesUsers = emptyList()
+                        likesError = null
+                        val encodedUsername = java.net.URLEncoder.encode(user.username, "UTF-8")
+                        val encodedTag = java.net.URLEncoder.encode(user.tag, "UTF-8")
+                        val encodedProfileImageUrl =
+                            java.net.URLEncoder.encode(user.profileImageUrl, "UTF-8")
+                        navController.navigate(
+                            "friend_profile" +
+                                "?userId=${user.userId}" +
+                                "&username=$encodedUsername" +
+                                "&tag=$encodedTag" +
+                                "&profileImageUrl=$encodedProfileImageUrl" +
+                                "&isMyPick=false"
+                        )
+                    }
+                )
+            }
         }
     }
 }

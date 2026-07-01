@@ -50,6 +50,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.font.FontWeight
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -59,44 +62,45 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import java.util.regex.Pattern
 
-/**
- * ISO 8601 duration 형식(예: "PT2M28S")을 초 단위로 변환
- * @param duration ISO 8601 duration 문자열 (예: "PT2M28S", "PT1H2M30S", "PT30S")
- * @return 초 단위로 변환된 값 (예: 148, 3750, 30)
- */
-fun parseDurationToSeconds(duration: String): Int {
-    // PT 제거
-    val durationStr = duration.removePrefix("PT")
-    if (durationStr.isEmpty()) return 0
-    
-    var totalSeconds = 0
-    
-    // 시간(H) 파싱
-    val hourPattern = Pattern.compile("(\\d+)H")
-    val hourMatcher = hourPattern.matcher(durationStr)
-    if (hourMatcher.find()) {
-        totalSeconds += hourMatcher.group(1).toInt() * 3600
-    }
-    
-    // 분(M) 파싱
-    val minutePattern = Pattern.compile("(\\d+)M")
-    val minuteMatcher = minutePattern.matcher(durationStr)
-    if (minuteMatcher.find()) {
-        totalSeconds += minuteMatcher.group(1).toInt() * 60
-    }
-    
-    // 초(S) 파싱
-    val secondPattern = Pattern.compile("(\\d+)S")
-    val secondMatcher = secondPattern.matcher(durationStr)
-    if (secondMatcher.find()) {
-        totalSeconds += secondMatcher.group(1).toInt()
-    }
-    
-    return totalSeconds
-}
+///**
+// * ISO 8601 duration 형식(예: "PT2M28S")을 초 단위로 변환
+// * @param duration ISO 8601 duration 문자열 (예: "PT2M28S", "PT1H2M30S", "PT30S")
+// * @return 초 단위로 변환된 값 (예: 148, 3750, 30)
+// */
+//fun parseDurationToSeconds(duration: String): Int {
+//    // PT 제거
+//    val durationStr = duration.removePrefix("PT")
+//    if (durationStr.isEmpty()) return 0
+//
+//    var totalSeconds = 0
+//
+//    // 시간(H) 파싱
+//    val hourPattern = Pattern.compile("(\\d+)H")
+//    val hourMatcher = hourPattern.matcher(durationStr)
+//    if (hourMatcher.find()) {
+//        totalSeconds += hourMatcher.group(1).toInt() * 3600
+//    }
+//
+//    // 분(M) 파싱
+//    val minutePattern = Pattern.compile("(\\d+)M")
+//    val minuteMatcher = minutePattern.matcher(durationStr)
+//    if (minuteMatcher.find()) {
+//        totalSeconds += minuteMatcher.group(1).toInt() * 60
+//    }
+//
+//    // 초(S) 파싱
+//    val secondPattern = Pattern.compile("(\\d+)S")
+//    val secondMatcher = secondPattern.matcher(durationStr)
+//    if (secondMatcher.find()) {
+//        totalSeconds += secondMatcher.group(1).toInt()
+//    }
+//
+//    return totalSeconds
+//}
 
 @Composable
 fun AddMusicScreen(
@@ -105,6 +109,13 @@ fun AddMusicScreen(
 ) {
     var globalLoading by remember { mutableStateOf(false) }
     val bg = if (tutorialMode) Color.Black else Color(0xFF1D1E20)
+
+    LaunchedEffect(tutorialMode) {
+        if (!tutorialMode) {
+            EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.ADD)
+            KillingPartCutAnalytics.killingpartCutStarted()
+        }
+    }
     
     Box(
         modifier = Modifier
@@ -113,11 +124,10 @@ fun AddMusicScreen(
     ) {
         // Center background logo (subtle)
             Image(
-                painter = painterResource(id = R.drawable.killingpart_logo_dark),
+                painter = painterResource(id = R.drawable.killingpart_logo_gray),
                 contentDescription = "앱 배경 로고",
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .offset(y = (-140).dp)
                     .size(280.dp)
             )
 
@@ -136,10 +146,12 @@ fun AddMusicScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 24.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
-                        TextButton(onClick = { navController.navigateToMainClearingStack() }) {
+                        TextButton(onClick = {
+                            navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_TRACK_SEARCH)
+                        }) {
                             Text(
                                 "건너뛰기",
                                 color = Color.White,
@@ -244,6 +256,8 @@ private fun TrackRowWithVideoSearch(
 
     TrackRow(track, onClick = {
         if (isLoading) return@TrackRow
+
+        KillingPartCutAnalytics.trackSelected(track.id)
         
         isLoading = true
         onLoadingChange(true)
@@ -319,9 +333,23 @@ private fun TrackRow(track: SimpleTrack, onClick: () -> Unit = {}, isLoading: Bo
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = track.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = track.title,
+                    color = Color.White,
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = track.artist, color = Color(0xFFA4A4A6), maxLines = 1)
+                Text(
+                    text = track.artist,
+                    color = Color(0xFFA4A4A6),
+                    fontFamily = PaperlogyFontFamily,
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }

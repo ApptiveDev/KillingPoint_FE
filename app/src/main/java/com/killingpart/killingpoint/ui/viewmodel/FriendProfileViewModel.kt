@@ -57,11 +57,18 @@ class FriendProfileViewModel(
                 }
                 else -> {
                     _state.value = FriendProfileUiState.Error(
-                        diariesResult.exceptionOrNull()?.message ?: "프로필 로드 실패"
+                        mapFriendProfileErrorMessage(diariesResult.exceptionOrNull()?.message)
                     )
                 }
             }
         }
     }
+}
+
+private fun mapFriendProfileErrorMessage(rawMessage: String?): String {
+    val message = rawMessage.orEmpty()
+    val isNotFound = message.contains("404") || message.contains("HTTP 404", ignoreCase = true)
+    if (isNotFound) return "탈퇴했거나 존재하지 않는 회원입니다."
+    return rawMessage ?: "프로필 로드 실패"
 }
 

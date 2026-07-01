@@ -17,6 +17,7 @@ data class AlarmItem(
     val title: String,
     val content: String,
     val deepLink: String,
+    val type: String,
     val createDate: String? = null
 )
 

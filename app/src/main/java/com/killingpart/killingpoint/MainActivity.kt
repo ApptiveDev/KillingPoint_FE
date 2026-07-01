@@ -36,9 +36,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
 import com.killingpart.killingpoint.navigation.OnboardingProgressStore
+import com.killingpart.killingpoint.navigation.handleAlarmNavigation
 import com.killingpart.killingpoint.notification.FcmTokenSync
 import com.killingpart.killingpoint.ui.component.VideoSplashScreen
 import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
@@ -51,11 +54,34 @@ class MainActivity : ComponentActivity() {
         MAIN
     }
 
+    private val _pendingAlarmType = mutableStateOf("")
+    private val _pendingDeepLink = mutableStateOf("")
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val type = intent.getStringExtra("type").orEmpty()
+        val deepLink = intent.getStringExtra("deepLink").orEmpty()
+        if (type.isNotBlank() && deepLink.isNotBlank()) {
+            _pendingAlarmType.value = type
+            _pendingDeepLink.value = deepLink
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         KakaoSdk.init(this, getString(R.string.kakao_native_app_key))
+        OnboardingAnalytics.appOpened()
         requestNotificationPermissionIfNeeded()
+        if (savedInstanceState == null) {
+            val type = intent.getStringExtra("type").orEmpty()
+            val deepLink = intent.getStringExtra("deepLink").orEmpty()
+            if (type.isNotBlank() && deepLink.isNotBlank()) {
+                _pendingAlarmType.value = type
+                _pendingDeepLink.value = deepLink
+            }
+        }
         enableEdgeToEdge()
         window.statusBarColor = AndroidColor.BLACK
         window.navigationBarColor = AndroidColor.BLACK
@@ -69,6 +95,9 @@ class MainActivity : ComponentActivity() {
             val loginViewModel: LoginViewModel = viewModel()
             val loginState by loginViewModel.state.collectAsState()
 
+            val pendingAlarmType = _pendingAlarmType.value
+            val pendingDeepLink = _pendingDeepLink.value
+
             var launchState by remember {
                 mutableStateOf(LaunchState.SPLASH)
             }
@@ -81,6 +110,10 @@ class MainActivity : ComponentActivity() {
             }
             var showUpdateDialog by rememberSaveable {
                 mutableStateOf(false)
+            }
+
+            var previousLoginState by remember {
+                mutableStateOf<LoginUiState?>(null)
             }
 
             LaunchedEffect(Unit) {
@@ -104,6 +137,12 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(loginState, context) {
                 when (val s = loginState) {
                     is LoginUiState.AutoLoginSuccess -> {
+                        if (previousLoginState !is LoginUiState.AutoLoginSuccess) {
+                            OnboardingAnalytics.authCompleted(
+                                provider = s.provider,
+                                isNewUser = s.isNew
+                            )
+                        }
                         FcmTokenSync.syncCurrentToken(context)
                         val repo = AuthRepository(context)
                         val start = repo.getUserInitSettings()
@@ -136,6 +175,7 @@ class MainActivity : ComponentActivity() {
                         showUpdateDialog = false
                     }
                 }
+                previousLoginState = loginState
             }
 
             Box(
@@ -162,10 +202,29 @@ class MainActivity : ComponentActivity() {
 
                         LaunchedEffect(startDestination, resolvedStartDestination) {
                             if (resolvedStartDestination != null && startDestination != "home") {
+                                if (startDestination == "main" || startDestination.startsWith("main?")) {
+                                    EngagementAnalytics.markAppOpenedOnMyTab()
+                                }
                                 navController.navigate(startDestination) {
                                     popUpTo(0) { inclusive = true }
                                 }
                             }
+                        }
+
+                        LaunchedEffect(pendingAlarmType, pendingDeepLink, resolvedStartDestination) {
+                            if (pendingAlarmType.isBlank() || pendingDeepLink.isBlank()) return@LaunchedEffect
+                            val dest = resolvedStartDestination ?: return@LaunchedEffect
+                            if (!dest.startsWith("main")) return@LaunchedEffect
+                            val repo = AuthRepository(context)
+                            handleAlarmNavigation(
+                                navController = navController,
+                                type = pendingAlarmType,
+                                deepLink = pendingDeepLink,
+                                repo = repo
+                            )
+                            // 네트워크 콜(suspension point) 이전에 지우면 코루틴이 취소되므로 반드시 이후에 지운다
+                            _pendingAlarmType.value = ""
+                            _pendingDeepLink.value = ""
                         }
 
                         Box(

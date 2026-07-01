@@ -116,21 +116,12 @@ fun AlbumDiaryBoxWithTimeBar(
                 verticalArrangement = Arrangement.Center
             ) {
                 track?.title?.let { title ->
-//                    Text(
-//                        text = title,
-//                        fontFamily = PaperlogyFontFamily,
-//                        fontWeight = FontWeight.Bold,
-//                        fontSize = 16.sp,
-//                        color = Color.White,
-//                        maxLines = 1,
-//                        overflow = TextOverflow.Ellipsis
-//                    )
                     ScrollableText(
                         text = title,
                         modifier = Modifier.fillMaxWidth(),
                         fontFamily = PaperlogyFontFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
+                        fontSize = 13.sp,
                         color = Color.White,
                     )
                 }
@@ -138,19 +129,12 @@ fun AlbumDiaryBoxWithTimeBar(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 track?.artist?.let { artist ->
-//                    Text(
-//                        text = artist,
-//                        fontFamily = PaperlogyFontFamily,
-//                        fontWeight = FontWeight.Medium,
-//                        fontSize = 12.sp,
-//                        color = Color.White
-//                    )
                     ScrollableText(
                         text = artist,
                         modifier = Modifier.fillMaxWidth(),
                         fontFamily = PaperlogyFontFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = 11.sp,
                         color = Color.White,
                     )
                 }

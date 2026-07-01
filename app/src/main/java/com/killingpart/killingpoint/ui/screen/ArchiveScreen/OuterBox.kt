@@ -40,6 +40,7 @@ import com.killingpart.killingpoint.ui.screen.ArchiveScreen.DiaryCard
 import android.net.Uri
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
 import androidx.compose.ui.text.style.TextAlign
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -47,6 +48,8 @@ import com.killingpart.killingpoint.ui.viewmodel.UserUiState
 import com.killingpart.killingpoint.ui.viewmodel.UserViewModel
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.ui.input.pointer.pointerInput
 import com.killingpart.killingpoint.ui.component.LikesModal
 
@@ -198,7 +201,7 @@ fun OuterBox(
                                 contentDescription = "프로필 사진",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(60.dp)
+                                    .size(50.dp)
                                     .clip(RoundedCornerShape(50))
                                     .border(3.dp, mainGreen, RoundedCornerShape(50)),
                                 placeholder = painterResource(id = R.drawable.default_profile),
@@ -212,7 +215,7 @@ fun OuterBox(
                                 contentDescription = "프로필 사진",
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
-                                    .size(60.dp)
+                                    .size(50.dp)
                                     .clip(RoundedCornerShape(50))
                                     .border(3.dp, mainGreen, RoundedCornerShape(50))
                             )
@@ -233,7 +236,7 @@ fun OuterBox(
                             },
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             color = mainGreen,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -247,7 +250,7 @@ fun OuterBox(
                             },
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
                             color = mainGreen,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -269,7 +272,7 @@ fun OuterBox(
                             text = "${userStatistics?.killingPartCount ?: diaries.size}",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -278,7 +281,7 @@ fun OuterBox(
                             text = "킬링파트",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -302,7 +305,7 @@ fun OuterBox(
                             text = "${userStatistics?.fanCount ?: 0}",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -311,7 +314,7 @@ fun OuterBox(
                             text = "팬덤",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -335,7 +338,7 @@ fun OuterBox(
                             text = "${userStatistics?.pickCount ?: 0}",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 16.sp,
+                            fontSize = 13.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -344,7 +347,7 @@ fun OuterBox(
                             text = "PICKS",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.W400,
-                            fontSize = 10.sp,
+                            fontSize = 8.sp,
                             color = mainGreen,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
@@ -373,6 +376,13 @@ fun OuterBox(
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
+                            contentDescription = null,
+                            tint = mainGreen,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "설정",
                             color = mainGreen,
