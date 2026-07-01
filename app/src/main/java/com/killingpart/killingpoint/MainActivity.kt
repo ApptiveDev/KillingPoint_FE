@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity() {
                         val start = repo.getUserInitSettings()
                             .getOrNull()
                             ?.let { init ->
-                                showUpdateDialog = !init.app.needsForceUpdate
+                                showUpdateDialog = init.app.needsForceUpdate
                                 when {
                                     init.needsPolicyAgreement -> "onboarding_policy"
                                     init.needsTagSetup -> "onboarding_name"
