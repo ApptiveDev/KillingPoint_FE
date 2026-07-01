@@ -80,6 +80,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 
 @Composable
 fun DiaryDetailScreen(
@@ -743,13 +744,16 @@ fun DiaryDetailScreen(
             BottomBar(navController = navController)
         }
 
-        // 저장/공유용 카드 오프스크린 렌더링 & 캡처
-        // record 로 GraphicsLayer 에만 기록하고 drawLayer 는 호출하지 않아 화면에는 보이지 않음
+        // 저장/공유용 카드 렌더링 & 캡처
+        // alpha 로 화면엔 거의 안 보이게 하되, drawLayer 를 호출해 레이어가 확실히 realize 되도록 함
+        // (영상 일시정지 등 화면이 재-invalidate 되지 않는 상황에서도 빈 캡처가 나오지 않게)
         if (captureRequested) {
             Box(
                 modifier = Modifier
+                    .alpha(0.02f)
                     .drawWithContent {
                         shareGraphicsLayer.record { this@drawWithContent.drawContent() }
+                        drawLayer(shareGraphicsLayer)
                     }
             ) {
                 DiaryShareCard(
@@ -767,7 +771,8 @@ fun DiaryDetailScreen(
             }
 
             LaunchedEffect(captureRequested) {
-                // 측정/그리기(record) 완료를 위해 몇 프레임 대기
+                // 측정/그리기(record + drawLayer) 완료를 위해 몇 프레임 대기
+                withFrameNanos { }
                 withFrameNanos { }
                 withFrameNanos { }
                 val result = runCatching {
