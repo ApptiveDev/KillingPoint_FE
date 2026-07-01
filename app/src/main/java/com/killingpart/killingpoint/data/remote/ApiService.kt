@@ -65,8 +65,8 @@ interface ApiService {
     @GET("users/init-settings")
     suspend fun getUserInitSettings(
         @Header("Authorization") accessToken: String,
-        @Query("clientType") clientType: String,
-        @Query("clientVersion") clientVersion: String
+        @Query("clientVersion") clientVersion: String,
+        @Query("clientType") clientType: String
     ): UserInitSettingsResponse
 
     @POST("users/policy-agreement")

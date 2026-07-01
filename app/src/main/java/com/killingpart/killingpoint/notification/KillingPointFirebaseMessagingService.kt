@@ -16,6 +16,7 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.killingpart.killingpoint.MainActivity
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.data.local.AlarmReadStore
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,7 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+        AlarmReadStore.markLocalUnread(applicationContext)
         createNotificationChannel()
 
         // 같은 메시지가 두 번 배달되는 경우(FCM 재전송 or 토큰 중복) 무시

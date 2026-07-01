@@ -1,7 +1,19 @@
 package com.killingpart.killingpoint.ui.screen.SearchScreen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import com.killingpart.killingpoint.R
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -59,6 +71,17 @@ fun SearchScreen(navController: NavController) {
     var isLoadingLikes by remember { mutableStateOf(false) }
     var likesError by remember { mutableStateOf<String?>(null) }
 
+    // 보관함 저장 팝업 (탭할 때마다 tick 증가 -> 타이머 재시작)
+    var storePopupVisible by remember { mutableStateOf(false) }
+    var storePopupTick by remember { mutableStateOf(0) }
+    LaunchedEffect(storePopupTick) {
+        if (storePopupTick > 0) {
+            storePopupVisible = true
+            delay(1000)
+            storePopupVisible = false
+        }
+    }
+
     LaunchedEffect(Unit) {
         EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.EXPLORE)
         searchViewModel.loadRandomDiaries(context)
@@ -97,7 +120,15 @@ fun SearchScreen(navController: NavController) {
         }
     }
 
-    val snapFlingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    // 한 번의 스와이프에 한 아이템만 이동하도록: 플링의 approach 이동을 없애 가장 가까운 아이템으로만 스냅
+    val snapFlingBehavior = rememberSnapFlingBehavior(
+        remember(listState) {
+            val base = SnapLayoutInfoProvider(listState)
+            object : SnapLayoutInfoProvider by base {
+                override fun calculateApproachOffset(velocity: Float, decayOffset: Float): Float = 0f
+            }
+        }
+    )
 
     LaunchedEffect(currentItemIndex.value, searchState) {
         val state = searchState as? SearchUiState.Success ?: return@LaunchedEffect
@@ -285,6 +316,11 @@ fun SearchScreen(navController: NavController) {
                                                     val currentDiary = currentState.diaries.find { it.diaryId == diaryId }
                                                     val currentIsStored = currentDiary?.isStored ?: false
 
+                                                    // 보관(저장)하는 경우에만 팝업 노출
+                                                    if (!currentIsStored) {
+                                                        storePopupTick++
+                                                    }
+
                                                     val updatedDiaries = currentState.diaries.map { diary ->
                                                         if (diary.diaryId == diaryId) {
                                                             diary.copy(isStored = !currentIsStored)
@@ -424,6 +460,52 @@ fun SearchScreen(navController: NavController) {
             }
             
             BottomBar(navController)
+        }
+
+        // 보관함 저장 팝업 (일정 시간 후 자동으로 사라짐)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .zIndex(20f),
+            contentAlignment = Alignment.Center
+        ) {
+            StoreSavedPopup(visible = storePopupVisible)
+        }
+    }
+}
+
+@Composable
+private fun StoreSavedPopup(
+    visible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + scaleIn(initialScale = 0.85f),
+        exit = fadeOut(),
+        modifier = modifier
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.Black.copy(alpha = 0.78f))
+                .border(1.dp, Color.White.copy(alpha = 0.18f), RoundedCornerShape(20.dp))
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.is_stored),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp)
+            )
+            Text(
+                text = "보관함에 저장되었어요",
+                color = Color.White.copy(alpha = 0.95f),
+                fontFamily = PaperlogyFontFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp
+            )
         }
     }
 }
