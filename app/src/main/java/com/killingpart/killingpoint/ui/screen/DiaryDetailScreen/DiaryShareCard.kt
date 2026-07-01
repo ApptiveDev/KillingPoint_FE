@@ -18,12 +18,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -108,19 +110,35 @@ fun DiaryShareCard(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(160.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF2A2A2C)),
+                        modifier = Modifier.size(width = 200.dp, height = 150.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (artwork != null) {
-                            Image(
-                                bitmap = artwork,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                        // 앨범 커버 뒤 CD (오른쪽으로 살짝 빼꼼)
+                        Image(
+                            painter = painterResource(id = R.drawable.cd),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .size(150.dp)
+                                .offset(x = 40.dp)
+                        )
+                        // 앨범 커버 (앞)
+                        Box(
+                            modifier = Modifier
+                                .size(150.dp)
+                                .offset(x = (-14).dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF2A2A2C)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (artwork != null) {
+                                Image(
+                                    bitmap = artwork,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
                         }
                     }
 
@@ -182,21 +200,25 @@ fun DiaryShareCard(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        // 초록색 구간의 양 끝(startProgress / endProgress) 아래에 초를 표시
+                        Box(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = startText,
                                 color = Color.White.copy(alpha = 0.62f),
                                 fontFamily = PaperlogyFontFamily,
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
+                                modifier = Modifier.align(
+                                    BiasAlignment(2f * startProgress.coerceIn(0f, 1f) - 1f, 0f)
+                                )
                             )
                             Text(
                                 text = endText,
                                 color = Color.White.copy(alpha = 0.62f),
                                 fontFamily = PaperlogyFontFamily,
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
+                                modifier = Modifier.align(
+                                    BiasAlignment(2f * endProgress.coerceIn(0f, 1f) - 1f, 0f)
+                                )
                             )
                         }
                     }
@@ -249,7 +271,7 @@ fun DiaryShareCard(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Image(
-                        painter = painterResource(id = R.drawable.killingpart_logo),
+                        painter = painterResource(id = R.drawable.kp_logo),
                         contentDescription = null,
                         modifier = Modifier
                             .size(46.dp)
