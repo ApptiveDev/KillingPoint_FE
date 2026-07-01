@@ -189,6 +189,16 @@ fun DiaryDetailScreen(
     val shareStartProgress = (startSeconds.toFloat() / shareTotalDuration).coerceIn(0f, 1f)
     val shareEndProgress = (endSeconds.toFloat() / shareTotalDuration).coerceIn(0f, 1f)
 
+    // 공유 카드에 넣을 코멘트: 공개(PUBLIC) 일기만 내용 노출, 비공개(PRIVATE/KILLING_PART)는 "비공개"로 대체
+    val shareCardContent = run {
+        val diaryScope = try {
+            Scope.valueOf(scope.ifEmpty { "PRIVATE" })
+        } catch (e: Exception) {
+            Scope.PRIVATE
+        }
+        if (diaryScope == Scope.PUBLIC) currentContent else "비공개"
+    }
+
     // 시스템 뒤로가기 처리 - 네비게이션 스택 확인
     BackHandler {
         val previousEntry = navController.previousBackStackEntry
@@ -819,7 +829,7 @@ fun DiaryDetailScreen(
                                         artwork = artwork,
                                         musicTitle = musicTitle,
                                         artist = artist,
-                                        content = currentContent,
+                                        content = shareCardContent,
                                         dateText = formattedDate,
                                         tagText = shareTag,
                                         startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
@@ -853,7 +863,7 @@ fun DiaryDetailScreen(
                                         artwork = artwork,
                                         musicTitle = musicTitle,
                                         artist = artist,
-                                        content = currentContent,
+                                        content = shareCardContent,
                                         dateText = formattedDate,
                                         tagText = shareTag,
                                         startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
@@ -864,9 +874,44 @@ fun DiaryDetailScreen(
                                 }
                                 val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
                                 val title = if (artist.isNotBlank()) "$musicTitle - $artist" else musicTitle
-                                val description = currentContent.ifBlank { "킬링파트에서 다이어리를 확인해 보세요." }
+                                val description = shareCardContent.ifBlank { "킬링파트에서 다이어리를 확인해 보세요." }
                                 DiaryShareImage.shareKakao(context, bitmap, title, description, link).onFailure {
                                     Toast.makeText(context, "카카오톡 공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
+                                }
+                            } finally {
+                                isSaving = false
+                            }
+                        }
+                    }
+                    ShareOptionItem(text = "인스타 스토리 공유") {
+                        showShareSheet = false
+                        coroutineScope.launch {
+                            try {
+                                isSaving = true
+                                val activity = context.findActivity()
+                                if (activity == null) {
+                                    Toast.makeText(context, "공유 실패: 화면을 찾을 수 없어요", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+                                val artwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                val bitmap = renderComposableToBitmap(activity) {
+                                    DiaryShareCard(
+                                        artwork = artwork,
+                                        musicTitle = musicTitle,
+                                        artist = artist,
+                                        content = shareCardContent,
+                                        dateText = formattedDate,
+                                        tagText = shareTag,
+                                        startText = "%d:%02d".format(startSeconds / 60, startSeconds % 60),
+                                        endText = "%d:%02d".format(endSeconds / 60, endSeconds % 60),
+                                        startProgress = shareStartProgress,
+                                        endProgress = shareEndProgress
+                                    )
+                                }
+                                val link = "https://killingpart.com/diaries/${diaryId ?: 0}"
+                                val fbAppId = context.getString(R.string.facebook_app_id)
+                                DiaryShareImage.shareInstagramStory(context, bitmap, link, fbAppId).onFailure {
+                                    Toast.makeText(context, "인스타 스토리 공유 실패: ${it.message ?: "알 수 없는 오류"}", Toast.LENGTH_SHORT).show()
                                 }
                             } finally {
                                 isSaving = false

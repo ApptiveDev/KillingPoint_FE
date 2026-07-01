@@ -385,6 +385,48 @@ object DiaryShareImage {
     }
 
     /**
+     * 카드 이미지를 인스타그램 스토리 배경으로 공유한다.
+     * Facebook(Meta) App ID 가 필요하며, 인스타그램 앱이 설치돼 있어야 한다.
+     */
+    suspend fun shareInstagramStory(
+        context: Context,
+        bitmap: Bitmap,
+        linkUrl: String,
+        facebookAppId: String
+    ): Result<Unit> {
+        return try {
+            if (facebookAppId.isBlank()) {
+                return Result.failure(IllegalStateException("인스타 스토리 공유를 위해 Facebook App ID 설정이 필요해요."))
+            }
+
+            val uri = withContext(Dispatchers.IO) {
+                val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+                val file = File(dir, "insta_story_${bitmap.hashCode()}.png")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                }
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            }
+
+            val intent = Intent("com.instagram.share.ADD_TO_STORY").apply {
+                setDataAndType(uri, "image/png")
+                putExtra("source_application", facebookAppId)
+                putExtra("content_url", linkUrl)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.grantUriPermission("com.instagram.android", uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            if (intent.resolveActivity(context.packageManager) == null) {
+                return Result.failure(IllegalStateException("인스타그램 앱을 열 수 없어요. 설치 여부를 확인해 주세요."))
+            }
+            context.startActivity(intent)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
      * 카카오 SDK FeedTemplate 로 카톡 리치 카드(이미지+제목+설명+버튼)를 공유한다.
      * 카드 이미지는 카카오 이미지 서버에 업로드하므로 별도 백엔드가 필요 없다.
      */
