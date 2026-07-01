@@ -51,10 +51,6 @@ import kotlinx.coroutines.withContext
 private val CardWidth = 360.dp
 private val CardHeight = 640.dp
 
-/**
- * 다이어리 저장/공유용 카드. iOS `MyCollectionDiaryShareImageView`(360x640)를 옮긴 것.
- * 고정 크기로 렌더링되어 GraphicsLayer 로 캡처된다.
- */
 @Composable
 fun DiaryShareCard(
     artwork: ImageBitmap?,
@@ -200,7 +196,6 @@ fun DiaryShareCard(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // 초록색 구간의 양 끝(startProgress / endProgress) 아래에 초를 표시
                         Box(modifier = Modifier.fillMaxWidth()) {
                             Text(
                                 text = startText,

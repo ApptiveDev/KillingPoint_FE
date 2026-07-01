@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -369,63 +370,58 @@ fun DiaryDetailScreen(
                     )
                 }
 
-                if (!isEditing) {
-                    if (diaryId != null && !isOtherPersonDiary) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.storing),
-                                contentDescription = "저장",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .height(38.dp)
-                                    .aspectRatio(96f / 164f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable(enabled = !isSaving) {
-                                        coroutineScope.launch {
-                                            isSaving = true
-                                            shareArtwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
-                                            captureRequested = true
-                                        }
+                if (diaryId != null && !isOtherPersonDiary) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.storing),
+                            contentDescription = "저장",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(38.dp)
+                                .aspectRatio(96f / 164f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(enabled = !isSaving) {
+                                    coroutineScope.launch {
+                                        isSaving = true
+                                        shareArtwork = DiaryShareImage.loadArtwork(context, albumImageUrl)
+                                        captureRequested = true
                                     }
-                            )
-                            Image(
-                                painter = painterResource(id = R.drawable.sharing),
-                                contentDescription = "공유",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .height(38.dp)
-                                    .aspectRatio(96f / 164f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { /* TODO: 공유 기능 */ }
-                            )
-                            Image(
-                                painter = painterResource(id = R.drawable.fixing),
-                                contentDescription = "수정",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .height(38.dp)
-                                    .aspectRatio(96f / 164f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { isEditing = true }
-                            )
-                            Image(
-                                painter = painterResource(id = R.drawable.deleting),
-                                contentDescription = "삭제",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier
-                                    .height(38.dp)
-                                    .aspectRatio(96f / 164f)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable { showDeleteDialog = true }
-                            )
-                        }
-                    } else if (isOtherPersonDiary) {
-                        Spacer(modifier = Modifier.width(48.dp))
-                    } else {
-                        Spacer(modifier = Modifier.width(48.dp))
+                                }
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.sharing),
+                            contentDescription = "공유",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(38.dp)
+                                .aspectRatio(96f / 164f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { /* TODO: 공유 기능 */ }
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.fixing),
+                            contentDescription = "수정",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(38.dp)
+                                .aspectRatio(96f / 164f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .alpha(if (isEditing) 0.4f else 1f)
+                                .clickable(enabled = !isEditing) { isEditing = true }
+                        )
+                        Image(
+                            painter = painterResource(id = R.drawable.deleting),
+                            contentDescription = "삭제",
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .height(38.dp)
+                                .aspectRatio(96f / 164f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showDeleteDialog = true }
+                        )
                     }
                 } else {
                     Spacer(modifier = Modifier.width(48.dp))
