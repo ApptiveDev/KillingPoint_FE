@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
             _pendingDeepLink.value = deepLink
         }
         handleKakaoLinkIntent(intent)
+        handleDiaryLinkIntent(intent)
     }
 
     /**
@@ -79,6 +80,25 @@ class MainActivity : ComponentActivity() {
         val route = data.getQueryParameter("route")
         val diaryId = data.getQueryParameter("diaryId")
         if (route == "diary" && !diaryId.isNullOrBlank()) {
+            _pendingAlarmType.value = "DIARY_ALARM"
+            _pendingDeepLink.value = "/api/diaries/$diaryId"
+        }
+    }
+
+
+    private fun handleDiaryLinkIntent(intent: Intent) {
+        val data = intent.data ?: return
+        val diaryId: String? = when {
+            data.scheme == "https" && data.host == "killingpart.com" -> {
+                val segments = data.pathSegments
+                if (segments.size >= 2 && segments[0] == "diaries") segments[1] else null
+            }
+            data.scheme == "killingpart" && data.host == "diaries" -> {
+                data.pathSegments.firstOrNull()
+            }
+            else -> null
+        }
+        if (!diaryId.isNullOrBlank() && diaryId.toLongOrNull() != null) {
             _pendingAlarmType.value = "DIARY_ALARM"
             _pendingDeepLink.value = "/api/diaries/$diaryId"
         }
@@ -98,6 +118,7 @@ class MainActivity : ComponentActivity() {
                 _pendingDeepLink.value = deepLink
             }
             handleKakaoLinkIntent(intent)
+            handleDiaryLinkIntent(intent)
         }
         enableEdgeToEdge()
         window.statusBarColor = AndroidColor.BLACK

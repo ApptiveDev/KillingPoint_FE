@@ -72,6 +72,24 @@
                 <data android:host="kakaolink"
                     android:scheme="kakaoe555c7ff865c9318e1672996f4481430" />
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="killingpart.com" />
+                <data android:pathPrefix="/diaries" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="killingpart" android:host="diaries" />
+            </intent-filter>
         </activity>
 
         <activity

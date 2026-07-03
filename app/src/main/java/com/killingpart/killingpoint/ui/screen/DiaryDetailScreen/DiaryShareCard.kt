@@ -27,6 +27,7 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.roundToInt
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -43,20 +44,26 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
@@ -90,169 +97,105 @@ fun DiaryShareCard(
             .requiredSize(CardWidth, CardHeight)
             .background(Color(0xFF1D1E20))
     ) {
-        // AppBackground 와 동일한 어두운 원 배경
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawCircle(
-                color = Color(0xFF060606),
-                radius = size.minDimension * 0.85f,
-                center = Offset(size.width * 0.1f, size.height * 0.37f)
-            )
-            drawCircle(
-                color = Color(0xFF060606),
-                radius = size.minDimension * 1.5f,
-                center = Offset(size.width * 1.1f, size.height * 1.2f)
-            )
-        }
+        Image(
+            painter = painterResource(id = R.drawable.my_background),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.48f))
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 21.dp)
-                .padding(top = 38.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+                .padding(top = 38.dp, bottom = 42.dp)
         ) {
-            // 트랙 카드
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(292.dp)
                     .clip(RoundedCornerShape(28.dp))
                     .background(Color.Black.copy(alpha = 0.72f))
+                    .border(0.dp, Color.White.copy(alpha = 0.04f), RoundedCornerShape(28.dp))
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 24.dp),
+                        .padding(top = 18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier.size(width = 200.dp, height = 150.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // 앨범 커버 뒤 CD (오른쪽으로 살짝 빼꼼)
-                        Image(
-                            painter = painterResource(id = R.drawable.cd),
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .size(150.dp)
-                                .offset(x = 40.dp)
-                        )
-                        // 앨범 커버 (앞)
-                        Box(
-                            modifier = Modifier
-                                .size(150.dp)
-                                .offset(x = (-14).dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF2A2A2C)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (artwork != null) {
-                                Image(
-                                    bitmap = artwork,
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = musicTitle,
-                        color = Color.White,
-                        fontFamily = PaperlogyFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        maxLines = 2,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                    AlbumDiskArtwork(
+                        artwork = artwork,
+                        modifier = Modifier.size(width = 200.dp, height = 142.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    Text(
-                        text = artist,
-                        color = Color.White.copy(alpha = 0.82f),
-                        fontFamily = PaperlogyFontFamily,
-                        fontSize = 13.sp,
-                        maxLines = 1
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Text(
+                            text = musicTitle,
+                            color = Color.White,
+                            fontFamily = PaperlogyFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 266.dp)
+                        )
+                        Text(
+                            text = artist,
+                            color = Color.White.copy(alpha = 0.82f),
+                            fontFamily = PaperlogyFontFamily,
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            textAlign = TextAlign.Center,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 266.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    TimelineRange(
+                        startText = startText,
+                        endText = endText,
+                        startProgress = startProgress,
+                        endProgress = endProgress,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 36.dp)
-                    ) {
-                        Canvas(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                        ) {
-                            val y = size.height / 2
-                            drawLine(
-                                color = Color.White.copy(alpha = 0.42f),
-                                start = Offset(0f, y),
-                                end = Offset(size.width, y),
-                                strokeWidth = 2.5.dp.toPx(),
-                                cap = StrokeCap.Round
-                            )
-                            val sx = size.width * startProgress.coerceIn(0f, 1f)
-                            val ex = size.width * endProgress.coerceIn(0f, 1f)
-                            if (ex > sx) {
-                                drawLine(
-                                    color = mainGreen,
-                                    start = Offset(sx, y),
-                                    end = Offset(ex, y),
-                                    strokeWidth = 6.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Box(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                text = startText,
-                                color = Color.White.copy(alpha = 0.62f),
-                                fontFamily = PaperlogyFontFamily,
-                                fontSize = 10.sp,
-                                modifier = Modifier.align(
-                                    BiasAlignment(2f * startProgress.coerceIn(0f, 1f) - 1f, 0f)
-                                )
-                            )
-                            Text(
-                                text = endText,
-                                color = Color.White.copy(alpha = 0.62f),
-                                fontFamily = PaperlogyFontFamily,
-                                fontSize = 10.sp,
-                                modifier = Modifier.align(
-                                    BiasAlignment(2f * endProgress.coerceIn(0f, 1f) - 1f, 0f)
-                                )
-                            )
-                        }
-                    }
+                            .padding(horizontal = 42.dp)
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.weight(1f))
 
             // 코멘트 카드
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(238.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .width(272.dp)
+                    .height(241.dp)
                     .clip(RoundedCornerShape(13.dp))
-                    .background(Color.White.copy(alpha = 0.10f))
+                    .background(Color(0xFF1F1F1F))
+                    .border(0.dp, color = Color.Transparent, RoundedCornerShape(13.dp))
             ) {
                 Text(
                     text = if (content.isBlank()) "작성된 코멘트가 없어요." else content,
                     color = Color.White.copy(alpha = 0.92f),
                     fontFamily = PaperlogyFontFamily,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 18.5.sp,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 22.dp)
@@ -269,32 +212,231 @@ fun DiaryShareCard(
                     Column {
                         Text(
                             text = dateText,
-                            color = Color.White.copy(alpha = 0.52f),
+                            color = Color(0xFF7B7B7B),
                             fontFamily = PaperlogyFontFamily,
-                            fontSize = 10.sp
+                            fontSize = 8.5.sp
                         )
                         Spacer(modifier = Modifier.height(5.dp))
                         Text(
                             text = tagText,
-                            color = Color.White.copy(alpha = 0.70f),
+                            color = Color(0xFF7B7B7B),
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.Medium,
-                            fontSize = 11.sp
+                            fontSize = 8.5.sp
                         )
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
                     Image(
-                        painter = painterResource(id = R.drawable.kp_logo),
+                        painter = painterResource(id = R.drawable.ic_killingpart),
                         contentDescription = null,
+                        contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(10.dp))
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(7.dp))
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * iOS AddSearchDetailAlbumArtworkView(coverSize=160) 를 코드로 재현.
+ * 뒤쪽 LP 회전판(그라디언트 원판 + 홈 9개 + 외곽 링 + 중앙 라벨)이 오른쪽으로 빼꼼 나오고,
+ * 앞쪽에 정사각 앨범 커버(모서리 16, 흰 0.12 테두리)를 겹친다.
+ */
+@Composable
+private fun AlbumDiskArtwork(
+    artwork: ImageBitmap?,
+    modifier: Modifier = Modifier
+) {
+    val coverSize = 140.dp
+    val diskSize = coverSize * 0.9f              // 144
+    val centerLabelSize = diskSize * 0.34f       // 48.96
+    val centerImageInset = centerLabelSize * 0.12f
+    val centerHoleSize = (diskSize * 0.05f).coerceAtLeast(4.dp)
+    val grooveBaseInset = diskSize * 0.08f
+    val grooveStepInset = diskSize * 0.04f
+    val grooveStroke = (diskSize * 0.006f).coerceAtLeast(0.8.dp)
+    val outerRingStroke = (diskSize * 0.008f).coerceAtLeast(1.dp)
+    val contentWidth = coverSize * 1.48f         // coverSize + coverSize*0.48 = 236.8
+
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.size(width = contentWidth, height = coverSize)) {
+            // 뒤: LP 회전판 (오른쪽으로 offset)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = coverSize * 0.55f)
+                    .size(diskSize),
+                contentAlignment = Alignment.Center
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val r = size.minDimension / 2f
+                    drawCircle(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.18f),
+                                Color.Black.copy(alpha = 0.95f),
+                                Color.White.copy(alpha = 0.06f),
+                                Color.Black.copy(alpha = 0.98f)
+                            ),
+                            start = Offset(0f, 0f),
+                            end = Offset(size.width, size.height)
+                        ),
+                        radius = r,
+                        center = center
+                    )
+                    for (i in 0 until 9) {
+                        val inset = grooveBaseInset.toPx() + i * grooveStepInset.toPx()
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.08f),
+                            radius = r - inset,
+                            center = center,
+                            style = Stroke(width = grooveStroke.toPx())
+                        )
+                    }
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.26f),
+                        radius = r,
+                        center = center,
+                        style = Stroke(width = outerRingStroke.toPx())
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(centerLabelSize)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.86f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (artwork != null) {
+                        Image(
+                            bitmap = artwork,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(centerImageInset)
+                                .clip(CircleShape)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(centerHoleSize)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.9f))
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(coverSize)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFF2A2A2C))
+                    .border(0.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(6.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (artwork != null) {
+                    Image(
+                        bitmap = artwork,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimelineRange(
+    startText: String,
+    endText: String,
+    startProgress: Float,
+    endProgress: Float,
+    modifier: Modifier = Modifier
+) {
+    val trackHeight = 4.dp
+    val segmentHeight = 6.dp
+    val labelWidth = 40.dp
+    val labelY = 24.dp
+    val totalHeight = 38.dp
+    val halfLabel = labelWidth / 2
+    val minGap = labelWidth + 4.dp
+
+    BoxWithConstraints(modifier = modifier.height(totalHeight)) {
+        val width = maxWidth
+        val sp = startProgress.coerceIn(0f, 1f)
+        val ep = endProgress.coerceIn(0f, 1f)
+        val startX = width * sp
+        val endX = width * ep
+        val segmentWidth = (endX - startX).coerceAtLeast(2.dp)
+
+        val upper = (width - halfLabel).coerceAtLeast(halfLabel)
+        val clampedStart = startX.coerceIn(halfLabel, upper)
+        val clampedEnd = endX.coerceIn(halfLabel, upper)
+        val initLeft = minOf(clampedStart, clampedEnd)
+        val initRight = maxOf(clampedStart, clampedEnd)
+        val initGap = initRight - initLeft
+        val adjUpper = (width - minGap / 2).coerceAtLeast(minGap / 2)
+        val adjCenter = ((initLeft + initRight) / 2).coerceIn(minGap / 2, adjUpper)
+        val leftX = if (initGap < minGap) adjCenter - minGap / 2 else initLeft
+        val rightX = if (initGap < minGap) adjCenter + minGap / 2 else initRight
+        val isStartLeft = clampedStart <= clampedEnd
+        val startLabelX = if (isStartLeft) leftX else rightX
+        val endLabelX = if (isStartLeft) rightX else leftX
+
+        // 트랙
+        Box(
+            modifier = Modifier
+                .offset(y = 2.5.dp)
+                .fillMaxWidth().padding(horizontal = 10.dp)
+                .height(trackHeight)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.42f))
+        )
+        // 구간
+        Box(
+            modifier = Modifier
+                .offset(x = startX, y = 2.dp)
+                .width(segmentWidth)
+                .height(segmentHeight)
+                .clip(CircleShape)
+                .background(mainGreen)
+        )
+        // 시작 라벨
+        Text(
+            text = startText,
+            color = Color.White,
+            fontFamily = PaperlogyFontFamily,
+            fontWeight = FontWeight.Thin,
+            fontSize = 11.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .width(labelWidth)
+                .offset(x = startLabelX - halfLabel, y = labelY - 7.dp)
+        )
+        // 끝 라벨
+        Text(
+            text = endText,
+            color = Color.White,
+            fontFamily = PaperlogyFontFamily,
+            fontWeight = FontWeight.Thin,
+            fontSize = 11.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .width(labelWidth)
+                .offset(x = endLabelX - halfLabel, y = labelY - 7.dp)
+        )
     }
 }
 
@@ -519,9 +661,13 @@ fun Context.findActivity(): Activity? {
 /**
  * Compose 콘텐츠를 화면과 무관하게 오프스크린 ComposeView 로 렌더링해 Bitmap 으로 반환한다.
  * view.draw(canvas) 는 동기 소프트웨어 렌더링이라 유튜브 영상 재생/정지 상태와 무관하게 동작한다.
+ *
+ * iOS(ImageRenderer scale=3) 와 동일하게, 기기 density 와 무관하게 dp 크기의 [targetScale] 배
+ * 해상도로 고정 출력한다. (예: 360x640dp -> 1080x1920px)
  */
 suspend fun renderComposableToBitmap(
     activity: Activity,
+    targetScale: Float = 3f,
     content: @androidx.compose.runtime.Composable () -> Unit
 ): Bitmap {
     val root = activity.window.decorView as ViewGroup
@@ -549,8 +695,16 @@ suspend fun renderComposableToBitmap(
         val height = composeView.measuredHeight.coerceAtLeast(1)
         composeView.layout(0, 0, width, height)
 
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        composeView.draw(Canvas(bitmap))
+        // 기기 density px -> dp*targetScale px 로 스케일해 고정 해상도(예: 1080x1920)로 출력
+        val density = activity.resources.displayMetrics.density
+        val drawScale = targetScale / density
+        val targetWidth = ((width / density) * targetScale).roundToInt().coerceAtLeast(1)
+        val targetHeight = ((height / density) * targetScale).roundToInt().coerceAtLeast(1)
+
+        val bitmap = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.scale(drawScale, drawScale)
+        composeView.draw(canvas)
         bitmap
     } finally {
         root.removeView(composeView)
