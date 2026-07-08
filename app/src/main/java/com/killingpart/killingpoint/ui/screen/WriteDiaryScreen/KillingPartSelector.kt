@@ -25,9 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
@@ -108,7 +112,7 @@ fun KillingPartSelector(
     val handleHeight = 74.dp
     val handleCorner = 7.dp
     val boxCorner = 12.dp
-    val edgeButtonSize = 34.dp
+    val edgeButtonSize = 32.dp
 
     val barWidth = 3.dp
     val barGap = 4.dp
@@ -327,45 +331,55 @@ fun KillingPartSelector(
                     sec += stepSec
                 }
 
-                // 루프 2초 밴드 하이라이트
-                if (loopSide != null) {
-                    val lx = sx(loopStartSec)
-                    val rx = sx(loopEndSec)
-                    val bH = with(density) { boxHeight.toPx() }
-                    drawRoundRect(
-                        color = mainGreen.copy(alpha = 0.28f),
-                        topLeft = Offset(lx, centerY - bH / 2f),
-                        size = Size((rx - lx).coerceAtLeast(0f), bH),
-                        cornerRadius = CornerRadius(
-                            with(density) { 6.dp.toPx() },
-                            with(density) { 6.dp.toPx() }
+                // 박스 지오메트리 (루프 밴드/테두리/인디케이터 공용)
+                val boxLeft = sx(startSec)
+                val boxRight = sx(endSec)
+                val bH = with(density) { boxHeight.toPx() }
+                val boxTop = centerY - bH / 2f
+                val strokePx = with(density) { 2.dp.toPx() }
+                val rad = with(density) { boxCorner.toPx() }
+                val boxPath = Path().apply {
+                    addRoundRect(
+                        RoundRect(
+                            rect = Rect(boxLeft, boxTop, boxRight, boxTop + bH),
+                            cornerRadius = CornerRadius(rad, rad)
                         )
                     )
                 }
 
+                // 루프 2초 밴드 하이라이트 (박스 컨테이너 라운드에 맞춰 클립)
+                if (loopSide != null) {
+                    val lx = sx(loopStartSec)
+                    val rx = sx(loopEndSec)
+                    clipPath(boxPath) {
+                        drawRect(
+                            color = mainGreen.copy(alpha = 0.28f),
+                            topLeft = Offset(lx, boxTop),
+                            size = Size((rx - lx).coerceAtLeast(0f), bH)
+                        )
+                    }
+                }
+
                 // 선택 구간 네온 박스 테두리
-                val boxLeft = sx(startSec)
-                val boxRight = sx(endSec)
-                val bH = with(density) { boxHeight.toPx() }
-                val strokePx = with(density) { 2.dp.toPx() }
-                val rad = with(density) { boxCorner.toPx() }
                 drawRoundRect(
                     color = mainGreen,
-                    topLeft = Offset(boxLeft, centerY - bH / 2f),
+                    topLeft = Offset(boxLeft, boxTop),
                     size = Size((boxRight - boxLeft).coerceAtLeast(0f), bH),
                     cornerRadius = CornerRadius(rad, rad),
                     style = Stroke(width = strokePx)
                 )
 
-                // 흰색 재생 인디케이터
+                // 흰색 재생 인디케이터: 박스 컨테이너 path로 클립 → 라운드 코너 근처에선
+                //  자동으로 짧아지고 가운데선 박스 높이를 꽉 채움 (고정 높이 아님)
                 if (displayPlaySec in startSec..endSec) {
                     val px = sx(displayPlaySec)
-                    drawRoundRect(
-                        color = Color.White,
-                        topLeft = Offset(px - strokePx / 2f, centerY - bH / 2f),
-                        size = Size(strokePx, bH),
-                        cornerRadius = CornerRadius(strokePx, strokePx)
-                    )
+                    clipPath(boxPath) {
+                        drawRect(
+                            color = Color.White,
+                            topLeft = Offset(px - strokePx / 2f, boxTop),
+                            size = Size(strokePx, bH)
+                        )
+                    }
                 }
             }
 
@@ -465,33 +479,18 @@ fun KillingPartSelector(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // ---- -1s / +1s 버튼: 각 시간 라벨 바로 아래(핸들 위치 따라) ----
-        val edgeButtonHalfPx = with(density) { edgeButtonSize.toPx() / 2f }
+        // ---- -1s / +1s 버튼: 양쪽 끝 고정 (초 텍스트는 핸들 따라 이동) ----
         Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
             EdgeStepButton(
                 label = "-1s",
                 size = edgeButtonSize,
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(startSec) - edgeButtonHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - edgeButtonHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                },
+                modifier = Modifier.align(Alignment.CenterStart),
                 onClick = { extendFront() }
             )
             EdgeStepButton(
                 label = "+1s",
                 size = edgeButtonSize,
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(endSec) - edgeButtonHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - edgeButtonHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                },
+                modifier = Modifier.align(Alignment.CenterEnd),
                 onClick = { extendBack() }
             )
         }
@@ -587,7 +586,7 @@ private fun HandleTimeLabel(text: String, modifier: Modifier = Modifier) {
             text = text,
             fontFamily = PaperlogyFontFamily,
             fontWeight = FontWeight.W400,
-            fontSize = 13.sp,
+            fontSize = 11.sp,
             color = Color.White
         )
     }
