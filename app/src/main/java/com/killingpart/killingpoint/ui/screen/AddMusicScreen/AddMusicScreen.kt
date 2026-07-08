@@ -282,6 +282,10 @@ private fun TrackRowWithVideoSearch(
                             "&image=$encodedImage" +
                             "&videoUrl=$encodedVideoUrl" +
                             "&totalDuration=$totalDuration" +
+                            "&sourceType=${track.sourceType}" +
+                            "&trackId=${track.trackId ?: ""}" +
+                            "&artistId=${track.artistId ?: ""}" +
+                            "&primaryGenreName=${java.net.URLEncoder.encode(track.primaryGenreName ?: "", "UTF-8")}" +
                             "&tutorial=$tutorialArg"
                 )
             } catch (e: Exception) {
@@ -298,6 +302,10 @@ private fun TrackRowWithVideoSearch(
                             "&image=$encodedImage" +
                             "&videoUrl=" +
                             "&totalDuration=180" +
+                            "&sourceType=${track.sourceType}" +
+                            "&trackId=${track.trackId ?: ""}" +
+                            "&artistId=${track.artistId ?: ""}" +
+                            "&primaryGenreName=${java.net.URLEncoder.encode(track.primaryGenreName ?: "", "UTF-8")}" +
                             "&tutorial=$tutorialArg"
                 )
             } finally {
