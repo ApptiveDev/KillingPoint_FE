@@ -111,7 +111,7 @@ fun SelectDurationScreen(
     totalDuration: Int,
     tutorialMode: Boolean = false
 ) {
-    var duration by remember { mutableStateOf(10f) }
+    var duration by remember { mutableStateOf(20f) }
     var start by remember { mutableStateOf(0f) }
 
     val startSeconds = remember(start) {

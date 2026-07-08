@@ -81,7 +81,7 @@ fun KillingPartSelector(
     totalDuration: Int,
     /** 첫 레이아웃 시 선택 구간 (다른 영상으로 바꿀 때 부모에서 넘김) */
     initialStartSec: Float = 0f,
-    initialDurationSec: Float = 10f,
+    initialDurationSec: Float = 20f,
     /** 현재 재생 위치(절대 초). 재생 인디케이터/채우기 표시용 */
     currentPlaySec: Float = 0f,
     isPlaying: Boolean = false,
@@ -298,7 +298,8 @@ fun KillingPartSelector(
                         val top = centerY - barH / 2f
 
                         val inSection = sec >= startSec - eps && sec <= endSec + eps
-                        val played = isPlaying && sec <= displayPlaySec + eps
+                        // 재생 인디케이터가 지나간(재생된) 구간 막대는 네온색으로
+                        val played = displayPlaySec > startSec - eps && sec <= displayPlaySec + eps
                         val color = when {
                             !inSection -> Color(0xFF454545)
                             played -> mainGreen
@@ -346,7 +347,7 @@ fun KillingPartSelector(
                 )
 
                 // 흰색 재생 인디케이터
-                if (isPlaying && displayPlaySec in startSec..endSec) {
+                if (displayPlaySec in startSec..endSec) {
                     val px = sx(displayPlaySec)
                     drawRoundRect(
                         color = Color.White,
@@ -366,8 +367,9 @@ fun KillingPartSelector(
                 pressed = pressedSide == HandleSide.LEFT,
                 modifier = Modifier
                     .offset {
+                        // 박스 컨테이너 안쪽: 핸들 왼쪽 끝이 구간 시작(박스 좌측)에 맞도록
                         IntOffset(
-                            (secToX(startSec) - handleWidthPx / 2f).roundToInt(),
+                            secToX(startSec).roundToInt(),
                             0
                         )
                     }
@@ -396,8 +398,9 @@ fun KillingPartSelector(
                 pressed = pressedSide == HandleSide.RIGHT,
                 modifier = Modifier
                     .offset {
+                        // 박스 컨테이너 안쪽: 핸들 오른쪽 끝이 구간 끝(박스 우측)에 맞도록
                         IntOffset(
-                            (secToX(endSec) - handleWidthPx / 2f).roundToInt(),
+                            (secToX(endSec) - handleWidthPx).roundToInt(),
                             0
                         )
                     }
@@ -483,6 +486,8 @@ fun KillingPartSelector(
             },
             onScrubEnd = {
                 commit(force = true)
+                // 미니맵으로 구간을 옮기면 새 구간 시작부터 다시 재생
+                latestOnSeek(startSec)
                 latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM_BAR)
             }
         )
