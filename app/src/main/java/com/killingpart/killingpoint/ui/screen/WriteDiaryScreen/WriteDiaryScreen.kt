@@ -37,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
+import com.killingpart.killingpoint.data.model.MusicMetadata
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import com.killingpart.killingpoint.R
@@ -71,7 +72,12 @@ fun WriteDiaryScreen(
     end: String,
     videoUrl: String,
     totalDuration: Int = 0, // YouTube 비디오 전체 길이 (초 단위)
-    tutorialMode: Boolean = false
+    tutorialMode: Boolean = false,
+    // 장르 추천용 (iTunes) — 등록 요청에 포함
+    sourceType: String = "ITUNES",
+    trackId: String? = null,
+    artistId: String? = null,
+    primaryGenreName: String? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
@@ -316,7 +322,13 @@ fun WriteDiaryScreen(
                                 duration = duration,
                                 start = start,
                                 end = end,
-                                totalDuration = totalDuration
+                                totalDuration = totalDuration,
+                                musicMetadata = MusicMetadata(
+                                    sourceType = sourceType,
+                                    trackId = trackId,
+                                    artistId = artistId,
+                                    primaryGenreName = primaryGenreName
+                                )
                             )
                             repo.createDiary(body)
                         }.onSuccess {

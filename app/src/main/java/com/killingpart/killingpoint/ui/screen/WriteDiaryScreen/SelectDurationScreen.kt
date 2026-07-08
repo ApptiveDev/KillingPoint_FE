@@ -109,7 +109,12 @@ fun SelectDurationScreen(
     imageUrl: String,
     videoUrl: String = "",
     totalDuration: Int,
-    tutorialMode: Boolean = false
+    tutorialMode: Boolean = false,
+    // 장르 추천용 (iTunes) — write_diary 로 그대로 전달
+    sourceType: String = "ITUNES",
+    trackId: String? = null,
+    artistId: String? = null,
+    primaryGenreName: String? = null
 ) {
     var duration by remember { mutableStateOf(20f) }
     var start by remember { mutableStateOf(0f) }
@@ -195,6 +200,10 @@ fun SelectDurationScreen(
                     "&end=${end.toInt()}" +
                     "&videoUrl=$encodedVideoUrl" +
                     "&totalDuration=${currentTotalDuration}" +
+                    "&sourceType=$sourceType" +
+                    "&trackId=${trackId ?: ""}" +
+                    "&artistId=${artistId ?: ""}" +
+                    "&primaryGenreName=${Uri.encode(primaryGenreName ?: "")}" +
                     "&tutorial=$tutorialArg"
         )
     }

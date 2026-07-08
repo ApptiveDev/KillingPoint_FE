@@ -31,8 +31,8 @@ class ItunesRepository(
                     // 100x100 썸네일 URL을 고해상도로 치환
                     albumImageUrl = item.artworkUrl100?.replace("100x100bb", "600x600bb"),
                     albumId = item.collectionId?.toString().orEmpty(),
-                    trackId = item.trackId,
-                    artistId = item.artistId,
+                    trackId = item.trackId?.toString(),
+                    artistId = item.artistId?.toString(),
                     primaryGenreName = item.primaryGenreName,
                     sourceType = SOURCE_TYPE
                 )
