@@ -113,6 +113,10 @@ fun NavGraph(
                     "&image={image}" +
                     "&videoUrl={videoUrl}" +
                     "&totalDuration={totalDuration}" +
+                    "&sourceType={sourceType}" +
+                    "&trackId={trackId}" +
+                    "&artistId={artistId}" +
+                    "&primaryGenreName={primaryGenreName}" +
                     "&tutorial={tutorial}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
@@ -120,6 +124,10 @@ fun NavGraph(
                 navArgument("image") { type = NavType.StringType; defaultValue = "" },
                 navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("sourceType") { type = NavType.StringType; defaultValue = "ITUNES" },
+                navArgument("trackId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("artistId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("primaryGenreName") { type = NavType.StringType; defaultValue = "" },
                 navArgument("tutorial") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
@@ -129,9 +137,20 @@ fun NavGraph(
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull() ?: 0
+            val sourceType = backStackEntry.arguments?.getString("sourceType").orEmpty().ifEmpty { "ITUNES" }
+            val trackId = backStackEntry.arguments?.getString("trackId").orEmpty().ifEmpty { null }
+            val artistId = backStackEntry.arguments?.getString("artistId").orEmpty().ifEmpty { null }
+            val primaryGenreName = URLDecoder.decode(backStackEntry.arguments?.getString("primaryGenreName").orEmpty(), "UTF-8").ifEmpty { null }
             val tutorial = backStackEntry.arguments?.getBoolean("tutorial") ?: false
 
-            SelectDurationScreen(navController, title, artist, image, videoUrl, totalDuration, tutorialMode = tutorial)
+            SelectDurationScreen(
+                navController, title, artist, image, videoUrl, totalDuration,
+                tutorialMode = tutorial,
+                sourceType = sourceType,
+                trackId = trackId,
+                artistId = artistId,
+                primaryGenreName = primaryGenreName
+            )
         }
 
         composable(
@@ -144,6 +163,10 @@ fun NavGraph(
                     "&end={end}" +
                     "&videoUrl={videoUrl}" +
                     "&totalDuration={totalDuration}" +
+                    "&sourceType={sourceType}" +
+                    "&trackId={trackId}" +
+                    "&artistId={artistId}" +
+                    "&primaryGenreName={primaryGenreName}" +
                     "&tutorial={tutorial}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
@@ -154,6 +177,10 @@ fun NavGraph(
                 navArgument("end") { type = NavType.StringType; defaultValue = "" },
                 navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("sourceType") { type = NavType.StringType; defaultValue = "ITUNES" },
+                navArgument("trackId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("artistId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("primaryGenreName") { type = NavType.StringType; defaultValue = "" },
                 navArgument("tutorial") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
@@ -166,6 +193,10 @@ fun NavGraph(
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull() ?: 0
+            val sourceType = backStackEntry.arguments?.getString("sourceType").orEmpty().ifEmpty { "ITUNES" }
+            val trackId = backStackEntry.arguments?.getString("trackId").orEmpty().ifEmpty { null }
+            val artistId = backStackEntry.arguments?.getString("artistId").orEmpty().ifEmpty { null }
+            val primaryGenreName = URLDecoder.decode(backStackEntry.arguments?.getString("primaryGenreName").orEmpty(), "UTF-8").ifEmpty { null }
             val tutorial = backStackEntry.arguments?.getBoolean("tutorial") ?: false
 
             WriteDiaryScreen(
@@ -178,7 +209,11 @@ fun NavGraph(
                 end,
                 videoUrl,
                 totalDuration,
-                tutorialMode = tutorial
+                tutorialMode = tutorial,
+                sourceType = sourceType,
+                trackId = trackId,
+                artistId = artistId,
+                primaryGenreName = primaryGenreName
             )
         }
 

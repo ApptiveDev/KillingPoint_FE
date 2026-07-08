@@ -24,19 +24,32 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.Abs
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import androidx.compose.runtime.DisposableEffect
 
+/** 온디맨드 seek+재생 명령. id 가 바뀔 때마다 실행됨 */
+data class PlayCommand(val id: Long, val seekTo: Float)
+
 /**
  * YouTube Player API를 사용한 백그라운드 재생 가능한 플레이어
  */
 @Composable
 fun YouTubePlayerBox(
-    diary: Diary?, 
-    startSeconds: Float, 
+    diary: Diary?,
+    startSeconds: Float,
     durationSeconds: Float = 0f,
     onVideoReady: () -> Unit = {},
     isPlayingState: Boolean? = null,
     onVideoEnd: () -> Unit = {},
     shouldLoop: Boolean = false,
-    showTrackInfo: Boolean = true
+    showTrackInfo: Boolean = true,
+    /** 현재 재생 위치(초)를 부모로 전달 */
+    onCurrentSecondChange: (Float) -> Unit = {},
+    /** 재생 상태(재생/정지)를 부모로 전달 */
+    onPlayingChange: (Boolean) -> Unit = {},
+    /** 온디맨드 seek+재생 (트랙 탭 / 좌핸들 탭 등) */
+    playCommand: PlayCommand? = null,
+    /** 지정 시 이 구간으로 루프 (2초 루프 등). null 이면 [startSeconds, endSeconds] 루프 */
+    loopOverride: ClosedFloatingPointRange<Float>? = null,
+    /** startSeconds 변경 시 자동 seek 여부. 구간 리사이즈 중 재생을 끊고 싶지 않으면 false */
+    seekOnStartChange: Boolean = true
 ) {
     val context = LocalContext.current
     
@@ -72,18 +85,51 @@ fun YouTubePlayerBox(
             }
             
             // startSeconds가 변경될 때 seekTo로 위치 이동 (디바운싱 적용)
-            LaunchedEffect(startSeconds) {
-                if (player != null) {
+            LaunchedEffect(startSeconds, seekOnStartChange) {
+                if (seekOnStartChange && player != null) {
                     // 500ms 디바운싱: 사용자가 슬라이더를 계속 움직이면 마지막 값만 적용
                     kotlinx.coroutines.delay(500)
                     player?.seekTo(startSeconds)
                 }
             }
 
+            // 현재 재생 위치 / 재생 상태 부모로 전달
+            LaunchedEffect(currentTime) { onCurrentSecondChange(currentTime) }
+            LaunchedEffect(isPlaying) { onPlayingChange(isPlaying) }
+
+            // 온디맨드 seek+재생 (트랙 탭 / 좌핸들 탭)
+            LaunchedEffect(playCommand) {
+                val cmd = playCommand ?: return@LaunchedEffect
+                player?.let {
+                    it.seekTo(cmd.seekTo)
+                    it.play()
+                }
+            }
+
+            // 루프 구간이 지정되면 해당 구간 시작으로 이동해 루프 시작
+            LaunchedEffect(loopOverride) {
+                val range = loopOverride ?: return@LaunchedEffect
+                player?.let {
+                    it.seekTo(range.start)
+                    it.play()
+                }
+            }
+
             val onVideoEndCallback = remember(onVideoEnd) { onVideoEnd }
             
-            LaunchedEffect(currentTime, endSeconds, startSeconds, durationSeconds, player, shouldLoop) {
-                if (isPlaying && player != null && endSeconds != null && durationSeconds > 0f && currentTime >= endSeconds) {
+            LaunchedEffect(currentTime, endSeconds, startSeconds, durationSeconds, player, shouldLoop, loopOverride) {
+                if (!isPlaying || player == null) return@LaunchedEffect
+
+                // 2초 루프 등 override 구간이 지정되면 해당 구간만 반복
+                if (loopOverride != null) {
+                    if (currentTime >= loopOverride.endInclusive) {
+                        player?.seekTo(loopOverride.start)
+                        player?.play()
+                    }
+                    return@LaunchedEffect
+                }
+
+                if (endSeconds != null && durationSeconds > 0f && currentTime >= endSeconds) {
                     if (shouldLoop) {
                         player?.seekTo(startSeconds)
                         player?.play()

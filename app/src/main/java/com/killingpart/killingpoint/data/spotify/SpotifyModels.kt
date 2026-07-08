@@ -35,6 +35,11 @@ data class SimpleTrack(
     val title: String,
     val artist: String,
     val albumImageUrl: String?,
-    val albumId: String // Spotify 앨범 ID
+    val albumId: String, // 앨범 ID (iTunes collectionId)
+    // 장르 추천 알고리즘용 (iTunes Search API 제공 필드) — 요청은 문자열로 보냄
+    val trackId: String? = null,
+    val artistId: String? = null,
+    val primaryGenreName: String? = null,
+    val sourceType: String = "ITUNES"
 )
 
