@@ -105,7 +105,7 @@ fun KillingPartSelector(
     val trackHeight = 120.dp
     val boxHeight = 92.dp
     val handleWidth = 22.dp
-    val handleHeight = 92.dp
+    val handleHeight = 74.dp
     val handleCorner = 7.dp
     val boxCorner = 12.dp
     val edgeButtonSize = 34.dp
@@ -174,16 +174,27 @@ fun KillingPartSelector(
         }
     }
 
-    // 재생 인디케이터 스무딩 (onCurrentSecond 는 대략 1초 간격 → 선형 보간, seek/loop 점프는 snap)
-    val playAnim = remember { Animatable(0f) }
+    // 재생 인디케이터: 프레임 기반 1x 진행 + 권위값(currentPlaySec) 큰 점프만 보정
+    //  - onCurrentSecond 는 ~1초 간격(지터 有) → 매 프레임 실제 경과시간만큼 진행시켜 부드럽게
+    //  - seek/루프 등 0.75초 초과 점프만 즉시 반영(그 외 소소한 지터는 무시해 멈춤/역행 방지)
+    var displayPlaySec by remember { mutableStateOf(0f) }
     LaunchedEffect(currentPlaySec) {
-        if (abs(currentPlaySec - playAnim.value) > 1.2f) {
-            playAnim.snapTo(currentPlaySec)
-        } else {
-            playAnim.animateTo(currentPlaySec, tween(durationMillis = 1000, easing = LinearEasing))
+        if (abs(currentPlaySec - displayPlaySec) > 0.75f) {
+            displayPlaySec = currentPlaySec
         }
     }
-    val displayPlaySec = playAnim.value
+    LaunchedEffect(isPlaying) {
+        if (!isPlaying) return@LaunchedEffect
+        var last = 0L
+        while (true) {
+            withFrameNanos { now ->
+                if (last != 0L) {
+                    displayPlaySec += (now - last) / 1_000_000_000f
+                }
+                last = now
+            }
+        }
+    }
 
     fun applyResize(side: HandleSide, dxPx: Float) {
         val dSec = dxPx / pxPerSec
@@ -421,30 +432,13 @@ fun KillingPartSelector(
                     )
             )
 
-            // ---- -1s / +1s 원형 버튼 ----
-            EdgeStepButton(
-                label = "-1s",
-                size = edgeButtonSize,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .zIndex(11f),
-                onClick = { extendFront() }
-            )
-            EdgeStepButton(
-                label = "+1s",
-                size = edgeButtonSize,
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .zIndex(11f),
-                onClick = { extendBack() }
-            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-        // ---- 핸들 시간 라벨 ----
-        Box(modifier = Modifier.fillMaxWidth().height(18.dp)) {
-            val labelHalfPx = with(density) { 38.dp.toPx() }
+        // ---- 핸들 시간 라벨 (핸들 위치 따라, 살짝 위로) ----
+        val labelHalfPx = with(density) { 38.dp.toPx() }
+        Box(modifier = Modifier.fillMaxWidth().height(16.dp)) {
             HandleTimeLabel(
                 text = formatTime(startSec),
                 modifier = Modifier.offset {
@@ -466,6 +460,39 @@ fun KillingPartSelector(
                         0
                     )
                 }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // ---- -1s / +1s 버튼: 각 시간 라벨 바로 아래(핸들 위치 따라) ----
+        val edgeButtonHalfPx = with(density) { edgeButtonSize.toPx() / 2f }
+        Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
+            EdgeStepButton(
+                label = "-1s",
+                size = edgeButtonSize,
+                modifier = Modifier.offset {
+                    IntOffset(
+                        (secToX(startSec) - edgeButtonHalfPx)
+                            .coerceIn(0f, (viewportWidthPx - edgeButtonHalfPx * 2f).coerceAtLeast(0f))
+                            .roundToInt(),
+                        0
+                    )
+                },
+                onClick = { extendFront() }
+            )
+            EdgeStepButton(
+                label = "+1s",
+                size = edgeButtonSize,
+                modifier = Modifier.offset {
+                    IntOffset(
+                        (secToX(endSec) - edgeButtonHalfPx)
+                            .coerceIn(0f, (viewportWidthPx - edgeButtonHalfPx * 2f).coerceAtLeast(0f))
+                            .roundToInt(),
+                        0
+                    )
+                },
+                onClick = { extendBack() }
             )
         }
 
@@ -573,12 +600,24 @@ private fun EdgeStepButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    var pressed by remember { mutableStateOf(false) }
+    val alpha by animateFloatAsState(if (pressed) 0.5f else 1f, label = "stepBtnAlpha")
     Box(
         modifier = modifier
             .size(size)
+            .graphicsLayer { this.alpha = alpha }
             .clip(CircleShape)
             .background(mainGreen)
-            .pointerInput(Unit) { detectTapGestures { onClick() } },
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        pressed = true
+                        tryAwaitRelease()
+                        pressed = false
+                    },
+                    onTap = { onClick() }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(
