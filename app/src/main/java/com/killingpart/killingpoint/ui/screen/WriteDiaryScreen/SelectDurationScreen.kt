@@ -50,6 +50,7 @@ import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
+import com.killingpart.killingpoint.ui.screen.MainScreen.PlayCommand
 import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.AlbumDiaryBoxWithoutContent
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
@@ -127,6 +128,13 @@ fun SelectDurationScreen(
         val endValue = (startSeconds + durationSeconds)
         endValue
     }
+
+    // ---- 재생 연동 상태 (구간자르기 개선안) ----
+    var currentPlaySec by remember { mutableStateOf(0f) }
+    var playerPlaying by remember { mutableStateOf(false) }
+    var seekCommand by remember { mutableStateOf<PlayCommand?>(null) }
+    var seekIdCounter by remember { mutableStateOf(0L) }
+    var loopOverride by remember { mutableStateOf<ClosedFloatingPointRange<Float>?>(null) }
 
     var currentVideoUrl by remember { mutableStateOf<String?>(if (videoUrl.isNotEmpty()) videoUrl else null) }
     var currentTotalDuration by remember { mutableStateOf(if (totalDuration > 0) totalDuration else 10) }
@@ -325,7 +333,18 @@ fun SelectDurationScreen(
                             .size(250.dp, 150.dp)
                     ) {
 
-                        YouTubePlayerBox(tempDiary, startSeconds, durationSeconds, shouldLoop = true)
+                        YouTubePlayerBox(
+                            tempDiary,
+                            startSeconds,
+                            durationSeconds,
+                            shouldLoop = true,
+                            onCurrentSecondChange = { currentPlaySec = it },
+                            onPlayingChange = { playerPlaying = it },
+                            playCommand = seekCommand,
+                            loopOverride = loopOverride,
+                            // 구간 리사이즈/±1초 조정 중 재생을 처음으로 되돌리지 않음
+                            seekOnStartChange = false
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -362,10 +381,19 @@ fun SelectDurationScreen(
                             totalDuration = currentTotalDuration,
                             initialStartSec = start,
                             initialDurationSec = duration,
+                            currentPlaySec = currentPlaySec,
+                            isPlaying = playerPlaying,
                             onStartChange = { s, e, d ->
                                 start = s
                                 end = e
                                 duration = d
+                            },
+                            onSeek = { sec ->
+                                seekIdCounter += 1
+                                seekCommand = PlayCommand(seekIdCounter, sec)
+                            },
+                            onLoopChange = { ls, le ->
+                                loopOverride = if (ls != null && le != null) ls..le else null
                             },
                             onHandleAdjusted = { handleSide ->
                                 KillingPartCutAnalytics.cutHandleAdjusted(handleSide)
