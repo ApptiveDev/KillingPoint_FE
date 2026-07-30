@@ -34,6 +34,7 @@ import androidx.navigation.NavController
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.repository.AuthRepository
+import com.killingpart.killingpoint.data.repository.ItunesRepository
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
@@ -58,10 +59,12 @@ fun DiaryDetailScreenForStored(
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val itunesRepo = remember { ItunesRepository.create() }
 
     var isStored by remember { mutableStateOf(true) }
     var showUnstoreDialog by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
+    var isRegistering by remember { mutableStateOf(false) }
 
     val startSeconds = parseTimeToSecondsForStored(start)
     val endSeconds = parseTimeToSecondsForStored(end)
@@ -179,18 +182,45 @@ fun DiaryDetailScreenForStored(
                 // 내 킬링파트로 등록
                 Button(
                     onClick = {
-                        val encodedVideoUrl = Uri.encode(videoUrl)
-                        navController.navigate(
-                            "write_diary" +
-                                    "?title=${Uri.encode(musicTitle)}" +
-                                    "&artist=${Uri.encode(artist)}" +
-                                    "&image=${Uri.encode(albumImageUrl)}" +
-                                    "&duration=${duration.toFloatOrNull()?.toInt() ?: 0}" +
-                                    "&start=${start.toFloatOrNull()?.toInt() ?: 0}" +
-                                    "&end=${end.toFloatOrNull()?.toInt() ?: 0}" +
-                                    "&videoUrl=$encodedVideoUrl" +
-                                    "&totalDuration=${totalDuration ?: 0}"
-                        )
+                        if (isRegistering) return@Button
+                        isRegistering = true
+                        coroutineScope.launch {
+                            // 보관한 킬링파트는 추천용 음악 메타데이터를 들고 있지 않다.
+                            // 곡명·아티스트로 iTunes를 다시 조회해 장르 정보를 복원한다.
+                            val matched = runCatching {
+                                itunesRepo.searchTracks("$musicTitle $artist")
+                            }.onFailure { e ->
+                                android.util.Log.e(
+                                    "DiaryDetailForStored",
+                                    "iTunes 재조회 실패: ${e.message}"
+                                )
+                            }.getOrNull()?.let { pickMatchingTrack(it, musicTitle, artist) }
+
+                            if (matched == null) {
+                                android.util.Log.w(
+                                    "DiaryDetailForStored",
+                                    "iTunes 메타데이터 복원 실패 — 장르 없이 진행: $artist - $musicTitle"
+                                )
+                            }
+
+                            val encodedVideoUrl = Uri.encode(videoUrl)
+                            navController.navigate(
+                                "write_diary" +
+                                        "?title=${Uri.encode(musicTitle)}" +
+                                        "&artist=${Uri.encode(artist)}" +
+                                        "&image=${Uri.encode(albumImageUrl)}" +
+                                        "&duration=${duration.toFloatOrNull()?.toInt() ?: 0}" +
+                                        "&start=${start.toFloatOrNull()?.toInt() ?: 0}" +
+                                        "&end=${end.toFloatOrNull()?.toInt() ?: 0}" +
+                                        "&videoUrl=$encodedVideoUrl" +
+                                        "&totalDuration=${totalDuration ?: 0}" +
+                                        "&sourceType=${matched?.sourceType ?: ItunesRepository.SOURCE_TYPE}" +
+                                        "&trackId=${matched?.trackId ?: ""}" +
+                                        "&artistId=${matched?.artistId ?: ""}" +
+                                        "&primaryGenreName=${Uri.encode(matched?.primaryGenreName ?: "")}"
+                            )
+                            isRegistering = false
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -358,6 +388,36 @@ fun DiaryDetailScreenForStored(
         }
     }
 }
+
+/**
+ * iTunes 재조회 결과에서 보관된 곡과 같은 트랙을 고른다.
+ * 곡명+아티스트 동시 일치 → 곡명만 일치 → 아티스트만 일치 순으로 완화한다.
+ */
+private fun pickMatchingTrack(
+    tracks: List<SimpleTrack>,
+    musicTitle: String,
+    artist: String
+): SimpleTrack? {
+    if (tracks.isEmpty()) return null
+
+    val title = musicTitle.normalizedForMatch()
+    val artistKey = artist.normalizedForMatch()
+    if (title.isEmpty() && artistKey.isEmpty()) return null
+
+    fun titleMatches(track: SimpleTrack) =
+        title.isNotEmpty() && track.title.normalizedForMatch() == title
+
+    fun artistMatches(track: SimpleTrack) =
+        artistKey.isNotEmpty() && track.artist.normalizedForMatch().contains(artistKey)
+
+    return tracks.firstOrNull { titleMatches(it) && artistMatches(it) }
+        ?: tracks.firstOrNull { titleMatches(it) }
+        ?: tracks.firstOrNull { artistMatches(it) }
+}
+
+/** 공백·괄호·특수문자 표기 차이를 무시하고 비교하기 위한 정규화 */
+private fun String.normalizedForMatch(): String =
+    lowercase().filter { it.isLetterOrDigit() }
 
 private fun parseTimeToSecondsForStored(timeStr: String): Int {
     return try {
