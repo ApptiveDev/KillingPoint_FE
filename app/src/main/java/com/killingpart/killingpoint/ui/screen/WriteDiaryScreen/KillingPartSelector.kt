@@ -2,7 +2,11 @@ package com.killingpart.killingpoint.ui.screen.WriteDiaryScreen
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -70,7 +74,9 @@ fun formatTime(seconds: Float): String {
  * 인터랙션
  *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.5초 대기 → 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
- *  - 핸들 0.5초 롱프레스: 핸들 옆 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
+ *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
+ *      좌핸들 = start~start+2, 우핸들 = end-2~end
+ *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드/배지가 강조 표시됨
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
  *  - -1s/+1s: 구간 앞/뒤 1초 확장(재생 유지), 조정 후 중앙 복귀
  *
@@ -82,6 +88,9 @@ private enum class HandleSide { LEFT, RIGHT }
 
 /** 구간 조절 후 중앙 복귀 모션이 시작되기 전 대기 시간 */
 private const val recenterDelayMillis = 500
+
+/** 핸들 롱프레스 시 반복 재생되는 구간 길이(초) */
+private const val loopWindowSec = 2f
 
 @Composable
 fun KillingPartSelector(
@@ -229,8 +238,8 @@ fun KillingPartSelector(
     fun activateLoop(side: HandleSide) {
         loopSide = side
         val (ls, le) = when (side) {
-            HandleSide.LEFT -> startSec to (startSec + 2f).coerceAtMost(endSec)
-            HandleSide.RIGHT -> (endSec - 2f).coerceAtLeast(startSec) to endSec
+            HandleSide.LEFT -> startSec to (startSec + loopWindowSec).coerceAtMost(endSec)
+            HandleSide.RIGHT -> (endSec - loopWindowSec).coerceAtLeast(startSec) to endSec
         }
         latestOnLoopChange(ls, le)
     }
@@ -241,6 +250,41 @@ fun KillingPartSelector(
             latestOnLoopChange(null, null)
         }
     }
+
+    // ---- 2초 루프 구간(절대 초). 두 핸들 모두 선택 구간 안쪽으로 잡는다 ----
+    val loopStartSec = when (loopSide) {
+        HandleSide.LEFT -> startSec
+        HandleSide.RIGHT -> (endSec - loopWindowSec).coerceAtLeast(startSec)
+        null -> Float.NaN
+    }
+    val loopEndSec = when (loopSide) {
+        HandleSide.LEFT -> (startSec + loopWindowSec).coerceAtMost(endSec)
+        HandleSide.RIGHT -> endSec
+        null -> Float.NaN
+    }
+
+    // 루프 중에는 해당 핸들이 2초 밴드를 가리지 않도록 바깥쪽으로 비켜선다.
+    // (2초 폭 ≈ 19dp < 핸들 폭 22dp 라 비키지 않으면 밴드가 완전히 가려짐)
+    val leftHandleShiftPx by animateFloatAsState(
+        if (loopSide == HandleSide.LEFT) -handleWidthPx else 0f,
+        label = "leftHandleShift"
+    )
+    val rightHandleShiftPx by animateFloatAsState(
+        if (loopSide == HandleSide.RIGHT) handleWidthPx else 0f,
+        label = "rightHandleShift"
+    )
+
+    // 루프 밴드 깜빡임(강조)
+    val loopPulseTransition = rememberInfiniteTransition(label = "loopPulse")
+    val loopPulse by loopPulseTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "loopPulseValue"
+    )
 
     fun extendFront() {
         val newStart = (startSec - 1f)
@@ -299,16 +343,6 @@ fun KillingPartSelector(
 
                 val stepSec = (barWidthPx + barGapPx) / pxPerSec
                 val eps = 0.001f
-                val loopStartSec = when (loopSide) {
-                    HandleSide.LEFT -> startSec
-                    HandleSide.RIGHT -> (endSec - 2f).coerceAtLeast(startSec)
-                    null -> Float.NaN
-                }
-                val loopEndSec = when (loopSide) {
-                    HandleSide.LEFT -> (startSec + 2f).coerceAtMost(endSec)
-                    HandleSide.RIGHT -> endSec
-                    null -> Float.NaN
-                }
 
                 var i = 0
                 var sec = 0f
@@ -355,14 +389,40 @@ fun KillingPartSelector(
                 }
 
                 // 루프 2초 밴드 하이라이트 (박스 컨테이너 라운드에 맞춰 클립)
+                //  - 밴드 밖 선택 구간은 어둡게 덮어 2초 구간만 도드라지게
+                //  - 밴드는 펄스로 밝기가 오가고, 양 끝에 경계선을 그려 루프 범위를 명확히
                 if (loopSide != null) {
                     val lx = sx(loopStartSec)
                     val rx = sx(loopEndSec)
                     clipPath(boxPath) {
+                        // 루프 밖 구간 디밍
                         drawRect(
-                            color = mainGreen.copy(alpha = 0.28f),
+                            color = Color(0xFF060606).copy(alpha = 0.55f),
+                            topLeft = Offset(boxLeft, boxTop),
+                            size = Size((lx - boxLeft).coerceAtLeast(0f), bH)
+                        )
+                        drawRect(
+                            color = Color(0xFF060606).copy(alpha = 0.55f),
+                            topLeft = Offset(rx, boxTop),
+                            size = Size((boxRight - rx).coerceAtLeast(0f), bH)
+                        )
+                        // 2초 밴드
+                        drawRect(
+                            color = mainGreen.copy(alpha = 0.22f + 0.20f * loopPulse),
                             topLeft = Offset(lx, boxTop),
                             size = Size((rx - lx).coerceAtLeast(0f), bH)
+                        )
+                        // 밴드 경계선
+                        val edgePx = with(density) { 2.dp.toPx() }
+                        drawRect(
+                            color = mainGreen,
+                            topLeft = Offset(lx, boxTop),
+                            size = Size(edgePx, bH)
+                        )
+                        drawRect(
+                            color = mainGreen,
+                            topLeft = Offset(rx - edgePx, boxTop),
+                            size = Size(edgePx, bH)
                         )
                     }
                 }
@@ -400,8 +460,9 @@ fun KillingPartSelector(
                 modifier = Modifier
                     .offset {
                         // 박스 컨테이너 안쪽: 핸들 왼쪽 끝이 구간 시작(박스 좌측)에 맞도록
+                        // 루프 중에는 밴드가 보이도록 핸들 폭만큼 왼쪽으로 비켜섬
                         IntOffset(
-                            secToX(startSec).roundToInt(),
+                            (secToX(startSec) + leftHandleShiftPx).roundToInt(),
                             0
                         )
                     }
@@ -431,8 +492,9 @@ fun KillingPartSelector(
                 modifier = Modifier
                     .offset {
                         // 박스 컨테이너 안쪽: 핸들 오른쪽 끝이 구간 끝(박스 우측)에 맞도록
+                        // 루프 중에는 밴드가 보이도록 핸들 폭만큼 오른쪽으로 비켜섬
                         IntOffset(
-                            (secToX(endSec) - handleWidthPx).roundToInt(),
+                            (secToX(endSec) - handleWidthPx + rightHandleShiftPx).roundToInt(),
                             0
                         )
                     }
@@ -453,6 +515,18 @@ fun KillingPartSelector(
                     )
             )
 
+            // ---- 루프 배지: 2초 밴드 위에 "2초 반복" 표시 ----
+            if (loopSide != null && viewportWidthPx > 0f) {
+                val bandCenterX = secToX((loopStartSec + loopEndSec) / 2f)
+                LoopBadge(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .zIndex(11f)
+                        .offset {
+                            IntOffset((bandCenterX - viewportWidthPx / 2f).roundToInt(), 0)
+                        }
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -589,6 +663,27 @@ private fun HandleView(
             imageVector = if (side == HandleSide.LEFT) Icons.Filled.KeyboardArrowLeft else Icons.Filled.KeyboardArrowRight,
             contentDescription = if (side == HandleSide.LEFT) "left handle" else "right handle",
             tint = Color(0xFF0A0A0A)
+        )
+    }
+}
+
+/** 롱프레스 2초 루프 중 밴드 위에 뜨는 배지 */
+@Composable
+private fun LoopBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .height(15.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(mainGreen)
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "2초 반복",
+            fontFamily = PaperlogyFontFamily,
+            fontWeight = FontWeight.W700,
+            fontSize = 8.sp,
+            color = Color(0xFF0A0A0A)
         )
     }
 }
