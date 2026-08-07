@@ -480,16 +480,23 @@ fun KillingPartSelector(
         Spacer(modifier = Modifier.height(6.dp))
 
         // ---- -1s / +1s 버튼: 양쪽 끝 고정 (초 텍스트는 핸들 따라 이동) ----
+        // 최대 구간(30s)에 도달했거나 트랙 경계에 닿으면 비활성화
+        val durationEps = 0.05f
+        val atMaxDuration = (endSec - startSec) >= maxDurationSec - durationEps
+        val canExtendFront = !atMaxDuration && startSec > durationEps
+        val canExtendBack = !atMaxDuration && endSec < totalDuration.toFloat() - durationEps
         Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
             EdgeStepButton(
                 label = "-1s",
                 size = edgeButtonSize,
+                enabled = canExtendFront,
                 modifier = Modifier.align(Alignment.CenterStart),
                 onClick = { extendFront() }
             )
             EdgeStepButton(
                 label = "+1s",
                 size = edgeButtonSize,
+                enabled = canExtendBack,
                 modifier = Modifier.align(Alignment.CenterEnd),
                 onClick = { extendBack() }
             )
@@ -597,26 +604,36 @@ private fun EdgeStepButton(
     label: String,
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     var pressed by remember { mutableStateOf(false) }
-    val alpha by animateFloatAsState(if (pressed) 0.5f else 1f, label = "stepBtnAlpha")
+    val alpha by animateFloatAsState(
+        when {
+            !enabled -> 0.3f
+            pressed -> 0.5f
+            else -> 1f
+        },
+        label = "stepBtnAlpha"
+    )
     Box(
         modifier = modifier
             .size(size)
             .graphicsLayer { this.alpha = alpha }
             .clip(CircleShape)
-            .background(mainGreen)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        pressed = true
-                        tryAwaitRelease()
-                        pressed = false
-                    },
-                    onTap = { onClick() }
-                )
-            },
+            .background(if (enabled) mainGreen else Color(0xFF6E6E6E))
+            .then(
+                if (enabled) Modifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            pressed = true
+                            tryAwaitRelease()
+                            pressed = false
+                        },
+                        onTap = { onClick() }
+                    )
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
