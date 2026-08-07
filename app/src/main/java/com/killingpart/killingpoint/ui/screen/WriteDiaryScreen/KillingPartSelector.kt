@@ -68,7 +68,7 @@ fun formatTime(seconds: Float): String {
  *  - secToX(sec)       : viewportWidth/2 + (sec - viewCenterSec) * pxPerSec
  *
  * 인터랙션
- *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
+ *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.5초 대기 → 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
  *  - 핸들 0.5초 롱프레스: 핸들 옆 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
@@ -79,6 +79,9 @@ fun formatTime(seconds: Float): String {
  */
 
 private enum class HandleSide { LEFT, RIGHT }
+
+/** 구간 조절 후 중앙 복귀 모션이 시작되기 전 대기 시간 */
+private const val recenterDelayMillis = 500
 
 @Composable
 fun KillingPartSelector(
@@ -151,11 +154,15 @@ fun KillingPartSelector(
         }
     }
 
-    fun recenter(animated: Boolean = true) {
+    /** 구간 조절이 끝난 뒤 [delayMillis] 만큼 쉬었다가 구간 중앙을 뷰 중앙으로 복귀 */
+    fun recenter(animated: Boolean = true, delayMillis: Int = recenterDelayMillis) {
         val target = (startSec + endSec) / 2f
         scope.launch {
             if (animated) {
-                viewCenterSec.animateTo(target, tween(durationMillis = 400, easing = LinearEasing))
+                viewCenterSec.animateTo(
+                    target,
+                    tween(durationMillis = 400, delayMillis = delayMillis, easing = LinearEasing)
+                )
             } else {
                 viewCenterSec.snapTo(target)
             }
