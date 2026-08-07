@@ -78,6 +78,8 @@ fun formatTime(seconds: Float): String {
  *      좌핸들 = start~start+2, 우핸들 = end-2~end
  *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드/배지가 강조 표시됨
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
+ *  - 트랙 가로 드래그: 구간 길이를 유지한 채 스펙트럼바 스크롤(구간은 화면 중앙 고정),
+ *      뗀 뒤 새 구간 시작부터 다시 재생 (미니맵 스크럽과 동일)
  *  - -1s/+1s: 구간 앞/뒤 1초 확장(재생 유지), 조정 후 중앙 복귀
  *
  * 재생 표시
@@ -131,6 +133,9 @@ fun KillingPartSelector(
     val barWidthPx = with(density) { barWidth.toPx() }
     val barGapPx = with(density) { barGap.toPx() }
     val handleWidthPx = with(density) { handleWidth.toPx() }
+    val handleHeightPx = with(density) { handleHeight.toPx() }
+    val trackHeightPx = with(density) { trackHeight.toPx() }
+    val handleTouchPadPx = with(density) { 4.dp.toPx() }
 
     // ---- 상태 ----
     var viewportWidthPx by remember { mutableStateOf(0f) }
@@ -308,6 +313,19 @@ fun KillingPartSelector(
         }
     }
 
+    /** 스펙트럼바 가로 스크롤: 구간 길이는 유지한 채 통째로 이동(미니맵 스크럽과 동일 동작) */
+    fun panSectionTo(newStartSec: Float) {
+        val dur = endSec - startSec
+        val ns = newStartSec.coerceIn(0f, (totalDuration.toFloat() - dur).coerceAtLeast(0f))
+        if (ns != startSec) {
+            startSec = ns
+            endSec = ns + dur
+            commit()
+        }
+        // 구간은 항상 화면 중앙에 고정된 채 파형만 흐르도록
+        recenter(animated = false)
+    }
+
     Column(modifier = Modifier.fillMaxWidth()) {
 
         // ===== 메인 트랙 =====
@@ -322,12 +340,63 @@ fun KillingPartSelector(
                         if (initialized) pxPerSec = w / visibleSeconds
                     }
                 }
-                // 트랙 탭 → 그 지점부터 재생
+                // 트랙 탭 → 그 지점부터 재생 / 가로 드래그 → 스펙트럼바 스크롤
                 .pointerInput(Unit) {
-                    detectTapGestures { pos ->
-                        val sec = xToSec(pos.x)
-                        if (sec in startSec..endSec) {
-                            latestOnSeek(sec)
+                    val slop = viewConfiguration.touchSlop
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        // 핸들 위에서 시작한 제스처는 핸들(리사이즈/루프)이 처리
+                        if (isOnHandle(
+                                pos = down.position,
+                                leftHandleLeftX = secToX(startSec) + leftHandleShiftPx,
+                                rightHandleLeftX = secToX(endSec) - handleWidthPx + rightHandleShiftPx,
+                                handleWidthPx = handleWidthPx,
+                                handleHeightPx = handleHeightPx,
+                                trackHeightPx = trackHeightPx,
+                                padPx = handleTouchPadPx
+                            )
+                        ) return@awaitEachGesture
+                        var panning = false
+                        var totalDx = 0f
+                        var accStartSec = 0f
+                        var canceled = false
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val ch = event.changes.firstOrNull { it.id == down.id } ?: break
+                            // 핸들 등 자식이 가져간 제스처는 트랙에서 처리하지 않음
+                            if (ch.isConsumed && !panning) { canceled = true; break }
+                            if (!ch.pressed) break
+
+                            val dx = ch.positionChange().x
+                            totalDx += dx
+                            if (!panning && abs(totalDx) > slop && pxPerSec > 0f) {
+                                panning = true
+                                accStartSec = startSec
+                            }
+                            if (panning) {
+                                // 오른쪽으로 끌면 이전 시간대가 보이도록(파형이 따라옴)
+                                accStartSec -= dx / pxPerSec
+                                panSectionTo(accStartSec)
+                                ch.consume()
+                            }
+                        }
+
+                        when {
+                            canceled -> Unit
+                            panning -> {
+                                commit(force = true)
+                                // 새 구간 시작부터 다시 미리듣기
+                                latestOnSeek(startSec)
+                                latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM_BAR)
+                            }
+                            else -> {
+                                // 탭: 누른 지점부터 미리듣기
+                                val sec = xToSec(down.position.x)
+                                if (sec in startSec..endSec) {
+                                    latestOnSeek(sec)
+                                }
+                            }
                         }
                     }
                 }
@@ -629,6 +698,24 @@ fun KillingPartSelector(
             )
         }
     }
+}
+
+/** 트랙 위 좌표가 좌/우 핸들 영역(여유 [padPx] 포함) 안인지 */
+private fun isOnHandle(
+    pos: Offset,
+    leftHandleLeftX: Float,
+    rightHandleLeftX: Float,
+    handleWidthPx: Float,
+    handleHeightPx: Float,
+    trackHeightPx: Float,
+    padPx: Float
+): Boolean {
+    val top = (trackHeightPx - handleHeightPx) / 2f - padPx
+    val bottom = trackHeightPx - top
+    if (pos.y < top || pos.y > bottom) return false
+    val inLeft = pos.x >= leftHandleLeftX - padPx && pos.x <= leftHandleLeftX + handleWidthPx + padPx
+    val inRight = pos.x >= rightHandleLeftX - padPx && pos.x <= rightHandleLeftX + handleWidthPx + padPx
+    return inLeft || inRight
 }
 
 /** 핸들 시간 라벨 상수 (분석 이벤트 handle_side 값) */
