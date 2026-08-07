@@ -127,7 +127,7 @@ fun KillingPartSelector(
     val handleHeight = 74.dp
     val handleCorner = 7.dp
     val boxCorner = 12.dp
-    val edgeButtonSize = 32.dp
+    val edgeButtonSize = 36.dp
 
     val barWidth = 3.dp
     val barGap = 4.dp
@@ -587,58 +587,41 @@ fun KillingPartSelector(
                     )
             )
 
-            // ---- 루프 배지: 2초 밴드 위에 "2초 반복" 표시 ----
-            if (loopSide != null && viewportWidthPx > 0f) {
-                val bandCenterX = secToX((loopStartSec + loopEndSec) / 2f)
-                LoopBadge(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .zIndex(11f)
-                        .offset {
-                            IntOffset((bandCenterX - viewportWidthPx / 2f).roundToInt(), 0)
-                        }
-                )
-            }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // ---- 핸들 시간 라벨 (핸들 위치 따라, 살짝 위로) ----
-        val labelHalfPx = with(density) { 38.dp.toPx() }
-        Box(modifier = Modifier.fillMaxWidth().height(16.dp)) {
-            HandleTimeLabel(
-                text = formatTime(startSec),
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(startSec) - labelHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - labelHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                }
-            )
-            HandleTimeLabel(
-                text = formatTime(endSec),
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(endSec) - labelHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - labelHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // ---- -1s / +1s 버튼: 양쪽 끝 고정 (초 텍스트는 핸들 따라 이동) ----
-        // 최대 구간(30s)에 도달했거나 트랙 경계에 닿으면 비활성화
+        // ---- 시간 라벨 + -1s/+1s 버튼: 같은 줄에 배치 ----
+        //  라벨은 핸들 위치를 따라 이동하되 양끝 버튼 영역은 침범하지 않도록 클램프
+        // 최대 구간(30s)에 도달했거나 트랙 경계에 닿으면 버튼 비활성화
         val durationEps = 0.05f
         val atMaxDuration = (endSec - startSec) >= maxDurationSec - durationEps
         val canExtendFront = !atMaxDuration && startSec > durationEps
         val canExtendBack = !atMaxDuration && endSec < totalDuration.toFloat() - durationEps
+
+        val labelHalfPx = with(density) { 38.dp.toPx() }
+        val edgeButtonPx = with(density) { edgeButtonSize.toPx() }
+        val labelGapPx = with(density) { 2.dp.toPx() }
+        fun labelOffsetX(sec: Float): Int {
+            val minX = edgeButtonPx + labelGapPx
+            val maxX = (viewportWidthPx - edgeButtonPx - labelGapPx - labelHalfPx * 2f)
+                .coerceAtLeast(minX)
+            return (secToX(sec) - labelHalfPx).coerceIn(minX, maxX).roundToInt()
+        }
+
         Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
+            HandleTimeLabel(
+                text = formatTime(startSec),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset { IntOffset(labelOffsetX(startSec), 0) }
+            )
+            HandleTimeLabel(
+                text = formatTime(endSec),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset { IntOffset(labelOffsetX(endSec), 0) }
+            )
             EdgeStepButton(
                 label = "-1s",
                 size = edgeButtonSize,
@@ -655,10 +638,11 @@ fun KillingPartSelector(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // ===== 미니맵 =====
+        // ===== 미니맵 (가리지 않도록 한 줄 통째로 사용) =====
         MiniMap(
+            modifier = Modifier.fillMaxWidth(),
             totalDuration = totalDuration,
             startSec = startSec,
             endSec = endSec,
@@ -678,7 +662,7 @@ fun KillingPartSelector(
             }
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
@@ -844,7 +828,8 @@ private fun MiniMap(
     startSec: Float,
     endSec: Float,
     onScrub: (newStartSec: Float) -> Unit,
-    onScrubEnd: () -> Unit
+    onScrubEnd: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     var widthPx by remember { mutableStateOf(0f) }
@@ -852,8 +837,7 @@ private fun MiniMap(
     val latestEndSec by rememberUpdatedState(endSec)
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .height(44.dp)
             .background(Color(0xFF1F1F1F), RoundedCornerShape(22.dp))
             .border(1.dp, Color(0xFF3A3A3A), RoundedCornerShape(22.dp))

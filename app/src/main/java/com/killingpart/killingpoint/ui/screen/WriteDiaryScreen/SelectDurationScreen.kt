@@ -409,7 +409,7 @@ fun SelectDurationScreen(
                             }
                         )
                     }
-                    Spacer(Modifier.height(24.dp))
+                    Spacer(Modifier.height(16.dp))
 
                     if (candidateVideos.isNotEmpty()) {
                         val toggleColor = if (isCandidateExpanded) Color(0xFFD9D9D9) else Color(0xFF878787)
@@ -515,10 +515,10 @@ fun SelectDurationScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(if (tutorialMode) 20.dp else 38.dp))
+                    Spacer(Modifier.height(if (tutorialMode) 16.dp else 20.dp))
                 }
 
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
 
