@@ -73,6 +73,7 @@ fun formatTime(seconds: Float): String {
  *
  * 인터랙션
  *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.5초 대기 → 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
+ *      좌핸들은 뗄 때 새 시작점부터 재생 새로고침(onSeek), 우핸들은 재생 유지
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
  *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
  *      좌핸들 = start~start+2, 우핸들 = end-2~end
@@ -547,6 +548,8 @@ fun KillingPartSelector(
                         onDragEnd = {
                             commit(force = true)
                             recenter()
+                            // 좌측 핸들 조절이 끝나면 새 시작점부터 다시 미리듣기
+                            latestOnSeek(startSec)
                             latestOnHandleAdjusted?.invoke(KillingPartHandle.LEFT)
                         }
                     )
