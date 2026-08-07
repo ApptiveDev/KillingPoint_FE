@@ -77,7 +77,7 @@ fun formatTime(seconds: Float): String {
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
  *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
  *      좌핸들 = start~start+2, 우핸들 = end-2~end
- *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드/배지가 강조 표시됨
+ *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드가 강조 표시됨
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
  *  - 트랙 가로 드래그: 구간 길이를 유지한 채 스펙트럼바 스크롤(구간은 화면 중앙 고정),
  *      뗀 뒤 새 구간 시작부터 다시 재생 (미니맵 스크럽과 동일)
@@ -737,27 +737,6 @@ private fun HandleView(
             imageVector = if (side == HandleSide.LEFT) Icons.Filled.KeyboardArrowLeft else Icons.Filled.KeyboardArrowRight,
             contentDescription = if (side == HandleSide.LEFT) "left handle" else "right handle",
             tint = Color(0xFF0A0A0A)
-        )
-    }
-}
-
-/** 롱프레스 2초 루프 중 밴드 위에 뜨는 배지 */
-@Composable
-private fun LoopBadge(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .height(15.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(mainGreen)
-            .padding(horizontal = 6.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "2초 반복",
-            fontFamily = PaperlogyFontFamily,
-            fontWeight = FontWeight.W700,
-            fontSize = 8.sp,
-            color = Color(0xFF0A0A0A)
         )
     }
 }
