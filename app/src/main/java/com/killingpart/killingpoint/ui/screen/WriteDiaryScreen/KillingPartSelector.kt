@@ -75,13 +75,14 @@ fun formatTime(seconds: Float): String {
  *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.5초 대기 → 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
  *      좌핸들은 뗄 때 새 시작점부터 재생 새로고침(onSeek), 우핸들은 재생 유지
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
- *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
+ *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 손을 떼면 해제
  *      좌핸들 = start~start+2, 우핸들 = end-2~end
- *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드가 강조 표시됨
+ *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드가 강조 표시되며, 핸들은 움직이지 않음
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
  *  - 트랙 가로 드래그: 구간 길이를 유지한 채 스펙트럼바 스크롤(구간은 화면 중앙 고정),
  *      뗀 뒤 새 구간 시작부터 다시 재생 (미니맵 스크럽과 동일)
- *  - -1s/+1s: 구간 앞/뒤 1초 확장(재생 유지), 조정 후 중앙 복귀
+ *  - -1s/+1s: 구간 앞/뒤 1초 확장, 조정 후 중앙 복귀
+ *      -1s 는 시작점이 바뀌므로 새 시작점부터 재생 새로고침(onSeek), +1s 는 재생 유지
  *
  * 재생 표시
  *  - currentPlaySec 위치에 흰색 인디케이터, 재생된 구간 막대는 네온색으로 채워짐
@@ -300,6 +301,8 @@ fun KillingPartSelector(
             startSec = newStart
             commit()
             recenter()
+            // 시작점이 바뀌었으니 좌핸들 조절과 동일하게 새 시작점부터 다시 미리듣기
+            latestOnSeek(startSec)
         }
     }
 
@@ -878,7 +881,7 @@ private fun MiniMap(
  * 핸들 제스처: 탭 / 드래그(리사이즈) / 0.5초 롱프레스(2초 루프)를 하나의 제스처로 판별.
  *  - 0.5초 내 이동(slop 초과) → 드래그
  *  - 0.5초 내 손 뗌 → 탭
- *  - 0.5초 유지 → 루프 활성 (이후 이동 시 루프 해제 후 드래그)
+ *  - 0.5초 유지 → 루프 활성 (이후 이동은 무시하고, 손을 떼야 해제)
  */
 private fun Modifier.handleGesture(
     side: HandleSide,
@@ -934,13 +937,10 @@ private fun Modifier.handleGesture(
             if (!ch.pressed) break
             val dx = ch.positionChange().x
             if (looping) {
-                // 루프 중 이동하면 루프 해제 후 드래그 전환
-                if (abs(ch.position.x - down.position.x) > slop) {
-                    looping = false
-                    onLoopEnd()
-                    dragging = true
-                    if (dx != 0f) { onDrag(side, dx); ch.consume() }
-                }
+                // 루프 중에는 손가락이 조금 흔들려도 핸들을 움직이지 않는다.
+                // (루프 재생이 손떨림에 너무 민감하다는 QA 피드백)
+                // 루프는 손을 뗄 때만 해제된다.
+                if (dx != 0f) ch.consume()
             } else if (dragging) {
                 if (dx != 0f) { onDrag(side, dx); ch.consume() }
             }
