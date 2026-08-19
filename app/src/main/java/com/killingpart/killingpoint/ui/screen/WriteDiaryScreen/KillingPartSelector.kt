@@ -2,7 +2,11 @@ package com.killingpart.killingpoint.ui.screen.WriteDiaryScreen
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -68,17 +72,29 @@ fun formatTime(seconds: Float): String {
  *  - secToX(sec)       : viewportWidth/2 + (sec - viewCenterSec) * pxPerSec
  *
  * 인터랙션
- *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
+ *  - 핸들 드래그: 구간 리사이즈. 뗀 후 0.5초 대기 → 0.4초 tween 으로 구간 중앙이 뷰 중앙으로 복귀
+ *      좌핸들은 뗄 때 새 시작점부터 재생 새로고침(onSeek), 우핸들은 재생 유지
  *  - 좌측 핸들 탭: 구간 처음부터 재생(onSeek)
- *  - 핸들 0.5초 롱프레스: 핸들 옆 2초 루프 활성(onLoopChange), 떼거나 움직이면 해제
+ *  - 핸들 0.5초 롱프레스: 선택 구간 안쪽 2초 루프 활성(onLoopChange), 손을 떼면 해제
+ *      좌핸들 = start~start+2, 우핸들 = end-2~end
+ *      루프 중에는 핸들이 바깥으로 비켜서고 2초 밴드가 강조 표시되며, 핸들은 움직이지 않음
  *  - 트랙 탭: 그 지점부터 재생(onSeek)
- *  - -1s/+1s: 구간 앞/뒤 1초 확장(재생 유지), 조정 후 중앙 복귀
+ *  - 트랙 가로 드래그: 구간 길이를 유지한 채 스펙트럼바 스크롤(구간은 화면 중앙 고정),
+ *      뗀 뒤 새 구간 시작부터 다시 재생 (미니맵 스크럽과 동일)
+ *  - -1s/+1s: 구간 앞/뒤 1초 확장, 조정 후 중앙 복귀
+ *      -1s 는 시작점이 바뀌므로 새 시작점부터 재생 새로고침(onSeek), +1s 는 재생 유지
  *
  * 재생 표시
  *  - currentPlaySec 위치에 흰색 인디케이터, 재생된 구간 막대는 네온색으로 채워짐
  */
 
 private enum class HandleSide { LEFT, RIGHT }
+
+/** 구간 조절 후 중앙 복귀 모션이 시작되기 전 대기 시간 */
+private const val recenterDelayMillis = 500
+
+/** 핸들 롱프레스 시 반복 재생되는 구간 길이(초) */
+private const val loopWindowSec = 2f
 
 @Composable
 fun KillingPartSelector(
@@ -112,13 +128,16 @@ fun KillingPartSelector(
     val handleHeight = 74.dp
     val handleCorner = 7.dp
     val boxCorner = 12.dp
-    val edgeButtonSize = 32.dp
+    val edgeButtonSize = 36.dp
 
     val barWidth = 3.dp
     val barGap = 4.dp
     val barWidthPx = with(density) { barWidth.toPx() }
     val barGapPx = with(density) { barGap.toPx() }
     val handleWidthPx = with(density) { handleWidth.toPx() }
+    val handleHeightPx = with(density) { handleHeight.toPx() }
+    val trackHeightPx = with(density) { trackHeight.toPx() }
+    val handleTouchPadPx = with(density) { 4.dp.toPx() }
 
     // ---- 상태 ----
     var viewportWidthPx by remember { mutableStateOf(0f) }
@@ -151,11 +170,15 @@ fun KillingPartSelector(
         }
     }
 
-    fun recenter(animated: Boolean = true) {
+    /** 구간 조절이 끝난 뒤 [delayMillis] 만큼 쉬었다가 구간 중앙을 뷰 중앙으로 복귀 */
+    fun recenter(animated: Boolean = true, delayMillis: Int = recenterDelayMillis) {
         val target = (startSec + endSec) / 2f
         scope.launch {
             if (animated) {
-                viewCenterSec.animateTo(target, tween(durationMillis = 400, easing = LinearEasing))
+                viewCenterSec.animateTo(
+                    target,
+                    tween(durationMillis = 400, delayMillis = delayMillis, easing = LinearEasing)
+                )
             } else {
                 viewCenterSec.snapTo(target)
             }
@@ -222,8 +245,8 @@ fun KillingPartSelector(
     fun activateLoop(side: HandleSide) {
         loopSide = side
         val (ls, le) = when (side) {
-            HandleSide.LEFT -> startSec to (startSec + 2f).coerceAtMost(endSec)
-            HandleSide.RIGHT -> (endSec - 2f).coerceAtLeast(startSec) to endSec
+            HandleSide.LEFT -> startSec to (startSec + loopWindowSec).coerceAtMost(endSec)
+            HandleSide.RIGHT -> (endSec - loopWindowSec).coerceAtLeast(startSec) to endSec
         }
         latestOnLoopChange(ls, le)
     }
@@ -235,6 +258,41 @@ fun KillingPartSelector(
         }
     }
 
+    // ---- 2초 루프 구간(절대 초). 두 핸들 모두 선택 구간 안쪽으로 잡는다 ----
+    val loopStartSec = when (loopSide) {
+        HandleSide.LEFT -> startSec
+        HandleSide.RIGHT -> (endSec - loopWindowSec).coerceAtLeast(startSec)
+        null -> Float.NaN
+    }
+    val loopEndSec = when (loopSide) {
+        HandleSide.LEFT -> (startSec + loopWindowSec).coerceAtMost(endSec)
+        HandleSide.RIGHT -> endSec
+        null -> Float.NaN
+    }
+
+    // 루프 중에는 해당 핸들이 2초 밴드를 가리지 않도록 바깥쪽으로 비켜선다.
+    // (2초 폭 ≈ 19dp < 핸들 폭 22dp 라 비키지 않으면 밴드가 완전히 가려짐)
+    val leftHandleShiftPx by animateFloatAsState(
+        if (loopSide == HandleSide.LEFT) -handleWidthPx else 0f,
+        label = "leftHandleShift"
+    )
+    val rightHandleShiftPx by animateFloatAsState(
+        if (loopSide == HandleSide.RIGHT) handleWidthPx else 0f,
+        label = "rightHandleShift"
+    )
+
+    // 루프 밴드 깜빡임(강조)
+    val loopPulseTransition = rememberInfiniteTransition(label = "loopPulse")
+    val loopPulse by loopPulseTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "loopPulseValue"
+    )
+
     fun extendFront() {
         val newStart = (startSec - 1f)
             .coerceAtLeast(0f)
@@ -243,6 +301,8 @@ fun KillingPartSelector(
             startSec = newStart
             commit()
             recenter()
+            // 시작점이 바뀌었으니 좌핸들 조절과 동일하게 새 시작점부터 다시 미리듣기
+            latestOnSeek(startSec)
         }
     }
 
@@ -255,6 +315,19 @@ fun KillingPartSelector(
             commit()
             recenter()
         }
+    }
+
+    /** 스펙트럼바 가로 스크롤: 구간 길이는 유지한 채 통째로 이동(미니맵 스크럽과 동일 동작) */
+    fun panSectionTo(newStartSec: Float) {
+        val dur = endSec - startSec
+        val ns = newStartSec.coerceIn(0f, (totalDuration.toFloat() - dur).coerceAtLeast(0f))
+        if (ns != startSec) {
+            startSec = ns
+            endSec = ns + dur
+            commit()
+        }
+        // 구간은 항상 화면 중앙에 고정된 채 파형만 흐르도록
+        recenter(animated = false)
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -271,12 +344,63 @@ fun KillingPartSelector(
                         if (initialized) pxPerSec = w / visibleSeconds
                     }
                 }
-                // 트랙 탭 → 그 지점부터 재생
+                // 트랙 탭 → 그 지점부터 재생 / 가로 드래그 → 스펙트럼바 스크롤
                 .pointerInput(Unit) {
-                    detectTapGestures { pos ->
-                        val sec = xToSec(pos.x)
-                        if (sec in startSec..endSec) {
-                            latestOnSeek(sec)
+                    val slop = viewConfiguration.touchSlop
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        // 핸들 위에서 시작한 제스처는 핸들(리사이즈/루프)이 처리
+                        if (isOnHandle(
+                                pos = down.position,
+                                leftHandleLeftX = secToX(startSec) + leftHandleShiftPx,
+                                rightHandleLeftX = secToX(endSec) - handleWidthPx + rightHandleShiftPx,
+                                handleWidthPx = handleWidthPx,
+                                handleHeightPx = handleHeightPx,
+                                trackHeightPx = trackHeightPx,
+                                padPx = handleTouchPadPx
+                            )
+                        ) return@awaitEachGesture
+                        var panning = false
+                        var totalDx = 0f
+                        var accStartSec = 0f
+                        var canceled = false
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val ch = event.changes.firstOrNull { it.id == down.id } ?: break
+                            // 핸들 등 자식이 가져간 제스처는 트랙에서 처리하지 않음
+                            if (ch.isConsumed && !panning) { canceled = true; break }
+                            if (!ch.pressed) break
+
+                            val dx = ch.positionChange().x
+                            totalDx += dx
+                            if (!panning && abs(totalDx) > slop && pxPerSec > 0f) {
+                                panning = true
+                                accStartSec = startSec
+                            }
+                            if (panning) {
+                                // 오른쪽으로 끌면 이전 시간대가 보이도록(파형이 따라옴)
+                                accStartSec -= dx / pxPerSec
+                                panSectionTo(accStartSec)
+                                ch.consume()
+                            }
+                        }
+
+                        when {
+                            canceled -> Unit
+                            panning -> {
+                                commit(force = true)
+                                // 새 구간 시작부터 다시 미리듣기
+                                latestOnSeek(startSec)
+                                latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM_BAR)
+                            }
+                            else -> {
+                                // 탭: 누른 지점부터 미리듣기
+                                val sec = xToSec(down.position.x)
+                                if (sec in startSec..endSec) {
+                                    latestOnSeek(sec)
+                                }
+                            }
                         }
                     }
                 }
@@ -292,16 +416,6 @@ fun KillingPartSelector(
 
                 val stepSec = (barWidthPx + barGapPx) / pxPerSec
                 val eps = 0.001f
-                val loopStartSec = when (loopSide) {
-                    HandleSide.LEFT -> startSec
-                    HandleSide.RIGHT -> (endSec - 2f).coerceAtLeast(startSec)
-                    null -> Float.NaN
-                }
-                val loopEndSec = when (loopSide) {
-                    HandleSide.LEFT -> (startSec + 2f).coerceAtMost(endSec)
-                    HandleSide.RIGHT -> endSec
-                    null -> Float.NaN
-                }
 
                 var i = 0
                 var sec = 0f
@@ -348,14 +462,40 @@ fun KillingPartSelector(
                 }
 
                 // 루프 2초 밴드 하이라이트 (박스 컨테이너 라운드에 맞춰 클립)
+                //  - 밴드 밖 선택 구간은 어둡게 덮어 2초 구간만 도드라지게
+                //  - 밴드는 펄스로 밝기가 오가고, 양 끝에 경계선을 그려 루프 범위를 명확히
                 if (loopSide != null) {
                     val lx = sx(loopStartSec)
                     val rx = sx(loopEndSec)
                     clipPath(boxPath) {
+                        // 루프 밖 구간 디밍
                         drawRect(
-                            color = mainGreen.copy(alpha = 0.28f),
+                            color = Color(0xFF060606).copy(alpha = 0.55f),
+                            topLeft = Offset(boxLeft, boxTop),
+                            size = Size((lx - boxLeft).coerceAtLeast(0f), bH)
+                        )
+                        drawRect(
+                            color = Color(0xFF060606).copy(alpha = 0.55f),
+                            topLeft = Offset(rx, boxTop),
+                            size = Size((boxRight - rx).coerceAtLeast(0f), bH)
+                        )
+                        // 2초 밴드
+                        drawRect(
+                            color = mainGreen.copy(alpha = 0.22f + 0.20f * loopPulse),
                             topLeft = Offset(lx, boxTop),
                             size = Size((rx - lx).coerceAtLeast(0f), bH)
+                        )
+                        // 밴드 경계선
+                        val edgePx = with(density) { 2.dp.toPx() }
+                        drawRect(
+                            color = mainGreen,
+                            topLeft = Offset(lx, boxTop),
+                            size = Size(edgePx, bH)
+                        )
+                        drawRect(
+                            color = mainGreen,
+                            topLeft = Offset(rx - edgePx, boxTop),
+                            size = Size(edgePx, bH)
                         )
                     }
                 }
@@ -393,8 +533,9 @@ fun KillingPartSelector(
                 modifier = Modifier
                     .offset {
                         // 박스 컨테이너 안쪽: 핸들 왼쪽 끝이 구간 시작(박스 좌측)에 맞도록
+                        // 루프 중에는 밴드가 보이도록 핸들 폭만큼 왼쪽으로 비켜섬
                         IntOffset(
-                            secToX(startSec).roundToInt(),
+                            (secToX(startSec) + leftHandleShiftPx).roundToInt(),
                             0
                         )
                     }
@@ -410,6 +551,8 @@ fun KillingPartSelector(
                         onDragEnd = {
                             commit(force = true)
                             recenter()
+                            // 좌측 핸들 조절이 끝나면 새 시작점부터 다시 미리듣기
+                            latestOnSeek(startSec)
                             latestOnHandleAdjusted?.invoke(KillingPartHandle.LEFT)
                         }
                     )
@@ -424,8 +567,9 @@ fun KillingPartSelector(
                 modifier = Modifier
                     .offset {
                         // 박스 컨테이너 안쪽: 핸들 오른쪽 끝이 구간 끝(박스 우측)에 맞도록
+                        // 루프 중에는 밴드가 보이도록 핸들 폭만큼 오른쪽으로 비켜섬
                         IntOffset(
-                            (secToX(endSec) - handleWidthPx).roundToInt(),
+                            (secToX(endSec) - handleWidthPx + rightHandleShiftPx).roundToInt(),
                             0
                         )
                     }
@@ -450,55 +594,58 @@ fun KillingPartSelector(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // ---- 핸들 시간 라벨 (핸들 위치 따라, 살짝 위로) ----
+        // ---- 시간 라벨 + -1s/+1s 버튼: 같은 줄에 배치 ----
+        //  라벨은 핸들 위치를 따라 이동하되 양끝 버튼 영역은 침범하지 않도록 클램프
+        // 최대 구간(30s)에 도달했거나 트랙 경계에 닿으면 버튼 비활성화
+        val durationEps = 0.05f
+        val atMaxDuration = (endSec - startSec) >= maxDurationSec - durationEps
+        val canExtendFront = !atMaxDuration && startSec > durationEps
+        val canExtendBack = !atMaxDuration && endSec < totalDuration.toFloat() - durationEps
+
         val labelHalfPx = with(density) { 38.dp.toPx() }
-        Box(modifier = Modifier.fillMaxWidth().height(16.dp)) {
+        val edgeButtonPx = with(density) { edgeButtonSize.toPx() }
+        val labelGapPx = with(density) { 2.dp.toPx() }
+        fun labelOffsetX(sec: Float): Int {
+            val minX = edgeButtonPx + labelGapPx
+            val maxX = (viewportWidthPx - edgeButtonPx - labelGapPx - labelHalfPx * 2f)
+                .coerceAtLeast(minX)
+            return (secToX(sec) - labelHalfPx).coerceIn(minX, maxX).roundToInt()
+        }
+
+        Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
             HandleTimeLabel(
                 text = formatTime(startSec),
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(startSec) - labelHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - labelHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                }
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset { IntOffset(labelOffsetX(startSec), 0) }
             )
             HandleTimeLabel(
                 text = formatTime(endSec),
-                modifier = Modifier.offset {
-                    IntOffset(
-                        (secToX(endSec) - labelHalfPx)
-                            .coerceIn(0f, (viewportWidthPx - labelHalfPx * 2f).coerceAtLeast(0f))
-                            .roundToInt(),
-                        0
-                    )
-                }
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset { IntOffset(labelOffsetX(endSec), 0) }
             )
-        }
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // ---- -1s / +1s 버튼: 양쪽 끝 고정 (초 텍스트는 핸들 따라 이동) ----
-        Box(modifier = Modifier.fillMaxWidth().height(edgeButtonSize)) {
             EdgeStepButton(
                 label = "-1s",
                 size = edgeButtonSize,
+                enabled = canExtendFront,
                 modifier = Modifier.align(Alignment.CenterStart),
                 onClick = { extendFront() }
             )
             EdgeStepButton(
                 label = "+1s",
                 size = edgeButtonSize,
+                enabled = canExtendBack,
                 modifier = Modifier.align(Alignment.CenterEnd),
                 onClick = { extendBack() }
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // ===== 미니맵 =====
+        // ===== 미니맵 (가리지 않도록 한 줄 통째로 사용) =====
         MiniMap(
+            modifier = Modifier.fillMaxWidth(),
             totalDuration = totalDuration,
             startSec = startSec,
             endSec = endSec,
@@ -518,7 +665,7 @@ fun KillingPartSelector(
             }
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
@@ -541,6 +688,24 @@ fun KillingPartSelector(
             )
         }
     }
+}
+
+/** 트랙 위 좌표가 좌/우 핸들 영역(여유 [padPx] 포함) 안인지 */
+private fun isOnHandle(
+    pos: Offset,
+    leftHandleLeftX: Float,
+    rightHandleLeftX: Float,
+    handleWidthPx: Float,
+    handleHeightPx: Float,
+    trackHeightPx: Float,
+    padPx: Float
+): Boolean {
+    val top = (trackHeightPx - handleHeightPx) / 2f - padPx
+    val bottom = trackHeightPx - top
+    if (pos.y < top || pos.y > bottom) return false
+    val inLeft = pos.x >= leftHandleLeftX - padPx && pos.x <= leftHandleLeftX + handleWidthPx + padPx
+    val inRight = pos.x >= rightHandleLeftX - padPx && pos.x <= rightHandleLeftX + handleWidthPx + padPx
+    return inLeft || inRight
 }
 
 /** 핸들 시간 라벨 상수 (분석 이벤트 handle_side 값) */
@@ -597,26 +762,36 @@ private fun EdgeStepButton(
     label: String,
     size: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     var pressed by remember { mutableStateOf(false) }
-    val alpha by animateFloatAsState(if (pressed) 0.5f else 1f, label = "stepBtnAlpha")
+    val alpha by animateFloatAsState(
+        when {
+            !enabled -> 0.3f
+            pressed -> 0.5f
+            else -> 1f
+        },
+        label = "stepBtnAlpha"
+    )
     Box(
         modifier = modifier
             .size(size)
             .graphicsLayer { this.alpha = alpha }
             .clip(CircleShape)
-            .background(mainGreen)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        pressed = true
-                        tryAwaitRelease()
-                        pressed = false
-                    },
-                    onTap = { onClick() }
-                )
-            },
+            .background(if (enabled) mainGreen else Color(0xFF6E6E6E))
+            .then(
+                if (enabled) Modifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            pressed = true
+                            tryAwaitRelease()
+                            pressed = false
+                        },
+                        onTap = { onClick() }
+                    )
+                } else Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -635,7 +810,8 @@ private fun MiniMap(
     startSec: Float,
     endSec: Float,
     onScrub: (newStartSec: Float) -> Unit,
-    onScrubEnd: () -> Unit
+    onScrubEnd: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     var widthPx by remember { mutableStateOf(0f) }
@@ -643,8 +819,7 @@ private fun MiniMap(
     val latestEndSec by rememberUpdatedState(endSec)
 
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .height(44.dp)
             .background(Color(0xFF1F1F1F), RoundedCornerShape(22.dp))
             .border(1.dp, Color(0xFF3A3A3A), RoundedCornerShape(22.dp))
@@ -706,7 +881,7 @@ private fun MiniMap(
  * 핸들 제스처: 탭 / 드래그(리사이즈) / 0.5초 롱프레스(2초 루프)를 하나의 제스처로 판별.
  *  - 0.5초 내 이동(slop 초과) → 드래그
  *  - 0.5초 내 손 뗌 → 탭
- *  - 0.5초 유지 → 루프 활성 (이후 이동 시 루프 해제 후 드래그)
+ *  - 0.5초 유지 → 루프 활성 (이후 이동은 무시하고, 손을 떼야 해제)
  */
 private fun Modifier.handleGesture(
     side: HandleSide,
@@ -762,13 +937,10 @@ private fun Modifier.handleGesture(
             if (!ch.pressed) break
             val dx = ch.positionChange().x
             if (looping) {
-                // 루프 중 이동하면 루프 해제 후 드래그 전환
-                if (abs(ch.position.x - down.position.x) > slop) {
-                    looping = false
-                    onLoopEnd()
-                    dragging = true
-                    if (dx != 0f) { onDrag(side, dx); ch.consume() }
-                }
+                // 루프 중에는 손가락이 조금 흔들려도 핸들을 움직이지 않는다.
+                // (루프 재생이 손떨림에 너무 민감하다는 QA 피드백)
+                // 루프는 손을 뗄 때만 해제된다.
+                if (dx != 0f) ch.consume()
             } else if (dragging) {
                 if (dx != 0f) { onDrag(side, dx); ch.consume() }
             }
