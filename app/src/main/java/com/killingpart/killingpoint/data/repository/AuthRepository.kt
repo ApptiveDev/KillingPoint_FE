@@ -57,6 +57,9 @@ class AuthRepository(
 ) {
     private companion object {
         const val CLIENT_TYPE = "ANDROID"
+
+        /** 킬링파트 삭제 QA 진단용 공통 로그 태그. logcat 에서 `KP_DELETE` 로 필터. */
+        const val DELETE_TAG = "KP_DELETE"
     }
 
     /**
@@ -286,7 +289,22 @@ class AuthRepository(
                 result.content.forEachIndexed { index, diary ->
                     android.util.Log.d("AuthRepository", "Diary[$index]: id=${diary.id}, title=${diary.musicTitle}, artist=${diary.artist}, totalDuration=${diary.totalDuration}")
                 }
-                
+
+                // QA 진단: 서버가 내려준 diaryId 가 실제로 다 채워져 있는지 / 등록일과 id 대응 확인
+                result.content.forEachIndexed { index, diary ->
+                    android.util.Log.d(
+                        DELETE_TAG,
+                        "목록[$index] id=${diary.id} createDate=${diary.createDate} scope=${diary.scope} title=${diary.musicTitle}"
+                    )
+                }
+                val nullIdCount = result.content.count { it.id == null }
+                if (nullIdCount > 0) {
+                    android.util.Log.e(
+                        DELETE_TAG,
+                        "diaryId 가 null 인 항목이 ${nullIdCount}개 있습니다 → 해당 항목은 상세화면에서 삭제 버튼이 아예 표시되지 않습니다"
+                    )
+                }
+
                 result
             } catch (e: HttpException) {
                 val code = e.code()
@@ -441,14 +459,23 @@ class AuthRepository(
     suspend fun deleteDiary(diaryId: Long) = withContext(Dispatchers.IO) {
         try {
             val accessToken = getAccessToken() ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            android.util.Log.d(DELETE_TAG, "DELETE 요청 전송: diaryId=$diaryId (url=${RetrofitClient.BASE_URL}diaries/$diaryId)")
             val response = api.deleteDiary("Bearer $accessToken", diaryId)
             if (!response.isSuccessful) {
-                throw IllegalStateException("일기 삭제 실패 (${response.code()}): ${response.message()}")
+                // errorBody 를 읽어야 실제 실패 사유가 남는다. response.message() 는 HTTP/2 에서 빈 문자열.
+                val errorBody = runCatching { response.errorBody()?.string() }.getOrNull().orEmpty()
+                android.util.Log.e(
+                    DELETE_TAG,
+                    "DELETE 실패: diaryId=$diaryId, code=${response.code()}, message='${response.message()}', body='$errorBody'"
+                )
+                throw IllegalStateException("일기 삭제 실패 (${response.code()}) id=$diaryId ${errorBody.take(200)}")
             }
+            android.util.Log.d(DELETE_TAG, "DELETE 성공: diaryId=$diaryId, code=${response.code()}")
         } catch (e: HttpException) {
             val code = e.code()
             val msg = e.response()?.errorBody()?.string().orEmpty()
-            throw IllegalStateException("일기 삭제 실패 ($code): $msg")
+            android.util.Log.e(DELETE_TAG, "DELETE HttpException: diaryId=$diaryId, code=$code, body='$msg'")
+            throw IllegalStateException("일기 삭제 실패 ($code) id=$diaryId $msg")
         }
     }
 

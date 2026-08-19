@@ -798,7 +798,7 @@ fun DiaryEntryCard(
                 horizontalAlignment = Alignment.End,
                 modifier = Modifier.clickable {
                     if (diary.id == null) {
-                        android.util.Log.e("DiaryEntryCard", "diary.id가 null입니다. 일기 상세 페이지로 이동할 수 없습니다.")
+                        android.util.Log.e("KP_DELETE", "캘린더: diary.id가 null입니다. 일기 상세 페이지로 이동할 수 없습니다. (createDate=${diary.createDate}, title=${diary.musicTitle})")
                         return@clickable
                     }
                     
@@ -806,7 +806,7 @@ fun DiaryEntryCard(
                     val diaryIdParam = "&diaryId=${diary.id}"
                     val scopeParam = "&scope=${diary.scope.name}"
                     
-                    android.util.Log.d("DiaryEntryCard", "일기 상세 페이지로 이동 - diaryId: ${diary.id}")
+                    android.util.Log.d("KP_DELETE", "캘린더 카드 클릭: id=${diary.id}, createDate=${diary.createDate}, title=${diary.musicTitle}")
                     
                     val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" } ?: ""
                     

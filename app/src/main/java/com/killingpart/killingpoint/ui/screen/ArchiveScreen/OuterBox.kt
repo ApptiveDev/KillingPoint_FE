@@ -506,6 +506,19 @@ fun OuterBox(
                                         onClick = {
                                             if (!interactionsEnabled) return@DiaryCard
                                             navController?.let { nav ->
+                                                // QA 진단: 여기서 id 가 null 이면 diaryId 파라미터가 통째로 빠져
+                                                // 상세화면에서 수정/삭제 아이콘이 사라진다.
+                                                android.util.Log.d(
+                                                    "KP_DELETE",
+                                                    "카드 클릭: id=${diary.id}, createDate=${diary.createDate}, " +
+                                                        "tab=$selectedTabIndex, title=${diary.musicTitle}"
+                                                )
+                                                if (diary.id == null) {
+                                                    android.util.Log.e(
+                                                        "KP_DELETE",
+                                                        "카드의 diary.id 가 null → diaryId 파라미터 없이 상세로 이동한다"
+                                                    )
+                                                }
                                                 val diaryIdParam =
                                                     diary.id?.let { "&diaryId=$it" } ?: ""
 
@@ -523,24 +536,25 @@ fun OuterBox(
                                                 val fromTabParam =
                                                     if (selectedTabIndex == 1) "&fromTab=stored" else "&fromTab=profile"
 
-                                                nav.navigate(
-                                                    "diary_detail" +
-                                                            "?artist=${Uri.encode(diary.artist)}" +
-                                                            "&musicTitle=${Uri.encode(diary.musicTitle)}" +
-                                                            "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
-                                                            "&content=${Uri.encode(diary.content)}" +
-                                                            "&videoUrl=${Uri.encode(diary.videoUrl)}" +
-                                                            "&duration=${Uri.encode(diary.duration)}" +
-                                                            "&start=${Uri.encode(diary.start)}" +
-                                                            "&end=${Uri.encode(diary.end)}" +
-                                                            "&createDate=${Uri.encode(diary.createDate)}" +
-                                                            scopeParam +
-                                                            diaryIdParam +
-                                                            totalDurationParam +
-                                                            fromTabParam +
-                                                            authorUsernameParam +
-                                                            authorTagParam
-                                                )
+                                                val route = "diary_detail" +
+                                                        "?artist=${Uri.encode(diary.artist)}" +
+                                                        "&musicTitle=${Uri.encode(diary.musicTitle)}" +
+                                                        "&albumImageUrl=${Uri.encode(diary.albumImageUrl)}" +
+                                                        "&content=${Uri.encode(diary.content)}" +
+                                                        "&videoUrl=${Uri.encode(diary.videoUrl)}" +
+                                                        "&duration=${Uri.encode(diary.duration)}" +
+                                                        "&start=${Uri.encode(diary.start)}" +
+                                                        "&end=${Uri.encode(diary.end)}" +
+                                                        "&createDate=${Uri.encode(diary.createDate)}" +
+                                                        scopeParam +
+                                                        diaryIdParam +
+                                                        totalDurationParam +
+                                                        fromTabParam +
+                                                        authorUsernameParam +
+                                                        authorTagParam
+                                                // QA 진단: 실제로 넘어가는 route 를 그대로 남긴다 (파라미터 유실/인코딩 확인용)
+                                                android.util.Log.d("KP_DELETE", "상세 이동 route=$route")
+                                                nav.navigate(route)
                                             }
                                         },
                                         onLikeClick = {

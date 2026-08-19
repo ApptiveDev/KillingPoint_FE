@@ -78,6 +78,9 @@ import java.time.format.DateTimeFormatter
 import androidx.activity.compose.BackHandler
 import android.widget.Toast
 
+/** 킬링파트 삭제 QA 진단용 공통 로그 태그. logcat 에서 `KP_DELETE` 로 필터. */
+private const val DELETE_TAG = "KP_DELETE"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiaryDetailScreen(
@@ -134,6 +137,26 @@ fun DiaryDetailScreen(
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+    }
+
+    // QA 진단: 삭제 버튼이 보이는 조건(diaryId != null && !isOtherPersonDiary)을 화면 진입 시 그대로 남긴다.
+    // 삭제 아이콘이 아예 안 보이는 경우와, 눌렀는데 서버가 거부하는 경우를 구분하기 위함.
+    LaunchedEffect(diaryId, isOtherPersonDiary) {
+        val canDelete = diaryId != null && !isOtherPersonDiary
+        android.util.Log.d(
+            DELETE_TAG,
+            "상세 진입: diaryId=$diaryId, fromTab='$fromTab', scope='$scope', createDate='$createDate', " +
+                "authorUsername='$authorUsername', authorTag='$authorTag', " +
+                "isOtherPersonDiary=$isOtherPersonDiary → 삭제버튼 표시=$canDelete"
+        )
+        if (!canDelete) {
+            val reason = when {
+                diaryId == null -> "diaryId 가 null (목록 응답에 diaryId 가 없거나 네비게이션 파라미터 유실)"
+                else -> "남의 일기로 판정됨 (authorUsername/authorTag 가 채워져 들어옴)"
+            }
+            android.util.Log.e(DELETE_TAG, "삭제 버튼 숨김 사유: $reason")
+            Toast.makeText(context, "[진단] 삭제 불가: $reason", Toast.LENGTH_LONG).show()
+        }
     }
 
     LaunchedEffect(diaryId, isOtherPersonDiary) {
@@ -953,7 +976,17 @@ fun DiaryDetailScreen(
                                         isDeleting = true
                                         coroutineScope.launch {
                                             try {
+                                                android.util.Log.d(
+                                                    DELETE_TAG,
+                                                    "삭제 확인 버튼 클릭: diaryId=$diaryId, fromTab=$fromTab"
+                                                )
                                                 repo.deleteDiary(diaryId)
+                                                // QA 진단용: 서버가 성공을 준 것과 목록에서 사라지는 것을 구분하기 위함
+                                                Toast.makeText(
+                                                    context,
+                                                    "삭제 요청 성공 (id=$diaryId)",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
 
                                                 val selectedDateParam =
                                                     if (selectedDate.isNotEmpty()) "&selectedDate=${
@@ -986,11 +1019,17 @@ fun DiaryDetailScreen(
                                                 }
                                             } catch (e: Exception) {
                                                 android.util.Log.e(
-                                                    "DiaryDetailScreen",
-                                                    "다이어리 삭제 실패: ${e.message}",
+                                                    DELETE_TAG,
+                                                    "다이어리 삭제 실패: diaryId=$diaryId, ${e.javaClass.simpleName}: ${e.message}",
                                                     e
                                                 )
                                                 e.printStackTrace()
+                                                // QA 진단용: 실패 사유를 화면에 그대로 노출한다
+                                                Toast.makeText(
+                                                    context,
+                                                    "삭제 실패 (id=$diaryId)\n${e.message ?: e.javaClass.simpleName}",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                                 isDeleting = false
                                                 showDeleteDialog = false
                                             }
