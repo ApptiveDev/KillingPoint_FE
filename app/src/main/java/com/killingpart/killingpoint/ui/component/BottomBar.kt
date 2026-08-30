@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
@@ -35,6 +36,7 @@ import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
     fun selectTab(tab: String, navigate: () -> Unit) {
         EngagementAnalytics.mainTabSelected(tab)
+        SubTabAnalytics.onLeavingTopTabs()
         navigate()
     }
 
@@ -51,7 +53,8 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.clickable {
                 selectTab(EngagementAnalytics.MainTab.MY) {
-                    navController.navigate("main")
+                    val tabArg = SubTabAnalytics.mainScreenArgFor(SubTabAnalytics.rememberedMySubTab())
+                    navController.navigate("main?tab=$tabArg")
                 }
             }
         ){
@@ -117,7 +120,8 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.clickable {
                 selectTab(EngagementAnalytics.MainTab.SOCIAL) {
-                    navController.navigate("social?tab=feed&friendListTab=picks")
+                    val tabArg = SubTabAnalytics.socialScreenArgFor(SubTabAnalytics.rememberedSocialPillSubTab())
+                    navController.navigate("social?tab=$tabArg&friendListTab=picks")
                 }
             }
         ){

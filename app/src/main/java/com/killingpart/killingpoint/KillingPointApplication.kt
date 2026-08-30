@@ -1,11 +1,15 @@
 package com.killingpart.killingpoint
 
 import android.app.Application
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.amplitude.android.Amplitude
 import com.amplitude.android.AutocaptureOption
 import com.amplitude.android.Configuration
 import com.amplitude.android.plugins.SessionReplayPlugin
 import com.killingpart.killingpoint.analytics.AmplitudeAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 
 class KillingPointApplication : Application() {
     lateinit var amplitude: Amplitude
@@ -22,5 +26,11 @@ class KillingPointApplication : Application() {
         )
         amplitude.add(SessionReplayPlugin())
         AmplitudeAnalytics.init(amplitude)
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                SubTabAnalytics.onAppBackgrounded()
+            }
+        })
     }
 }

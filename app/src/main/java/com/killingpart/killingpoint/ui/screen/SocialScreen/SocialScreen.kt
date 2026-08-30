@@ -21,6 +21,7 @@ import androidx.navigation.NavController
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.screen.MainScreen.TopPillTabs
@@ -28,6 +29,11 @@ import com.killingpart.killingpoint.ui.viewmodel.AlarmViewModel
 
 enum class SocialTab {
     FEED, FRIEND
+}
+
+private fun subTabFor(tab: SocialTab): String = when (tab) {
+    SocialTab.FEED -> SubTabAnalytics.SubTab.FEED
+    SocialTab.FRIEND -> SubTabAnalytics.SubTab.FRIENDS
 }
 
 @Composable
@@ -55,8 +61,10 @@ fun SocialScreen(
             }
         )
     }
+    var hasAppeared by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        SubTabAnalytics.enterTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(selectedTab))
         EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.SOCIAL)
         alarmViewModel.refreshAlarmFlag(context)
     }
@@ -65,11 +73,19 @@ fun SocialScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 alarmViewModel.refreshAlarmFlag(context)
+                if (!hasAppeared) {
+                    hasAppeared = true
+                } else if (SubTabAnalytics.consumeSocialReturnIfPending()) {
+                    SubTabAnalytics.enterTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(selectedTab))
+                } else {
+                    SubTabAnalytics.onScreenResumed(SubTabAnalytics.Tab.SOCIAL) { subTabFor(selectedTab) }
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            SubTabAnalytics.onScreenDisappeared(SubTabAnalytics.Tab.SOCIAL)
         }
     }
 
@@ -106,10 +122,14 @@ fun SocialScreen(
                             SocialTab.FRIEND -> 1
                         },
                         onSelected = { idx ->
-                            selectedTab = when (idx) {
+                            val newTab = when (idx) {
                                 0 -> SocialTab.FEED
                                 else -> SocialTab.FRIEND
                             }
+                            if (newTab != selectedTab) {
+                                SubTabAnalytics.selectSubTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(newTab))
+                            }
+                            selectedTab = newTab
                         },
                         modifier = Modifier.weight(1f),
                         height = 54.dp,
@@ -123,7 +143,7 @@ fun SocialScreen(
                         modifier = Modifier
                             .width(54.dp)
                             .fillMaxHeight()
-                            .clickable { navController.navigate("alarm_list") },
+                            .clickable { navController.navigate("alarm_list?entrySource=social_tab") },
                         contentAlignment = Alignment.Center
                     ) {
                         Image(

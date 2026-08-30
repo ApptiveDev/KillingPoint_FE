@@ -28,6 +28,8 @@ object NotificationAnalytics {
         const val PUSH = "push"
         const val NOTIFICATION_LIST = "notification_list"
         const val PICK_LIST = "pick_list"
+        const val SOCIAL_TAB = "social_tab"
+        const val UNKNOWN = "unknown"
     }
 
     fun pushNotificationOpened(
@@ -45,10 +47,13 @@ object NotificationAnalytics {
         )
     }
 
-    fun notificationListViewed(unreadCount: Int? = null) {
+    fun notificationListViewed(entryPoint: String? = null, unreadCount: Int? = null) {
         AmplitudeAnalytics.track(
             "notification_list_viewed",
-            buildMap { unreadCount?.let { put("unread_count", it) } }
+            buildMap {
+                entryPoint?.let { put("entry_point", it) }
+                unreadCount?.let { put("unread_count", it) }
+            }
         )
     }
 

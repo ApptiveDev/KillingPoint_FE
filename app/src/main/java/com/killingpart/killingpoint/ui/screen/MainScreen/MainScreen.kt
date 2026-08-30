@@ -31,6 +31,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,18 +50,22 @@ import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.component.LoadingVideo
@@ -79,6 +84,13 @@ import kotlinx.coroutines.launch
 enum class MainTab {
     PROFILE, PLAY, CALENDAR
 }
+
+private fun subTabFor(tab: MainTab): String = when (tab) {
+    MainTab.PROFILE -> SubTabAnalytics.SubTab.COLLECTION
+    MainTab.PLAY -> SubTabAnalytics.SubTab.KILLINGPART_PLAY
+    MainTab.CALENDAR -> SubTabAnalytics.SubTab.MUSIC_CALENDAR
+}
+
 @Composable
 fun MainScreen(navController: NavController, initialTab: String = "play", initialSelectedDate: String = "") {
     var selected by remember(initialTab) { 
@@ -116,12 +128,15 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
     val listIndex = 1
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var hasAppeared by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
+        SubTabAnalytics.enterTab(SubTabAnalytics.Tab.MY, subTabFor(selected))
         EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.MY)
         diaryViewModel.loadDiaries(context)
         userViewModel.loadUserInfo(context)
-        
+
         // WebView 캐시 초기화
         try {
             val webView = android.webkit.WebView(context)
@@ -129,6 +144,23 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
             webView.clearHistory()
             webView.destroy()
         } catch (e: Exception) {
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (!hasAppeared) {
+                    hasAppeared = true
+                } else {
+                    SubTabAnalytics.onScreenResumed(SubTabAnalytics.Tab.MY) { subTabFor(selected) }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            SubTabAnalytics.onScreenDisappeared(SubTabAnalytics.Tab.MY)
         }
     }
 
@@ -213,11 +245,15 @@ fun MainScreen(navController: NavController, initialTab: String = "play", initia
                         MainTab.CALENDAR -> 2
                     },
                     onSelected = { idx ->
-                        selected = when (idx) {
+                        val newSelected = when (idx) {
                             0 -> MainTab.PROFILE
                             1 -> MainTab.PLAY
                             else -> MainTab.CALENDAR
                         }
+                        if (newSelected != selected) {
+                            SubTabAnalytics.selectSubTab(SubTabAnalytics.Tab.MY, subTabFor(newSelected))
+                        }
+                        selected = newSelected
                         listExpanded = false
                     },
                     modifier = Modifier

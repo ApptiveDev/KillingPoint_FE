@@ -346,8 +346,14 @@ fun NavGraph(
             )
         }
 
-        composable("alarm_list") {
-            AlarmListScreen(navController)
+        composable(
+            route = "alarm_list?entrySource={entrySource}",
+            arguments = listOf(
+                navArgument("entrySource") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val entrySource = backStackEntry.arguments?.getString("entrySource").orEmpty()
+            AlarmListScreen(navController, entrySource = entrySource)
         }
 
         composable(
