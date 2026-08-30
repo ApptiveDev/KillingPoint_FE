@@ -404,8 +404,8 @@ fun SelectDurationScreen(
                             onLoopChange = { ls, le ->
                                 loopOverride = if (ls != null && le != null) ls..le else null
                             },
-                            onHandleAdjusted = { handleSide ->
-                                KillingPartCutAnalytics.cutHandleAdjusted(handleSide)
+                            onHandleAdjusted = { control, s, e, d ->
+                                KillingPartCutAnalytics.cutHandleAdjusted(control, s, e, d)
                             }
                         )
                     }
