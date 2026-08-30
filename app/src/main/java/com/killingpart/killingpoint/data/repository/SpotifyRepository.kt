@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.data.repository
 
 import android.content.Context
+import com.killingpart.killingpoint.BuildConfig
 import com.killingpart.killingpoint.data.remote.SpotifyService
 import com.killingpart.killingpoint.data.remote.SpotifyTokenResponse
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
@@ -54,8 +55,8 @@ class SpotifyRepository(
     }
 
     companion object {
-        // 사용자 제공값
-        private const val SPOTIFY_BASIC_AUTH = "Basic YzBhMjM1Yzk0MDFhNGI2ZGFjZGZmYjRlNjk0ODc0YTU6MGJmNzc2MTBmN2E4NDM5MmEzMDZmM2JlODYxNDI3NWY="
+        // local.properties의 spotify.basicAuth 값 (BuildConfig로 주입, 키 교체 시 local.properties만 수정)
+        private val SPOTIFY_BASIC_AUTH = BuildConfig.SPOTIFY_BASIC_AUTH
 
         fun create(): SpotifyRepository {
             val logging = HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BODY }
