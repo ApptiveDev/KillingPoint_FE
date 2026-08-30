@@ -48,6 +48,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.data.model.AlarmDeepLink
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
@@ -70,9 +71,19 @@ fun AlarmListScreen(navController: NavController) {
     val repo = remember { AuthRepository(context) }
     val coroutineScope = rememberCoroutineScope()
     var opening by remember { mutableStateOf(false) }
+    var hasTrackedListViewed by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         alarmViewModel.loadAlarms(context)
+    }
+
+    LaunchedEffect(alarmState) {
+        val state = alarmState as? AlarmUiState.Success ?: return@LaunchedEffect
+        if (hasTrackedListViewed) return@LaunchedEffect
+        hasTrackedListViewed = true
+        NotificationAnalytics.notificationListViewed(
+            unreadCount = state.alarms.count { !it.isRead }
+        )
     }
 
     DisposableEffect(lifecycleOwner, context) {
@@ -220,6 +231,11 @@ fun AlarmListScreen(navController: NavController) {
                                                     alarmViewModel.toggleSelection(alarm.alarmId)
                                                     return@clickable
                                                 }
+                                                NotificationAnalytics.notificationSelected(
+                                                    notificationType = NotificationAnalytics.NotificationType.fromAlarmType(alarm.type),
+                                                    notificationId = alarm.alarmId.toString(),
+                                                    listPosition = index
+                                                )
                                                 // 탭하면 이동 가능 여부와 무관하게 항상 읽음(회색) 처리
                                                 alarmViewModel.markAlarmRead(context, alarm.alarmId)
                                                 // 이동은 딥링크가 유효한 알림에서만
@@ -232,6 +248,7 @@ fun AlarmListScreen(navController: NavController) {
                                                                 type = alarm.type,
                                                                 deepLink = alarm.deepLink,
                                                                 repo = repo,
+                                                                entryPoint = NotificationAnalytics.EntryPoint.NOTIFICATION_LIST,
                                                                 onError = { msg ->
                                                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                                                 }

@@ -37,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kakao.sdk.common.KakaoSdk
 import com.killingpart.killingpoint.BuildConfig
 import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.navigation.NavGraph
@@ -56,6 +57,9 @@ class MainActivity : ComponentActivity() {
 
     private val _pendingAlarmType = mutableStateOf("")
     private val _pendingDeepLink = mutableStateOf("")
+    private val _pendingNotificationId = mutableStateOf<String?>(null)
+    private val _pendingIsPush = mutableStateOf(false)
+    private val _pendingIsColdStart = mutableStateOf(false)
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -65,6 +69,9 @@ class MainActivity : ComponentActivity() {
         if (type.isNotBlank() && deepLink.isNotBlank()) {
             _pendingAlarmType.value = type
             _pendingDeepLink.value = deepLink
+            _pendingNotificationId.value = intent.getStringExtra("notificationId")
+            _pendingIsPush.value = true
+            _pendingIsColdStart.value = false
         }
         handleKakaoLinkIntent(intent)
         handleDiaryLinkIntent(intent)
@@ -116,6 +123,9 @@ class MainActivity : ComponentActivity() {
             if (type.isNotBlank() && deepLink.isNotBlank()) {
                 _pendingAlarmType.value = type
                 _pendingDeepLink.value = deepLink
+                _pendingNotificationId.value = intent.getStringExtra("notificationId")
+                _pendingIsPush.value = true
+                _pendingIsColdStart.value = true
             }
             handleKakaoLinkIntent(intent)
             handleDiaryLinkIntent(intent)
@@ -135,6 +145,9 @@ class MainActivity : ComponentActivity() {
 
             val pendingAlarmType = _pendingAlarmType.value
             val pendingDeepLink = _pendingDeepLink.value
+            val pendingNotificationId = _pendingNotificationId.value
+            val pendingIsPush = _pendingIsPush.value
+            val pendingIsColdStart = _pendingIsColdStart.value
 
             var launchState by remember {
                 mutableStateOf(LaunchState.SPLASH)
@@ -263,16 +276,26 @@ class MainActivity : ComponentActivity() {
                             if (pendingAlarmType.isBlank() || pendingDeepLink.isBlank()) return@LaunchedEffect
                             val dest = resolvedStartDestination ?: return@LaunchedEffect
                             if (!dest.startsWith("main")) return@LaunchedEffect
+                            if (pendingIsPush) {
+                                NotificationAnalytics.pushNotificationOpened(
+                                    notificationType = NotificationAnalytics.NotificationType.fromAlarmType(pendingAlarmType),
+                                    notificationId = pendingNotificationId,
+                                    isColdStart = pendingIsColdStart
+                                )
+                            }
                             val repo = AuthRepository(context)
                             handleAlarmNavigation(
                                 navController = navController,
                                 type = pendingAlarmType,
                                 deepLink = pendingDeepLink,
-                                repo = repo
+                                repo = repo,
+                                entryPoint = if (pendingIsPush) NotificationAnalytics.EntryPoint.PUSH else null
                             )
                             // 네트워크 콜(suspension point) 이전에 지우면 코루틴이 취소되므로 반드시 이후에 지운다
                             _pendingAlarmType.value = ""
                             _pendingDeepLink.value = ""
+                            _pendingNotificationId.value = null
+                            _pendingIsPush.value = false
                         }
 
                         Box(

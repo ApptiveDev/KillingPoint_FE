@@ -2,9 +2,11 @@ package com.killingpart.killingpoint.navigation
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.screen.HomeScreen.HelloScreen
 import com.killingpart.killingpoint.ui.screen.MainScreen.MainScreen
@@ -234,7 +236,9 @@ fun NavGraph(
                     "&totalDuration={totalDuration}" +
                     "&fromTab={fromTab}" +
                     "&authorUsername={authorUsername}" +
-                    "&authorTag={authorTag}",
+                    "&authorTag={authorTag}" +
+                    "&notifEntryPoint={notifEntryPoint}" +
+                    "&notifType={notifType}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -251,7 +255,9 @@ fun NavGraph(
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
                 navArgument("fromTab") { type = NavType.StringType; defaultValue = "" },
                 navArgument("authorUsername") { type = NavType.StringType; defaultValue = "" },
-                navArgument("authorTag") { type = NavType.StringType; defaultValue = "" }
+                navArgument("authorTag") { type = NavType.StringType; defaultValue = "" },
+                navArgument("notifEntryPoint") { type = NavType.StringType; defaultValue = "" },
+                navArgument("notifType") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -273,6 +279,16 @@ fun NavGraph(
             val fromTab = URLDecoder.decode(backStackEntry.arguments?.getString("fromTab").orEmpty(), "UTF-8")
             val authorUsername = URLDecoder.decode(backStackEntry.arguments?.getString("authorUsername").orEmpty(), "UTF-8")
             val authorTag = URLDecoder.decode(backStackEntry.arguments?.getString("authorTag").orEmpty(), "UTF-8")
+            val notifEntryPoint = URLDecoder.decode(backStackEntry.arguments?.getString("notifEntryPoint").orEmpty(), "UTF-8")
+            val notifType = URLDecoder.decode(backStackEntry.arguments?.getString("notifType").orEmpty(), "UTF-8")
+
+            LaunchedEffect(diaryId, notifEntryPoint, notifType) {
+                NotificationAnalytics.killingpartDetailViewed(
+                    notificationType = notifType.ifBlank { null },
+                    entryPoint = notifEntryPoint.ifBlank { null },
+                    diaryId = diaryId?.toString()
+                )
+            }
 
             if (fromTab == "stored") {
                 DiaryDetailScreenForStored(
@@ -312,15 +328,22 @@ fun NavGraph(
         }
 
         composable(
-            route = "social?tab={tab}&friendListTab={friendListTab}",
+            route = "social?tab={tab}&friendListTab={friendListTab}&notifEntryPoint={notifEntryPoint}",
             arguments = listOf(
                 navArgument("tab") { type = NavType.StringType; defaultValue = "feed" },
-                navArgument("friendListTab") { type = NavType.StringType; defaultValue = "picks" }
+                navArgument("friendListTab") { type = NavType.StringType; defaultValue = "picks" },
+                navArgument("notifEntryPoint") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "feed"
             val friendListTab = backStackEntry.arguments?.getString("friendListTab") ?: "picks"
-            SocialScreen(navController, initialTab = tab, initialFriendListTab = friendListTab)
+            val notifEntryPoint = backStackEntry.arguments?.getString("notifEntryPoint").orEmpty()
+            SocialScreen(
+                navController,
+                initialTab = tab,
+                initialFriendListTab = friendListTab,
+                notifEntryPoint = notifEntryPoint
+            )
         }
 
         composable("alarm_list") {

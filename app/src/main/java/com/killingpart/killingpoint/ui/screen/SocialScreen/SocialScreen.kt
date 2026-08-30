@@ -34,7 +34,8 @@ enum class SocialTab {
 fun SocialScreen(
     navController: NavController,
     initialTab: String = "feed",
-    initialFriendListTab: String = "picks"
+    initialFriendListTab: String = "picks",
+    notifEntryPoint: String = ""
 ) {
     val alarmViewModel: AlarmViewModel = viewModel()
     val hasUnread by alarmViewModel.hasUnread.collectAsState()
@@ -153,7 +154,8 @@ fun SocialScreen(
                         SocialTab.FEED -> FeedScreen(navController)
                         SocialTab.FRIEND -> FriendScreen(
                             navController = navController,
-                            initialListTab = initialFriendTabEnum
+                            initialListTab = initialFriendTabEnum,
+                            entryPoint = notifEntryPoint.ifBlank { null }
                         )
                     }
                 }

@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -54,16 +55,24 @@ enum class FriendTab {
 @Composable
 fun FriendScreen(
     navController: NavController,
-    initialListTab: FriendTab = FriendTab.PICKS
+    initialListTab: FriendTab = FriendTab.PICKS,
+    entryPoint: String? = null
 ) {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
     var selectedTab by remember { mutableStateOf<FriendTab?>(initialListTab) }
+    var trackedPickListViewFor by remember { mutableStateOf<FriendTab?>(null) }
 
     LaunchedEffect(initialListTab) {
         selectedTab = initialListTab
     }
-    
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab != FriendTab.FANS) {
+            trackedPickListViewFor = null
+        }
+    }
+
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
     val friendViewModel: FriendViewModel = viewModel()
@@ -75,6 +84,14 @@ fun FriendScreen(
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+    }
+
+    LaunchedEffect(selectedTab, userStatistics) {
+        if (selectedTab != FriendTab.FANS) return@LaunchedEffect
+        if (trackedPickListViewFor == FriendTab.FANS) return@LaunchedEffect
+        val stats = userStatistics ?: return@LaunchedEffect
+        trackedPickListViewFor = FriendTab.FANS
+        NotificationAnalytics.pickListViewed(entryPoint = entryPoint, pickCount = stats.fanCount)
     }
 
     // JWT 토큰에서 userId 추출 및 통계 로드
