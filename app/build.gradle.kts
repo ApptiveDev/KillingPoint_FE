@@ -24,8 +24,8 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 47
-        versionName = "2.3.8d"
+        versionCode = 48
+        versionName = "2.3.9d"
 
         buildConfigField("String", "AMPLITUDE_API_KEY", "\"$amplitudeApiKey\"")
         buildConfigField("String", "SPOTIFY_BASIC_AUTH", "\"$spotifyBasicAuth\"")
