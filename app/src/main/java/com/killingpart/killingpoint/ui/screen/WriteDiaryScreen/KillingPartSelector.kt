@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics.HandleSide as CutControl
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import kotlinx.coroutines.launch
@@ -327,14 +328,15 @@ fun KillingPartSelector(
     fun panSectionTo(newStartSec: Float): Boolean {
         val dur = endSec - startSec
         val ns = newStartSec.coerceIn(0f, (totalDuration.toFloat() - dur).coerceAtLeast(0f))
-        if (ns != startSec) {
+        val changed = ns != startSec
+        if (changed) {
             startSec = ns
             endSec = ns + dur
             commit()
         }
         // 구간은 항상 화면 중앙에 고정된 채 파형만 흐르도록
         recenter(animated = false)
-        return ns != startSec
+        return changed
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -366,7 +368,10 @@ fun KillingPartSelector(
                                 trackHeightPx = trackHeightPx,
                                 padPx = handleTouchPadPx
                             )
-                        ) return@awaitEachGesture
+                        ) {
+                            android.util.Log.d("SpectrumDebug", "onHandle=true, gesture skipped at pos=${down.position}")
+                            return@awaitEachGesture
+                        }
                         var panning = false
                         var totalDx = 0f
                         var accStartSec = 0f
@@ -395,6 +400,7 @@ fun KillingPartSelector(
                             }
                         }
 
+                        android.util.Log.d("SpectrumDebug", "gesture end: canceled=$canceled panning=$panning spectrumChanged=$spectrumChanged totalDx=$totalDx")
                         when {
                             canceled -> Unit
                             panning -> {
@@ -403,7 +409,10 @@ fun KillingPartSelector(
                                 if (didChange) {
                                     // 새 구간 시작부터 다시 미리듣기
                                     latestOnSeek(startSec)
+                                    android.util.Log.d("SpectrumDebug", "firing SPECTRUM event start=$startSec end=$endSec")
                                     latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM, startSec, endSec, endSec - startSec)
+                                } else {
+                                    android.util.Log.d("SpectrumDebug", "panning happened but didChange=false, no event fired")
                                 }
                             }
                             else -> {

@@ -57,6 +57,10 @@ class AuthRepository(
 ) {
     private companion object {
         const val CLIENT_TYPE = "ANDROID"
+        // 서버는 x.y.z 형태만 허용하는 경우가 있어 "2.3.8d" 같은 suffix 는 제거한다.
+        val CLIENT_VERSION: String =
+            Regex("""\d+\.\d+\.\d+""").find(BuildConfig.VERSION_NAME)?.value
+                ?: BuildConfig.VERSION_NAME
     }
 
     /**
@@ -68,6 +72,14 @@ class AuthRepository(
         withContext(Dispatchers.IO) {
             runCatching {
                 val res: KakaoAuthResponse = api.loginWithKakao(KakaoAuthRequest(kakaoAccessToken))
+                // DEBUG: log received tokens (masked) to help diagnose auth issues
+                try {
+                    val a = res.accessToken
+                    val r = res.refreshToken
+                    val ma = if (a.length > 10) a.substring(0,6) + "..." + a.takeLast(4) else a
+                    val mr = if (r.length > 10) r.substring(0,6) + "..." + r.takeLast(4) else r
+                    android.util.Log.d("AuthRepository", "exchangeKakaoAccessToken received access=$ma refresh=$mr isNew=${res.isNew}")
+                } catch (_: Exception) {}
                 tokenStore.save(res.accessToken, res.refreshToken)
                 res.isNew // isNew 반환
             }.recoverCatching { e ->
@@ -166,7 +178,7 @@ class AuthRepository(
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")
             api.getUserInitSettings(
                 accessToken = "Bearer $accessToken",
-                clientVersion = BuildConfig.VERSION_NAME,
+                clientVersion = CLIENT_VERSION,
                 clientType = CLIENT_TYPE
             )
         }.recoverCatching { e ->

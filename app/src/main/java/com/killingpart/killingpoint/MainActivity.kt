@@ -183,9 +183,10 @@ class MainActivity : ComponentActivity() {
                         }
                         FcmTokenSync.syncCurrentToken(context)
                         val repo = AuthRepository(context)
-                        val start = repo.getUserInitSettings()
-                            .getOrNull()
-                            ?.let { init ->
+                        val fallbackAfterLogin =
+                            if (s.isNew) "onboarding_policy" else "main"
+                        val start = repo.getUserInitSettings().fold(
+                            onSuccess = { init ->
                                 showUpdateDialog = init.app.needsForceUpdate
                                 when {
                                     init.needsPolicyAgreement -> "onboarding_policy"
@@ -193,7 +194,16 @@ class MainActivity : ComponentActivity() {
                                     OnboardingProgressStore.isTutorialInProgress(context) -> "onboarding_kp_intro"
                                     else -> "main"
                                 }
-                            } ?: "home"
+                            },
+                            onFailure = { e ->
+                                android.util.Log.e(
+                                    "MainActivity",
+                                    "init-settings 실패, 로그인 화면으로 되돌리지 않음: ${e.message}"
+                                )
+                                showUpdateDialog = false
+                                fallbackAfterLogin
+                            }
+                        )
                         resolvedStartDestination = start
                     }
 

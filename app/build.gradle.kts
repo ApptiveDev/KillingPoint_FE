@@ -14,7 +14,7 @@ android {
         minSdk = 29
         targetSdk = 36
         versionCode = 47
-        versionName = "2.3.8"
+        versionName = "2.3.8d"
 
         buildConfigField("String", "AMPLITUDE_API_KEY", "\"fcb84a98b48f87f85e7112a1587976fd\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

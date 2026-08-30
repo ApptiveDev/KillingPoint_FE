@@ -14,7 +14,7 @@ object AmplitudeAnalytics {
         if (properties.isEmpty()) {
             amplitude?.track(event)
         } else {
-            amplitude?.track(event, properties)
+            amplitude?.track(event, properties.toMutableMap())
         }
     }
 

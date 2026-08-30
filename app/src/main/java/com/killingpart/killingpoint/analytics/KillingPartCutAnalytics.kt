@@ -1,6 +1,7 @@
 package com.killingpart.killingpoint.analytics
 
 object KillingPartCutAnalytics {
+    /** cut_handle_adjusted.control 허용값 (이벤트 로그 정의서) */
     object HandleSide {
         const val LEFT = "left"
         const val RIGHT = "right"
@@ -9,6 +10,13 @@ object KillingPartCutAnalytics {
         const val NUDGE_MINUS_1S = "nudge_minus_1s"
         const val NUDGE_PLUS_1S = "nudge_plus_1s"
         const val UNKNOWN = "unknown"
+
+        private val allowed = setOf(
+            LEFT, RIGHT, SPECTRUM, MINIMAP, NUDGE_MINUS_1S, NUDGE_PLUS_1S, UNKNOWN
+        )
+
+        fun normalize(control: String): String =
+            if (control in allowed) control else UNKNOWN
     }
 
     fun killingpartCutStarted() {
@@ -21,20 +29,20 @@ object KillingPartCutAnalytics {
     }
 
     fun cutHandleAdjusted(control: String, startSec: Float, endSec: Float, clipDurationSec: Float) {
-        // round to 2 decimal places as spec'd
-        val s = (kotlin.math.round(startSec * 100f) / 100f)
-        val e = (kotlin.math.round(endSec * 100f) / 100f)
-        val d = (kotlin.math.round(clipDurationSec * 100f) / 100f)
         AmplitudeAnalytics.track(
             "cut_handle_adjusted",
             mapOf(
-                "control" to control,
-                "start_sec" to s,
-                "end_sec" to e,
-                "clip_duration_sec" to d
+                "control" to HandleSide.normalize(control),
+                "start_sec" to round2(startSec),
+                "end_sec" to round2(endSec),
+                "clip_duration_sec" to round2(clipDurationSec)
             )
         )
     }
+
+    /** 정의서: float, 소수점 둘째 자리. Amplitude에는 Double로 보내 이진 오차를 줄인다. */
+    private fun round2(value: Float): Double =
+        kotlin.math.round(value.toDouble() * 100.0) / 100.0
 
     fun cutCompleted() {
         AmplitudeAnalytics.track("cut_completed")
