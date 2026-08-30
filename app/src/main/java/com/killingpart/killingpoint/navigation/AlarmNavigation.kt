@@ -2,12 +2,18 @@ package com.killingpart.killingpoint.navigation
 
 import android.net.Uri
 import androidx.navigation.NavController
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.data.model.AlarmDeepLink
 import com.killingpart.killingpoint.data.model.DiaryDetail
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.repository.AuthRepository
 
-fun NavController.navigateToDiaryDetailFromAlarm(detail: DiaryDetail, myUserId: Long?) {
+fun NavController.navigateToDiaryDetailFromAlarm(
+    detail: DiaryDetail,
+    myUserId: Long?,
+    entryPoint: String? = null,
+    notificationType: String? = null
+) {
     val diary = detail.toDiary()
     val isOwnDiary = myUserId != null && detail.userId == myUserId
     val authorParams = if (!isOwnDiary && detail.username.isNotBlank() && detail.tag.isNotBlank()) {
@@ -15,6 +21,8 @@ fun NavController.navigateToDiaryDetailFromAlarm(detail: DiaryDetail, myUserId: 
     } else ""
     val diaryIdParam = diary.id?.let { "&diaryId=$it" }.orEmpty()
     val totalDurationParam = diary.totalDuration?.let { "&totalDuration=$it" }.orEmpty()
+    val notifParams = (entryPoint?.let { "&notifEntryPoint=${Uri.encode(it)}" }.orEmpty()) +
+        (notificationType?.let { "&notifType=${Uri.encode(it)}" }.orEmpty())
     val displayContent = if (diary.scope == Scope.PRIVATE) "비공개 일기입니다." else diary.content
     navigate(
         "diary_detail" +
@@ -31,13 +39,15 @@ fun NavController.navigateToDiaryDetailFromAlarm(detail: DiaryDetail, myUserId: 
             diaryIdParam +
             totalDurationParam +
             "&fromTab=social" +
+            notifParams +
             authorParams
     )
 }
 
-fun NavController.navigateFromSubscribeAlarm(deepLink: String) {
+fun NavController.navigateFromSubscribeAlarm(deepLink: String, entryPoint: String? = null) {
     if (!AlarmDeepLink.isSubscribeFansDeepLink(deepLink)) return
-    navigate("social?tab=friend&friendListTab=fans")
+    val entryParam = entryPoint?.let { "&notifEntryPoint=${Uri.encode(it)}" }.orEmpty()
+    navigate("social?tab=friend&friendListTab=fans$entryParam")
 }
 
 suspend fun handleAlarmNavigation(
@@ -45,6 +55,7 @@ suspend fun handleAlarmNavigation(
     type: String,
     deepLink: String,
     repo: AuthRepository,
+    entryPoint: String? = null,
     onError: ((String) -> Unit)? = null
 ) {
     when (type) {
@@ -52,7 +63,12 @@ suspend fun handleAlarmNavigation(
             repo.getDiaryDetailByAlarmDeepLink(deepLink).fold(
                 onSuccess = { detail ->
                     val myUserId = repo.getUserIdFromToken()
-                    navController.navigateToDiaryDetailFromAlarm(detail, myUserId)
+                    navController.navigateToDiaryDetailFromAlarm(
+                        detail,
+                        myUserId,
+                        entryPoint = entryPoint,
+                        notificationType = NotificationAnalytics.NotificationType.fromAlarmType(type)
+                    )
                 },
                 onFailure = { e ->
                     onError?.invoke(mapAlarmNavigationError(type, e.message))
@@ -60,7 +76,7 @@ suspend fun handleAlarmNavigation(
             )
         }
         "SUBSCRIBE_ALARM" -> {
-            navController.navigateFromSubscribeAlarm(deepLink)
+            navController.navigateFromSubscribeAlarm(deepLink, entryPoint)
         }
     }
 }

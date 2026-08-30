@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics.HandleSide as CutControl
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
 import kotlinx.coroutines.launch
@@ -110,7 +111,7 @@ fun KillingPartSelector(
     onSeek: (sec: Float) -> Unit = {},
     /** 2초 루프 구간 변경. null 이면 루프 해제 */
     onLoopChange: (loopStart: Float?, loopEnd: Float?) -> Unit = { _, _ -> },
-    onHandleAdjusted: ((handleSide: String) -> Unit)? = null
+    onHandleAdjusted: ((control: String, start: Float, end: Float, duration: Float) -> Unit)? = null
 ) {
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
@@ -155,6 +156,7 @@ fun KillingPartSelector(
     var lastCommittedEnd by remember { mutableStateOf(Float.NaN) }
 
     val latestOnHandleAdjusted by rememberUpdatedState(onHandleAdjusted)
+    var minimapTouched by remember { mutableStateOf(false) }
     val latestOnLoopChange by rememberUpdatedState(onLoopChange)
     val latestOnSeek by rememberUpdatedState(onSeek)
 
@@ -297,37 +299,44 @@ fun KillingPartSelector(
         val newStart = (startSec - 1f)
             .coerceAtLeast(0f)
             .coerceAtLeast(endSec - maxDurationSec)
-        if (newStart != startSec) {
-            startSec = newStart
-            commit()
-            recenter()
+        val didChange = newStart != startSec
+        startSec = newStart
+        commit()
+        recenter()
+        if (didChange) {
             // 시작점이 바뀌었으니 좌핸들 조절과 동일하게 새 시작점부터 다시 미리듣기
             latestOnSeek(startSec)
         }
+        latestOnHandleAdjusted?.invoke(KillingPartHandle.NUDGE_MINUS_1S, startSec, endSec, endSec - startSec)
     }
 
     fun extendBack() {
         val newEnd = (endSec + 1f)
             .coerceAtMost(totalDuration.toFloat())
             .coerceAtMost(startSec + maxDurationSec)
-        if (newEnd != endSec) {
-            endSec = newEnd
-            commit()
-            recenter()
+        val didChange = newEnd != endSec
+        endSec = newEnd
+        commit()
+        recenter()
+        if (didChange) {
+            // 재생 유지
         }
+        latestOnHandleAdjusted?.invoke(KillingPartHandle.NUDGE_PLUS_1S, startSec, endSec, endSec - startSec)
     }
 
     /** 스펙트럼바 가로 스크롤: 구간 길이는 유지한 채 통째로 이동(미니맵 스크럽과 동일 동작) */
-    fun panSectionTo(newStartSec: Float) {
+    fun panSectionTo(newStartSec: Float): Boolean {
         val dur = endSec - startSec
         val ns = newStartSec.coerceIn(0f, (totalDuration.toFloat() - dur).coerceAtLeast(0f))
-        if (ns != startSec) {
+        val changed = ns != startSec
+        if (changed) {
             startSec = ns
             endSec = ns + dur
             commit()
         }
         // 구간은 항상 화면 중앙에 고정된 채 파형만 흐르도록
         recenter(animated = false)
+        return changed
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -359,10 +368,14 @@ fun KillingPartSelector(
                                 trackHeightPx = trackHeightPx,
                                 padPx = handleTouchPadPx
                             )
-                        ) return@awaitEachGesture
+                        ) {
+                            android.util.Log.d("SpectrumDebug", "onHandle=true, gesture skipped at pos=${down.position}")
+                            return@awaitEachGesture
+                        }
                         var panning = false
                         var totalDx = 0f
                         var accStartSec = 0f
+                        var spectrumChanged = false
                         var canceled = false
 
                         while (true) {
@@ -381,18 +394,26 @@ fun KillingPartSelector(
                             if (panning) {
                                 // 오른쪽으로 끌면 이전 시간대가 보이도록(파형이 따라옴)
                                 accStartSec -= dx / pxPerSec
-                                panSectionTo(accStartSec)
+                                val changed = panSectionTo(accStartSec)
+                                spectrumChanged = spectrumChanged || changed
                                 ch.consume()
                             }
                         }
 
+                        android.util.Log.d("SpectrumDebug", "gesture end: canceled=$canceled panning=$panning spectrumChanged=$spectrumChanged totalDx=$totalDx")
                         when {
                             canceled -> Unit
                             panning -> {
+                                val didChange = spectrumChanged
                                 commit(force = true)
-                                // 새 구간 시작부터 다시 미리듣기
-                                latestOnSeek(startSec)
-                                latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM_BAR)
+                                if (didChange) {
+                                    // 새 구간 시작부터 다시 미리듣기
+                                    latestOnSeek(startSec)
+                                    android.util.Log.d("SpectrumDebug", "firing SPECTRUM event start=$startSec end=$endSec")
+                                    latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM, startSec, endSec, endSec - startSec)
+                                } else {
+                                    android.util.Log.d("SpectrumDebug", "panning happened but didChange=false, no event fired")
+                                }
                             }
                             else -> {
                                 // 탭: 누른 지점부터 미리듣기
@@ -553,7 +574,7 @@ fun KillingPartSelector(
                             recenter()
                             // 좌측 핸들 조절이 끝나면 새 시작점부터 다시 미리듣기
                             latestOnSeek(startSec)
-                            latestOnHandleAdjusted?.invoke(KillingPartHandle.LEFT)
+                            latestOnHandleAdjusted?.invoke(KillingPartHandle.LEFT, startSec, endSec, endSec - startSec)
                         }
                     )
             )
@@ -585,7 +606,7 @@ fun KillingPartSelector(
                         onDragEnd = {
                             commit(force = true)
                             recenter()
-                            latestOnHandleAdjusted?.invoke(KillingPartHandle.RIGHT)
+                            latestOnHandleAdjusted?.invoke(KillingPartHandle.RIGHT, startSec, endSec, endSec - startSec)
                         }
                     )
             )
@@ -652,16 +673,21 @@ fun KillingPartSelector(
             onScrub = { newStartSec ->
                 val dur = (endSec - startSec)
                 val ns = newStartSec.coerceIn(0f, (totalDuration - dur).coerceAtLeast(0f))
+                if (ns != startSec) minimapTouched = true
                 startSec = ns
                 endSec = ns + dur
                 commit()
                 recenter(animated = false)
             },
             onScrubEnd = {
+                val didChange = minimapTouched
                 commit(force = true)
-                // 미니맵으로 구간을 옮기면 새 구간 시작부터 다시 재생
-                latestOnSeek(startSec)
-                latestOnHandleAdjusted?.invoke(KillingPartHandle.SPECTRUM_BAR)
+                if (didChange) {
+                    // 미니맵으로 구간을 옮기면 새 구간 시작부터 다시 재생
+                    latestOnSeek(startSec)
+                    latestOnHandleAdjusted?.invoke(KillingPartHandle.MINIMAP, startSec, endSec, endSec - startSec)
+                }
+                minimapTouched = false
             }
         )
 
@@ -712,7 +738,11 @@ private fun isOnHandle(
 private object KillingPartHandle {
     const val LEFT = "left"
     const val RIGHT = "right"
-    const val SPECTRUM_BAR = "spectrum_bar"
+    const val SPECTRUM = "spectrum"
+    const val MINIMAP = "minimap"
+    const val NUDGE_MINUS_1S = "nudge_minus_1s"
+    const val NUDGE_PLUS_1S = "nudge_plus_1s"
+    const val UNKNOWN = "unknown"
 }
 
 @Composable

@@ -66,6 +66,7 @@ class KillingPointFirebaseMessagingService : FirebaseMessagingService() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             if (deepLink.isNotBlank()) putExtra("deepLink", deepLink)
             if (alarmType.isNotBlank()) putExtra("type", alarmType)
+            messageId?.let { putExtra("notificationId", it) }
         }
         val pendingIntent = PendingIntent.getActivity(
             this,

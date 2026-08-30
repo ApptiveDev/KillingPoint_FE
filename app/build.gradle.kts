@@ -1,9 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     id("com.google.gms.google-services")
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val spotifyBasicAuth: String = localProperties.getProperty("spotify.basicAuth", "")
+val amplitudeApiKey: String = localProperties.getProperty("amplitude.apiKey", "")
 
 android {
     namespace = "com.killingpart.killingpoint"
@@ -13,10 +24,11 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 47
-        versionName = "2.3.8"
+        versionCode = 48
+        versionName = "2.3.9d"
 
-        buildConfigField("String", "AMPLITUDE_API_KEY", "\"fcb84a98b48f87f85e7112a1587976fd\"")
+        buildConfigField("String", "AMPLITUDE_API_KEY", "\"$amplitudeApiKey\"")
+        buildConfigField("String", "SPOTIFY_BASIC_AUTH", "\"$spotifyBasicAuth\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

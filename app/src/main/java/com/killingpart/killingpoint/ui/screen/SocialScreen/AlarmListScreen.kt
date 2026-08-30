@@ -48,6 +48,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.data.model.AlarmDeepLink
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.R
@@ -60,7 +62,7 @@ import com.killingpart.killingpoint.ui.viewmodel.AlarmViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun AlarmListScreen(navController: NavController) {
+fun AlarmListScreen(navController: NavController, entrySource: String = "") {
     val alarmViewModel: AlarmViewModel = viewModel()
     val alarmState by alarmViewModel.state.collectAsState()
     val isSelectionMode by alarmViewModel.isSelectionMode.collectAsState()
@@ -70,9 +72,30 @@ fun AlarmListScreen(navController: NavController) {
     val repo = remember { AuthRepository(context) }
     val coroutineScope = rememberCoroutineScope()
     var opening by remember { mutableStateOf(false) }
+    var hasTrackedListViewed by remember { mutableStateOf(false) }
+    val notificationEntryPoint = when (entrySource) {
+        "social_tab" -> NotificationAnalytics.EntryPoint.SOCIAL_TAB
+        "push" -> NotificationAnalytics.EntryPoint.PUSH
+        else -> NotificationAnalytics.EntryPoint.UNKNOWN
+    }
 
     LaunchedEffect(Unit) {
+        if (entrySource == "social_tab") {
+            SubTabAnalytics.selectSubTab(SubTabAnalytics.Tab.SOCIAL, SubTabAnalytics.SubTab.NOTIFICATION)
+        } else {
+            SubTabAnalytics.enterTab(SubTabAnalytics.Tab.SOCIAL, SubTabAnalytics.SubTab.NOTIFICATION)
+        }
         alarmViewModel.loadAlarms(context)
+    }
+
+    LaunchedEffect(alarmState) {
+        val state = alarmState as? AlarmUiState.Success ?: return@LaunchedEffect
+        if (hasTrackedListViewed) return@LaunchedEffect
+        hasTrackedListViewed = true
+        NotificationAnalytics.notificationListViewed(
+            entryPoint = notificationEntryPoint,
+            unreadCount = state.alarms.count { !it.isRead }
+        )
     }
 
     DisposableEffect(lifecycleOwner, context) {
@@ -84,6 +107,7 @@ fun AlarmListScreen(navController: NavController) {
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            SubTabAnalytics.onScreenDisappeared(SubTabAnalytics.Tab.SOCIAL)
         }
     }
 
@@ -100,7 +124,10 @@ fun AlarmListScreen(navController: NavController) {
                     .padding(top = 20.dp)
             ) {
                 IconButton(
-                    onClick = { navController.popBackStack() },
+                    onClick = {
+                        SubTabAnalytics.leaveNotificationBackToSocial()
+                        navController.popBackStack()
+                    },
                     modifier = Modifier.align(Alignment.CenterStart)
                 ) {
                     Icon(
@@ -220,6 +247,11 @@ fun AlarmListScreen(navController: NavController) {
                                                     alarmViewModel.toggleSelection(alarm.alarmId)
                                                     return@clickable
                                                 }
+                                                NotificationAnalytics.notificationSelected(
+                                                    notificationType = NotificationAnalytics.NotificationType.fromAlarmType(alarm.type),
+                                                    notificationId = alarm.alarmId.toString(),
+                                                    listPosition = index
+                                                )
                                                 // 탭하면 이동 가능 여부와 무관하게 항상 읽음(회색) 처리
                                                 alarmViewModel.markAlarmRead(context, alarm.alarmId)
                                                 // 이동은 딥링크가 유효한 알림에서만
@@ -232,6 +264,7 @@ fun AlarmListScreen(navController: NavController) {
                                                                 type = alarm.type,
                                                                 deepLink = alarm.deepLink,
                                                                 repo = repo,
+                                                                entryPoint = NotificationAnalytics.EntryPoint.NOTIFICATION_LIST,
                                                                 onError = { msg ->
                                                                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                                                 }

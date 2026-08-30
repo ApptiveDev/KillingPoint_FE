@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.model.UserStatistics
@@ -124,6 +125,12 @@ fun FriendProfileScreen(
                     friendViewModel.loadFriends(context, userIdFromToken, 100, 100)
                 }
         }
+
+        NotificationAnalytics.profileViewed(
+            entryPoint = if (fromPickFandomList) NotificationAnalytics.EntryPoint.PICK_LIST else null,
+            profileUserId = userId.toString(),
+            isOwnProfile = userIdFromToken?.let { it == userId }
+        )
     }
 
     // 친구 컬렉션 좋아요 목록 데이터 로드
