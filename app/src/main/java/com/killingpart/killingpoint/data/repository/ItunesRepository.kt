@@ -18,10 +18,10 @@ class ItunesRepository(
     private val service: ItunesService
 ) {
 
-    suspend fun searchTracks(query: String, country: String = "KR", limit: Int = 10): List<SimpleTrack> =
+    suspend fun searchTracks(query: String, limit: Int = 10): List<SimpleTrack> =
         withContext(Dispatchers.IO) {
             if (query.isBlank()) return@withContext emptyList()
-            val res: ItunesSearchResponse = service.searchTracks(term = query, country = country, limit = limit)
+            val res: ItunesSearchResponse = service.searchTracks(term = query, limit = limit)
             res.results.mapNotNull { item ->
                 val title = item.trackName ?: return@mapNotNull null
                 SimpleTrack(
