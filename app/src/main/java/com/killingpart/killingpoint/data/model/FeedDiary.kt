@@ -31,7 +31,12 @@ data class FeedDiary(
     val userId: Long,
     val username: String,
     val tag: String,
-    val profileImageUrl: String
+    val profileImageUrl: String,
+    // GET /api/diaries/random 추천 항목 (장르 추천 알고리즘). 일반 항목엔 없음
+    @SerializedName("isRecommended")
+    val isRecommended: Boolean = false,
+    @SerializedName("recommendationReason")
+    val recommendationReason: String? = null // 예: "GENRE_MATCH"
 ) {
     val toDiary: Diary
         get() = Diary(

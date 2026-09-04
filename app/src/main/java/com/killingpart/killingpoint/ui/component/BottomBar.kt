@@ -26,12 +26,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.UnboundedFontFamily
 
 @Composable
 fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
+    fun selectTab(tab: String, navigate: () -> Unit) {
+        EngagementAnalytics.mainTabSelected(tab)
+        SubTabAnalytics.onLeavingTopTabs()
+        navigate()
+    }
+
     Row (
         modifier = Modifier.fillMaxWidth()
             .background(color = Color.Black)
@@ -43,7 +51,12 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
         Column (
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.clickable { navController.navigate("main")}
+            modifier = Modifier.clickable {
+                selectTab(EngagementAnalytics.MainTab.MY) {
+                    val tabArg = SubTabAnalytics.mainScreenArgFor(SubTabAnalytics.rememberedMySubTab())
+                    navController.navigate("main?tab=$tabArg")
+                }
+            }
         ){
             Image(
                 painter = painterResource(id = R.drawable.navi_home),
@@ -61,12 +74,17 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
 
         Column (
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.clickable {
+                selectTab(EngagementAnalytics.MainTab.EXPLORE) {
+                    navController.navigate("search")
+                }
+            }
         ){
             Image(
                 painter = painterResource(id = R.drawable.navi_search),
                 contentDescription = "탐색 네비게이션 바",
-                modifier = Modifier.size(36.dp).clickable {navController.navigate("search")}
+                modifier = Modifier.size(36.dp)
             )
             Text(
                 text = "탐색",
@@ -83,7 +101,11 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
             Image(
                 painter = painterResource(id = R.drawable.navi_add),
                 contentDescription = "추가 네비게이션 바",
-                modifier = Modifier.size(36.dp).clickable { navController.navigate("add_music?tutorial=false") }
+                modifier = Modifier.size(36.dp).clickable {
+                    selectTab(EngagementAnalytics.MainTab.ADD) {
+                        navController.navigate("add_music?tutorial=false")
+                    }
+                }
             )
             Text(
                 text = "추가",
@@ -96,7 +118,12 @@ fun BottomBar(navController: NavController, modifier: Modifier = Modifier) {
         Column (
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.clickable { navController.navigate("social") }
+            modifier = Modifier.clickable {
+                selectTab(EngagementAnalytics.MainTab.SOCIAL) {
+                    val tabArg = SubTabAnalytics.socialScreenArgFor(SubTabAnalytics.rememberedSocialPillSubTab())
+                    navController.navigate("social?tab=$tabArg&friendListTab=picks")
+                }
+            }
         ){
             Image(
                 painter = painterResource(id = R.drawable.navi_social),

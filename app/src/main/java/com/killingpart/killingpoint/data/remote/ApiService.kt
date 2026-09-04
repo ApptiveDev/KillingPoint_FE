@@ -14,10 +14,12 @@ import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
 import com.killingpart.killingpoint.data.model.YoutubeVideoRequest
 import com.killingpart.killingpoint.data.model.SubscribeResponse
 import com.killingpart.killingpoint.data.model.FeedResponse
+import com.killingpart.killingpoint.data.model.DiaryDetail
 import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.UserStatistics
 import com.killingpart.killingpoint.data.model.LikeResponse
 import com.killingpart.killingpoint.data.model.StoreResponse
+import com.killingpart.killingpoint.data.model.SurveyRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -33,7 +35,12 @@ import com.killingpart.killingpoint.data.model.RandomDiariesResponse
 import com.killingpart.killingpoint.data.model.StoredDiariesResponse
 import com.killingpart.killingpoint.data.model.DiaryLikesResponse
 import com.killingpart.killingpoint.data.model.PolicyAgreementRequest
+import com.killingpart.killingpoint.data.model.UpdateUsernameRequest
 import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
+import com.killingpart.killingpoint.data.model.AlarmResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledRequest
+import com.killingpart.killingpoint.data.model.AlarmEnabledResponse
+import com.killingpart.killingpoint.data.model.FcmTokenRequest
 
 interface ApiService {
 
@@ -58,14 +65,20 @@ interface ApiService {
     @GET("users/init-settings")
     suspend fun getUserInitSettings(
         @Header("Authorization") accessToken: String,
-        @Query("clientType") clientType: String,
-        @Query("clientVersion") clientVersion: String
+        @Query("clientVersion") clientVersion: String,
+        @Query("clientType") clientType: String
     ): UserInitSettingsResponse
 
     @POST("users/policy-agreement")
     suspend fun agreePolicies(
         @Header("Authorization") accessToken: String,
         @Body body: PolicyAgreementRequest
+    ): retrofit2.Response<Unit>
+
+    @POST("surveys")
+    suspend fun submitSurvey(
+        @Header("Authorization") accessToken: String,
+        @Body body: SurveyRequest
     ): retrofit2.Response<Unit>
 
     @POST("jwt/exchange")
@@ -79,6 +92,13 @@ interface ApiService {
         @Query("page") page: Int = 0,
         @Query("size") size: Int
     ): MyDiaries
+
+    /** GET /api/diaries/{diaryId} — 일기 단건 조회 */
+    @GET("diaries/{diaryId}")
+    suspend fun getDiaryDetail(
+        @Header("Authorization") accessToken: String,
+        @Path("diaryId") diaryId: Long
+    ): DiaryDetail
 
     @POST("diaries")
     suspend fun createDiary(
@@ -105,6 +125,12 @@ interface ApiService {
         @Body body: UpdateTagRequest
     ): retrofit2.Response<Unit>
 
+    @PATCH("users/my/names")
+    suspend fun updateUsername(
+        @Header("Authorization") accessToken: String,
+        @Body body: UpdateUsernameRequest
+    ): UserInfo
+
     @GET("presigned-url")
     suspend fun getPresignedUrl(
         @Header("Authorization") accessToken: String
@@ -114,6 +140,11 @@ interface ApiService {
     suspend fun updateProfileImage(
         @Header("Authorization") accessToken: String,
         @Body body: UpdateProfileImageRequest
+    ): UserInfo
+
+    @DELETE("users/my/profile-image")
+    suspend fun deleteProfileImage(
+        @Header("Authorization") accessToken: String
     ): UserInfo
 
     @POST("users/logout")
@@ -210,6 +241,25 @@ interface ApiService {
         @Body body: ReportDiaryRequest
     ): retrofit2.Response<Unit>
 
+    @POST("users/{blockedId}/blocks")
+    suspend fun blockUser(
+        @Header("Authorization") accessToken: String,
+        @Path("blockedId") blockedId: Long
+    ): retrofit2.Response<Unit>
+
+    @GET("users/blocks")
+    suspend fun getBlockedUsers(
+        @Header("Authorization") accessToken: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 5
+    ): SubscribeResponse
+
+    @DELETE("users/{blockedId}/blocks")
+    suspend fun unblockUser(
+        @Header("Authorization") accessToken: String,
+        @Path("blockedId") blockedId: Long
+    ): retrofit2.Response<Unit>
+
     @GET("diaries/randoms")
     suspend fun getRandomDiaries(
         @Header("Authorization") accessToken: String
@@ -228,4 +278,33 @@ interface ApiService {
         @Header("Authorization") accessToken: String,
         @Body body: DiaryOrderRequest
     ): retrofit2.Response<Unit>
+
+    @POST("fcm/tokens")
+    suspend fun addDeviceToken(
+        @Header("Authorization") accessToken: String,
+        @Body body: FcmTokenRequest
+    ): retrofit2.Response<Unit>
+
+    @DELETE("fcm/tokens")
+    suspend fun deleteDeviceToken(
+        @Header("Authorization") accessToken: String
+    ): retrofit2.Response<Unit>
+
+    @PATCH("users/my/notification-settings")
+    suspend fun updateAlarmEnabled(
+        @Header("Authorization") accessToken: String,
+        @Body body: AlarmEnabledRequest
+    ): retrofit2.Response<Unit>
+
+    @GET("users/my/notification-settings")
+    suspend fun getAlarmEnabled(
+        @Header("Authorization") accessToken: String
+    ): AlarmEnabledResponse
+
+    @GET("alarms")
+    suspend fun getAlarms(
+        @Header("Authorization") accessToken: String,
+        @Query("page") page: Int = 0,
+        @Query("size") size: Int = 20
+    ): AlarmResponse
 }

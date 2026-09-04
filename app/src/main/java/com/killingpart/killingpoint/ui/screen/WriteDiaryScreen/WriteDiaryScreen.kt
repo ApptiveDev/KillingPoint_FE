@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.killingpart.killingpoint.data.model.CreateDiaryRequest
+import com.killingpart.killingpoint.data.model.MusicMetadata
 import com.killingpart.killingpoint.data.repository.AuthRepository
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import com.killingpart.killingpoint.R
@@ -43,6 +45,8 @@ import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.component.BottomBar
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import androidx.compose.material3.TextButton
@@ -68,7 +72,12 @@ fun WriteDiaryScreen(
     end: String,
     videoUrl: String,
     totalDuration: Int = 0, // YouTube 비디오 전체 길이 (초 단위)
-    tutorialMode: Boolean = false
+    tutorialMode: Boolean = false,
+    // 장르 추천용 (iTunes) — 등록 요청에 포함
+    sourceType: String = "ITUNES",
+    trackId: String? = null,
+    artistId: String? = null,
+    primaryGenreName: String? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
     var content by remember { mutableStateOf("") }
@@ -128,7 +137,9 @@ fun WriteDiaryScreen(
                 }
                 if (tutorialMode) {
                     TextButton(
-                        onClick = { navController.navigateToMainClearingStack() },
+                        onClick = {
+                            navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_DIARY_DETAIL)
+                        },
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Text(
@@ -291,7 +302,8 @@ fun WriteDiaryScreen(
             }
         }
         Spacer(modifier = Modifier.height(20.dp))
-        // 저장 버튼 (중앙정렬)
+        // 저장 버튼 (중앙정렬) — 본문이 비어 있으면 비활성 + alpha 0.4
+        val canSubmit = content.isNotBlank()
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.Center
@@ -310,16 +322,24 @@ fun WriteDiaryScreen(
                                 duration = duration,
                                 start = start,
                                 end = end,
-                                totalDuration = totalDuration
+                                totalDuration = totalDuration,
+                                musicMetadata = MusicMetadata(
+                                    sourceType = sourceType,
+                                    trackId = trackId,
+                                    artistId = artistId,
+                                    primaryGenreName = primaryGenreName
+                                )
                             )
                             repo.createDiary(body)
                         }.onSuccess {
                             android.util.Log.d("WriteDiaryScreen", "Diary created successfully")
                             if (tutorialMode) {
+                                KillingPartCutAnalytics.onboardingKillingpartCutCompleted()
                                 navController.navigate("onboarding_home_preview") {
                                     popUpTo("onboarding_kp_intro") { inclusive = false }
                                 }
                             } else {
+                                KillingPartCutAnalytics.killingpartCutCompleted()
                                 navController.navigate("main")
                             }
                         }.onFailure { e ->
@@ -327,10 +347,12 @@ fun WriteDiaryScreen(
                         }
                     }
                 },
-                enabled = !tutorialMode || content.isNotBlank(),
-                modifier = Modifier.fillMaxWidth(0.8f),
+                enabled = canSubmit,
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .alpha(if (canSubmit) 1f else 0.4f),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (tutorialMode && content.isBlank()) Color(0xFF3D4A2E) else Color(0xFFCCFF33),
+                    containerColor = if (tutorialMode && !canSubmit) Color(0xFF3D4A2E) else Color(0xFFCCFF33),
                     contentColor = Color.Black,
                     disabledContainerColor = Color(0xFF3D4A2E),
                     disabledContentColor = Color(0xFF5C5C5C)

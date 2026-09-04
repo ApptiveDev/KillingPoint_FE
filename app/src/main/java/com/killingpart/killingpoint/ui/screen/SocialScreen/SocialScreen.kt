@@ -1,31 +1,92 @@
 package com.killingpart.killingpoint.ui.screen.SocialScreen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.analytics.EngagementAnalytics
+import com.killingpart.killingpoint.analytics.SubTabAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.component.BottomBar
 import com.killingpart.killingpoint.ui.screen.MainScreen.TopPillTabs
+import com.killingpart.killingpoint.ui.viewmodel.AlarmViewModel
 
 enum class SocialTab {
     FEED, FRIEND
 }
 
+private fun subTabFor(tab: SocialTab): String = when (tab) {
+    SocialTab.FEED -> SubTabAnalytics.SubTab.FEED
+    SocialTab.FRIEND -> SubTabAnalytics.SubTab.FRIENDS
+}
+
 @Composable
-fun SocialScreen(navController: NavController, initialTab: String = "feed") {
-    var selectedTab by rememberSaveable(initialTab) { 
+fun SocialScreen(
+    navController: NavController,
+    initialTab: String = "feed",
+    initialFriendListTab: String = "picks",
+    notifEntryPoint: String = ""
+) {
+    val alarmViewModel: AlarmViewModel = viewModel()
+    val hasUnread by alarmViewModel.hasUnread.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val initialFriendTabEnum = when (initialFriendListTab.lowercase()) {
+        "fans", "fandom" -> FriendTab.FANS
+        else -> FriendTab.PICKS
+    }
+
+    var selectedTab by rememberSaveable(initialTab) {
         mutableStateOf(
             when (initialTab) {
                 "friend" -> SocialTab.FRIEND
                 else -> SocialTab.FEED
             }
         )
+    }
+    var hasAppeared by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        SubTabAnalytics.enterTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(selectedTab))
+        EngagementAnalytics.onMainTabScreenVisible(EngagementAnalytics.MainTab.SOCIAL)
+        alarmViewModel.refreshAlarmFlag(context)
+    }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                alarmViewModel.refreshAlarmFlag(context)
+                if (!hasAppeared) {
+                    hasAppeared = true
+                } else if (SubTabAnalytics.consumeSocialReturnIfPending()) {
+                    SubTabAnalytics.enterTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(selectedTab))
+                } else {
+                    SubTabAnalytics.onScreenResumed(SubTabAnalytics.Tab.SOCIAL) { subTabFor(selectedTab) }
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            SubTabAnalytics.onScreenDisappeared(SubTabAnalytics.Tab.SOCIAL)
+        }
     }
 
     AppBackground {
@@ -45,22 +106,62 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
             ) {
                 Spacer(modifier = Modifier.height(35.dp))
 
-                TopPillTabs(
-                    options = listOf("피드", "친구"),
-                    selectedIndex = when (selectedTab) {
-                        SocialTab.FEED -> 0
-                        SocialTab.FRIEND -> 1
-                    },
-                    onSelected = { idx ->
-                        selectedTab = when (idx) {
-                            0 -> SocialTab.FEED
-                            else -> SocialTab.FRIEND
-                        }
-                    },
+                Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 30.dp)
-                )
+                        .fillMaxWidth(0.9f)
+                        .padding(horizontal = 16.dp)
+                        .height(45.dp)
+                        .clip(RoundedCornerShape(34.dp))
+                        .background(Color(0xFF101010)),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TopPillTabs(
+                        options = listOf("피드", "친구"),
+                        selectedIndex = when (selectedTab) {
+                            SocialTab.FEED -> 0
+                            SocialTab.FRIEND -> 1
+                        },
+                        onSelected = { idx ->
+                            val newTab = when (idx) {
+                                0 -> SocialTab.FEED
+                                else -> SocialTab.FRIEND
+                            }
+                            if (newTab != selectedTab) {
+                                SubTabAnalytics.selectSubTab(SubTabAnalytics.Tab.SOCIAL, subTabFor(newTab))
+                            }
+                            selectedTab = newTab
+                        },
+                        modifier = Modifier.weight(1f),
+                        height = 54.dp,
+                        containerColor = Color.Transparent,
+                        indicatorColor = Color(0xFFEEEFF3),
+                        selectedTextColor = Color.Black,
+                        unselectedTextColor = Color(0xFF7B7B7B),
+                        cornerRadius = 30.dp
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(54.dp)
+                            .fillMaxHeight()
+                            .clickable { navController.navigate("alarm_list?entrySource=social_tab") },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_bell),
+                            contentDescription = "알림 목록 진입",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        if (hasUnread) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .offset(x = 8.dp, y = (-8).dp)
+                                    .size(7.dp)
+                                    .background(Color(0xFFFF3B30), CircleShape)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
@@ -71,7 +172,11 @@ fun SocialScreen(navController: NavController, initialTab: String = "feed") {
                 ) {
                     when (selectedTab) {
                         SocialTab.FEED -> FeedScreen(navController)
-                        SocialTab.FRIEND -> FriendScreen(navController)
+                        SocialTab.FRIEND -> FriendScreen(
+                            navController = navController,
+                            initialListTab = initialFriendTabEnum,
+                            entryPoint = notifEntryPoint.ifBlank { null }
+                        )
                     }
                 }
 

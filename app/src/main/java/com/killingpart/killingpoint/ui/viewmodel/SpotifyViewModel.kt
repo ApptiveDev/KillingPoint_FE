@@ -2,7 +2,7 @@ package com.killingpart.killingpoint.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.killingpart.killingpoint.data.repository.SpotifyRepository
+import com.killingpart.killingpoint.data.repository.ItunesRepository
 import com.killingpart.killingpoint.data.spotify.SimpleTrack
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +16,8 @@ sealed interface SpotifyUiState {
 }
 
 class SpotifyViewModel(
-    private val repo: SpotifyRepository = SpotifyRepository.create()
+    // 곡 검색 소스: Spotify → Apple iTunes Search API 로 교체
+    private val repo: ItunesRepository = ItunesRepository.create()
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<SpotifyUiState>(SpotifyUiState.Idle)

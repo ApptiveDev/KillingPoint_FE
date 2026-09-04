@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.ui.theme.PaperlogyFontFamily
 import com.killingpart.killingpoint.ui.theme.mainGreen
@@ -52,11 +53,26 @@ enum class FriendTab {
 }
 
 @Composable
-fun FriendScreen(navController: NavController) {
+fun FriendScreen(
+    navController: NavController,
+    initialListTab: FriendTab = FriendTab.PICKS,
+    entryPoint: String? = null
+) {
     val context = LocalContext.current
     var searchText by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf<FriendTab?>(FriendTab.PICKS) }
-    
+    var selectedTab by remember { mutableStateOf<FriendTab?>(initialListTab) }
+    var trackedPickListViewFor by remember { mutableStateOf<FriendTab?>(null) }
+
+    LaunchedEffect(initialListTab) {
+        selectedTab = initialListTab
+    }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab != FriendTab.FANS) {
+            trackedPickListViewFor = null
+        }
+    }
+
     val userViewModel: UserViewModel = viewModel()
     val userState by userViewModel.state.collectAsState()
     val friendViewModel: FriendViewModel = viewModel()
@@ -68,6 +84,14 @@ fun FriendScreen(navController: NavController) {
 
     LaunchedEffect(Unit) {
         userViewModel.loadUserInfo(context)
+    }
+
+    LaunchedEffect(selectedTab, userStatistics) {
+        if (selectedTab != FriendTab.FANS) return@LaunchedEffect
+        if (trackedPickListViewFor == FriendTab.FANS) return@LaunchedEffect
+        val stats = userStatistics ?: return@LaunchedEffect
+        trackedPickListViewFor = FriendTab.FANS
+        NotificationAnalytics.pickListViewed(entryPoint = entryPoint, pickCount = stats.fanCount)
     }
 
     // JWT 토큰에서 userId 추출 및 통계 로드
@@ -214,7 +238,7 @@ fun FriendScreen(navController: NavController) {
                 text = "나의 픽 ",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.PICKS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.PICKS) Color.White else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.PICKS
@@ -228,7 +252,7 @@ fun FriendScreen(navController: NavController) {
                     }}",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.PICKS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.PICKS) Color(0xFFCEFF43) else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.PICKS
@@ -242,7 +266,7 @@ fun FriendScreen(navController: NavController) {
                 text = "나의 팬덤 ",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.FANS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.FANS) Color.White else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.FANS
@@ -256,7 +280,7 @@ fun FriendScreen(navController: NavController) {
                 }}",
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = if (selectedTab == FriendTab.FANS) FontWeight.Medium else FontWeight.Light,
-                fontSize = 12.sp,
+                fontSize = 10.sp,
                 color = if (selectedTab == FriendTab.FANS) Color(0xFFCEFF43) else Color(0xFFA4A4A6),
                 modifier = Modifier.clickable { 
                     selectedTab = FriendTab.FANS
@@ -315,22 +339,16 @@ fun FriendScreen(navController: NavController) {
                             .fillMaxSize()
                             .weight(1f)
                             .padding(bottom = 10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         items(friends) { user ->
-                            // 검색 결과인 경우와 일반 목록인 경우를 구분
-                            val isSearchResult = state.searchResults != null && searchText.isNotBlank()
+
                             FriendItemCard(
                                 user = user,
                                 navController = navController,
                                 currentUserId = currentUserId,
-                                isPickTab = if (isSearchResult) {
-                                    // 검색 결과에서는 user.isMyPick만 확인
-                                    user.isMyPick
-                                } else {
-                                    // 일반 목록에서는 탭이 PICKS이거나 이미 나의 픽인 경우
-                                    selectedTab == FriendTab.PICKS || user.isMyPick
-                                },
+                                // 현재 선택된 상단 탭 (픽 / 팬덤). user.isMyPick 과 혼동하지 않음
+                                isPickTab = selectedTab == FriendTab.PICKS,
                                 onSubscribeClick = {
 
                                     // friendViewModel.addSubscribe(context, user.userId, currentUserId)
@@ -377,7 +395,6 @@ fun FriendItemCard(
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(10.dp)
-            .padding(end=12.dp)
             .clickable {
                 // 픽/팬덤 리스트에서 진입한 경우: 내 프로필이든 친구 프로필이든 friend_profile + 뒤로가기만 표시
                 if (fromPickFandomList) {
@@ -422,7 +439,7 @@ fun FriendItemCard(
             // 프로필 이미지
             Box(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
                     .border(2.dp, mainGreen, CircleShape)
             ) {
@@ -443,16 +460,16 @@ fun FriendItemCard(
                         text = user.username,
                         fontFamily = PaperlogyFontFamily,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         color = Color.White
                     )
-                    // 나의 픽 표시 (이미 구독한 경우에만)
-                    if ( user.isMyPick ) {
+                    // 팬덤 탭에서만: 나를 팔로우한 사람 중 내가 이미 픽한 경우
+                    if (!isPickTab && user.isMyPick) {
                         Text(
                             text = "나의 픽",
                             fontFamily = PaperlogyFontFamily,
                             fontWeight = FontWeight.Medium,
-                            fontSize = 10.sp,
+                            fontSize = 11.sp,
                             color = mainGreen
                         )
                     }
@@ -462,7 +479,7 @@ fun FriendItemCard(
                     text = "@${user.tag}",
                     fontFamily = PaperlogyFontFamily,
                     fontWeight = FontWeight.Light,
-                    fontSize = 10.sp,
+                    fontSize = 9.sp,
                     color = Color(0xFFFFFFFF)
                 )
             }

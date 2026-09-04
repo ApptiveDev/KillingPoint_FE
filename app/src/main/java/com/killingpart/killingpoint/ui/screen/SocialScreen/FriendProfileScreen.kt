@@ -31,6 +31,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.killingpart.killingpoint.R
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.data.model.UserStatistics
@@ -124,6 +125,12 @@ fun FriendProfileScreen(
                     friendViewModel.loadFriends(context, userIdFromToken, 100, 100)
                 }
         }
+
+        NotificationAnalytics.profileViewed(
+            entryPoint = if (fromPickFandomList) NotificationAnalytics.EntryPoint.PICK_LIST else null,
+            profileUserId = userId.toString(),
+            isOwnProfile = userIdFromToken?.let { it == userId }
+        )
     }
 
     // 친구 컬렉션 좋아요 목록 데이터 로드
@@ -254,18 +261,18 @@ fun FriendProfileScreen(
                                                             text = username.ifEmpty { "사용자" },
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 14.sp,
+                                                            fontSize = 12.sp,
                                                             color = mainGreen,
                                                             maxLines = 1,
                                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                                         )
-                                                        Spacer(modifier = Modifier.height(6.dp))
+                                                        Spacer(modifier = Modifier.height(4.dp))
 
                                                         Text(
                                                             text = "@${tag.ifEmpty { "unknown" }}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 12.sp,
+                                                            fontSize = 10.sp,
                                                             color = mainGreen,
                                                             maxLines = 1,
                                                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
@@ -288,7 +295,7 @@ fun FriendProfileScreen(
                                                             text = "${state.diaries?.content?.size ?: 0}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -297,7 +304,7 @@ fun FriendProfileScreen(
                                                             text = "킬링파트",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -320,7 +327,7 @@ fun FriendProfileScreen(
                                                             text = "${state.fansCount}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -329,7 +336,7 @@ fun FriendProfileScreen(
                                                             text = "팬덤",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -352,7 +359,7 @@ fun FriendProfileScreen(
                                                             text = "${state.picksCount}",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 16.sp,
+                                                            fontSize = 13.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -362,7 +369,7 @@ fun FriendProfileScreen(
                                                             text = "PICKS",
                                                             fontFamily = PaperlogyFontFamily,
                                                             fontWeight = FontWeight.W400,
-                                                            fontSize = 10.sp,
+                                                            fontSize = 8.sp,
                                                             color = mainGreen,
                                                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                                         )
@@ -383,9 +390,9 @@ fun FriendProfileScreen(
                                                         .height(32.dp)
                                                         .background(
                                                             color = if (currentIsMyPick) Color(
-                                                                0xFFCEFF43
-                                                            ) else Color(
                                                                 0xFF262626
+                                                            ) else Color(
+                                                                0xFFCEFF43
                                                             ),
                                                             shape = RoundedCornerShape(10.dp)
                                                         )
@@ -480,24 +487,13 @@ fun FriendProfileScreen(
                                                                 }
                                                             }
                                                         }
-                                                        .then(
-                                                            if (currentIsMyPick) {
-                                                                Modifier.border(
-                                                                    1.dp,
-                                                                    mainGreen,
-                                                                    RoundedCornerShape(10.dp)
-                                                                )
-                                                            } else {
-                                                                Modifier
-                                                            }
-                                                        ),
-                                                    contentAlignment = Alignment.Center
+                                                    , contentAlignment = Alignment.Center
                                                 ) {
                                                     Text(
                                                         text = if (currentIsMyPick) "나의 PICK!" else "나의 픽으로 추가",
                                                         color = if (currentIsMyPick) Color(
-                                                            0xFF000000
-                                                        ) else Color(0xFFCEFF43),
+                                                            0xFFCEFF43
+                                                        ) else Color(0xFF000000),
                                                         fontFamily = PaperlogyFontFamily,
                                                         fontSize = 10.sp,
                                                         fontWeight = FontWeight.W400

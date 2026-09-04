@@ -54,34 +54,34 @@ fun MusicListOne(
             .scale(dragScale)
             .clickable(onClick = onClick)
             .background(color = rowBackground, shape = RoundedCornerShape(8.dp))
-            .padding(10.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (showDragHandle) {
             Image(
                 painter = painterResource(id = R.drawable.play_order_btn),
                 contentDescription = "순서 변경",
-                modifier = Modifier.size(16.dp).then(dragHandleModifier)
+                modifier = Modifier.size(14.dp).then(dragHandleModifier)
             )
-            Spacer(modifier = Modifier.width(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
         }
         AsyncImage(
             model = imageUrl,
             contentDescription = "앨범 표지",
-            modifier = Modifier.size(52.dp)
-                .background(color = Color.Transparent, shape = RoundedCornerShape(8.dp))
+            modifier = Modifier.size(40.dp)
+                .background(color = Color.Transparent, shape = RoundedCornerShape(6.dp))
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(10.dp))
         Column (
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ){
             ScrollableText(
                 text = musicTitle,
                 modifier = Modifier.fillMaxWidth(),
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Normal,
-                fontSize = 14.sp,
+                fontSize = 12.sp,
                 color = Color.White
             )
             ScrollableText(
@@ -89,7 +89,7 @@ fun MusicListOne(
                 modifier = Modifier.fillMaxWidth(),
                 fontFamily = PaperlogyFontFamily,
                 fontWeight = FontWeight.Light,
-                fontSize = 10.sp,
+                fontSize = 9.sp,
                 color = Color.White
             )
         }
@@ -97,7 +97,7 @@ fun MusicListOne(
             androidx.compose.foundation.Image(
                 painter = painterResource(id = R.drawable.music_note_yellow),
                 contentDescription = "재생 중",
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(16.dp)
             )
         }
     }

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.*
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,10 +50,13 @@ import com.killingpart.killingpoint.data.model.YouTubeVideo
 import com.killingpart.killingpoint.R
 import com.killingpart.killingpoint.ui.screen.AddMusicScreen.korean_font_medium
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
+import com.killingpart.killingpoint.ui.screen.MainScreen.PlayCommand
 import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.AlbumDiaryBoxWithoutContent
 import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.Scope
 import com.killingpart.killingpoint.ui.component.BottomBar
+import com.killingpart.killingpoint.analytics.KillingPartCutAnalytics
+import com.killingpart.killingpoint.analytics.OnboardingAnalytics
 import com.killingpart.killingpoint.navigation.navigateToMainClearingStack
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.graphicsLayer
@@ -105,9 +109,14 @@ fun SelectDurationScreen(
     imageUrl: String,
     videoUrl: String = "",
     totalDuration: Int,
-    tutorialMode: Boolean = false
+    tutorialMode: Boolean = false,
+    // 장르 추천용 (iTunes) — write_diary 로 그대로 전달
+    sourceType: String = "ITUNES",
+    trackId: String? = null,
+    artistId: String? = null,
+    primaryGenreName: String? = null
 ) {
-    var duration by remember { mutableStateOf(10f) }
+    var duration by remember { mutableStateOf(20f) }
     var start by remember { mutableStateOf(0f) }
 
     val startSeconds = remember(start) {
@@ -125,42 +134,59 @@ fun SelectDurationScreen(
         endValue
     }
 
+    // ---- 재생 연동 상태 (구간자르기 개선안) ----
+    var currentPlaySec by remember { mutableStateOf(0f) }
+    var playerPlaying by remember { mutableStateOf(false) }
+    var seekCommand by remember { mutableStateOf<PlayCommand?>(null) }
+    var seekIdCounter by remember { mutableStateOf(0L) }
+    var loopOverride by remember { mutableStateOf<ClosedFloatingPointRange<Float>?>(null) }
+
     var currentVideoUrl by remember { mutableStateOf<String?>(if (videoUrl.isNotEmpty()) videoUrl else null) }
     var currentTotalDuration by remember { mutableStateOf(if (totalDuration > 0) totalDuration else 10) }
     var candidateVideos by remember { mutableStateOf<List<YouTubeVideo>>(emptyList()) }
     var isLoadingVideo by remember { mutableStateOf(false) }
-    var isCandidateExpanded by remember { mutableStateOf(true) }
+    var isCandidateExpanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val repo = remember { AuthRepository(context) }
     val tutorialTouchInteraction = remember { MutableInteractionSource() }
 
-    LaunchedEffect(title, artist) {
-        if (videoUrl.isEmpty()) {
-            isLoadingVideo = true
-            try {
-                val videos = repo.searchVideos(title, artist)
-                videos.forEachIndexed { index, video ->
-                    android.util.Log.d("SelectDurationScreen", "  비디오[$index]: url=${video.id}")
-                }
-                candidateVideos = videos
+    // Add Music에서 이미 videoUrl이 넘어온 경우에도 후보 목록은 검색 API로 채워야 "다른 영상 검색 결과"가 보임
+    LaunchedEffect(title, artist, videoUrl) {
+        isLoadingVideo = true
+        try {
+            val videos = repo.searchVideos(title, artist)
+            videos.forEachIndexed { index, video ->
+                android.util.Log.d("SelectDurationScreen", "  비디오[$index]: id=${video.id}")
+            }
+            candidateVideos = videos
+            if (videoUrl.isEmpty()) {
                 val firstVideo = videos.firstOrNull()
-                val newVideoId = firstVideo?.id
-                currentVideoUrl = newVideoId
+                currentVideoUrl = firstVideo?.id
                 currentTotalDuration = firstVideo?.duration ?: 10
                 isCandidateExpanded = false
-            } catch (e: Exception) {
-                candidateVideos = emptyList()
+            } else {
+                currentVideoUrl = videoUrl
+                val matched = videos.find { it.id == videoUrl }
+                currentTotalDuration = matched?.duration ?: if (totalDuration > 0) totalDuration else 10
+                isCandidateExpanded = false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SelectDurationScreen", "searchVideos 실패: ${e.message}")
+            candidateVideos = emptyList()
+            if (videoUrl.isEmpty()) {
                 currentVideoUrl = null
                 currentTotalDuration = 10
             }
-            isLoadingVideo = false
         }
+        isLoadingVideo = false
     }
 
 
     val scrollState = rememberScrollState()
     val navigateNext: () -> Unit = {
+        KillingPartCutAnalytics.cutCompleted()
+
         val encodedVideoUrl = Uri.encode(currentVideoUrl ?: "")
         val tutorialArg = if (tutorialMode) "true" else "false"
 
@@ -174,6 +200,10 @@ fun SelectDurationScreen(
                     "&end=${end.toInt()}" +
                     "&videoUrl=$encodedVideoUrl" +
                     "&totalDuration=${currentTotalDuration}" +
+                    "&sourceType=$sourceType" +
+                    "&trackId=${trackId ?: ""}" +
+                    "&artistId=${artistId ?: ""}" +
+                    "&primaryGenreName=${Uri.encode(primaryGenreName ?: "")}" +
                     "&tutorial=$tutorialArg"
         )
     }
@@ -222,7 +252,9 @@ fun SelectDurationScreen(
                 }
                 if (tutorialMode) {
                     TextButton(
-                        onClick = { navController.navigateToMainClearingStack() },
+                        onClick = {
+                            navController.navigateToMainClearingStack(OnboardingAnalytics.SkipStep.TUTORIAL_TRIM)
+                        },
                         modifier = Modifier.align(Alignment.CenterEnd)
                     ) {
                         Text(
@@ -310,7 +342,18 @@ fun SelectDurationScreen(
                             .size(250.dp, 150.dp)
                     ) {
 
-                        YouTubePlayerBox(tempDiary, startSeconds, durationSeconds, shouldLoop = true)
+                        YouTubePlayerBox(
+                            tempDiary,
+                            startSeconds,
+                            durationSeconds,
+                            shouldLoop = true,
+                            onCurrentSecondChange = { currentPlaySec = it },
+                            onPlayingChange = { playerPlaying = it },
+                            playCommand = seekCommand,
+                            loopOverride = loopOverride,
+                            // 구간 리사이즈/±1초 조정 중 재생을 처음으로 되돌리지 않음
+                            seekOnStartChange = false
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -342,16 +385,31 @@ fun SelectDurationScreen(
                     )
                     Spacer(Modifier.height(3.dp))
 
-                    KillingPartSelector(
-
-                        currentTotalDuration, onStartChange = { s,e,d ->
-                            start = s
-                            end = e
-                            duration =d
-                        }
-
-                    )
-                    Spacer(Modifier.height(24.dp))
+                    key(currentVideoUrl) {
+                        KillingPartSelector(
+                            totalDuration = currentTotalDuration,
+                            initialStartSec = start,
+                            initialDurationSec = duration,
+                            currentPlaySec = currentPlaySec,
+                            isPlaying = playerPlaying,
+                            onStartChange = { s, e, d ->
+                                start = s
+                                end = e
+                                duration = d
+                            },
+                            onSeek = { sec ->
+                                seekIdCounter += 1
+                                seekCommand = PlayCommand(seekIdCounter, sec)
+                            },
+                            onLoopChange = { ls, le ->
+                                loopOverride = if (ls != null && le != null) ls..le else null
+                            },
+                            onHandleAdjusted = { control, s, e, d ->
+                                KillingPartCutAnalytics.cutHandleAdjusted(control, s, e, d)
+                            }
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
 
                     if (candidateVideos.isNotEmpty()) {
                         val toggleColor = if (isCandidateExpanded) Color(0xFFD9D9D9) else Color(0xFF878787)
@@ -393,11 +451,21 @@ fun SelectDurationScreen(
                                         modifier = Modifier
                                             .width(146.dp)
                                             .clickable {
+                                                val newTotal = video.duration
                                                 currentVideoUrl = video.id
-                                                currentTotalDuration = video.duration
-                                                start = 0f
-                                                duration = 10f.coerceAtMost(video.duration.toFloat())
-                                                end = (start + duration).coerceAtMost(video.duration.toFloat())
+                                                currentTotalDuration = newTotal
+                                                val tf = newTotal.toFloat()
+                                                val minDur = 10f
+                                                val maxDur = minOf(30f, tf)
+                                                val maxStart = (tf - minDur).coerceAtLeast(0f)
+                                                val newStart = start.coerceIn(0f, maxStart)
+                                                val newDuration = duration.coerceIn(
+                                                    minDur,
+                                                    minOf(maxDur, tf - newStart)
+                                                )
+                                                start = newStart
+                                                duration = newDuration
+                                                end = (newStart + newDuration).coerceAtMost(tf)
                                             }
                                     ) {
                                         AsyncImage(
@@ -447,10 +515,10 @@ fun SelectDurationScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(if (tutorialMode) 20.dp else 38.dp))
+                    Spacer(Modifier.height(if (tutorialMode) 16.dp else 20.dp))
                 }
 
-                Spacer(modifier = Modifier.height(80.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
 

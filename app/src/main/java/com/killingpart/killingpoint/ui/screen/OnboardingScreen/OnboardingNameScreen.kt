@@ -120,13 +120,7 @@ fun OnboardingNameScreen(navController: NavController) {
                     )
                 }
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(
-                    text = "예약어(killingpart / admin / support)는 사용할 수 없습니다.",
-                    color = Color(0xFF5C5D60),
-                    fontFamily = PaperlogyFontFamily,
-                    fontSize = 11.sp,
-                    lineHeight = 16.sp
-                )
+
             }
 
             Button(

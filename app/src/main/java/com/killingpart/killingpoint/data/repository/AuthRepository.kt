@@ -2,6 +2,7 @@ package com.killingpart.killingpoint.data.repository
 
 import android.R
 import android.content.Context
+import com.killingpart.killingpoint.BuildConfig
 import com.killingpart.killingpoint.data.local.TokenStore
 import com.killingpart.killingpoint.data.model.KakaoAuthRequest
 import com.killingpart.killingpoint.data.model.KakaoAuthResponse
@@ -14,12 +15,14 @@ import com.killingpart.killingpoint.data.model.Diary
 import com.killingpart.killingpoint.data.model.UpdateTagRequest
 import com.killingpart.killingpoint.data.model.PresignedUrlResponse
 import com.killingpart.killingpoint.data.model.UpdateProfileImageRequest
+import com.killingpart.killingpoint.data.model.UpdateUsernameRequest
 import com.killingpart.killingpoint.data.model.YoutubeVideoRequest
 import com.killingpart.killingpoint.data.model.SubscribeResponse
 import com.killingpart.killingpoint.data.model.FeedResponse
 import com.killingpart.killingpoint.data.model.FeedDiary
 import com.killingpart.killingpoint.data.model.LikeResponse
 import com.killingpart.killingpoint.data.model.StoreResponse
+import com.killingpart.killingpoint.data.model.SurveyRequest
 import com.killingpart.killingpoint.data.remote.RetrofitClient
 import com.killingpart.killingpoint.data.remote.ApiService
 import com.killingpart.killingpoint.ui.screen.MainScreen.YouTubePlayerBox
@@ -39,6 +42,12 @@ import com.killingpart.killingpoint.data.model.DiaryLikesResponse
 import com.killingpart.killingpoint.data.model.PolicyAgreementItem
 import com.killingpart.killingpoint.data.model.PolicyAgreementRequest
 import com.killingpart.killingpoint.data.model.UserInitSettingsResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledResponse
+import com.killingpart.killingpoint.data.model.AlarmResponse
+import com.killingpart.killingpoint.data.model.AlarmEnabledRequest
+import com.killingpart.killingpoint.data.model.AlarmDeepLink
+import com.killingpart.killingpoint.data.model.DiaryDetail
+import com.killingpart.killingpoint.data.model.FcmTokenRequest
 
 class AuthRepository(
     private val context: Context,
@@ -46,6 +55,14 @@ class AuthRepository(
     private val youtubeApi: ApiService = RetrofitClient.getYoutubeApi(),
     private val tokenStore: TokenStore = TokenStore(context.applicationContext)
 ) {
+    private companion object {
+        const val CLIENT_TYPE = "ANDROID"
+        // 서버는 x.y.z 형태만 허용하는 경우가 있어 "2.3.8d" 같은 suffix 는 제거한다.
+        val CLIENT_VERSION: String =
+            Regex("""\d+\.\d+\.\d+""").find(BuildConfig.VERSION_NAME)?.value
+                ?: BuildConfig.VERSION_NAME
+    }
+
     /**
      *  카카오 accessToken을 받아서:
      *   1) 우리 서버 /auth/kakao 로 교환
@@ -55,6 +72,14 @@ class AuthRepository(
         withContext(Dispatchers.IO) {
             runCatching {
                 val res: KakaoAuthResponse = api.loginWithKakao(KakaoAuthRequest(kakaoAccessToken))
+                // DEBUG: log received tokens (masked) to help diagnose auth issues
+                try {
+                    val a = res.accessToken
+                    val r = res.refreshToken
+                    val ma = if (a.length > 10) a.substring(0,6) + "..." + a.takeLast(4) else a
+                    val mr = if (r.length > 10) r.substring(0,6) + "..." + r.takeLast(4) else r
+                    android.util.Log.d("AuthRepository", "exchangeKakaoAccessToken received access=$ma refresh=$mr isNew=${res.isNew}")
+                } catch (_: Exception) {}
                 tokenStore.save(res.accessToken, res.refreshToken)
                 res.isNew // isNew 반환
             }.recoverCatching { e ->
@@ -147,14 +172,15 @@ class AuthRepository(
             }
         }
 
-    suspend fun getUserInitSettings(
-        clientType: String = "ANDROID",
-        clientVersion: String = "1.0.0"
-    ): Result<UserInitSettingsResponse> = withContext(Dispatchers.IO) {
+    suspend fun getUserInitSettings(): Result<UserInitSettingsResponse> = withContext(Dispatchers.IO) {
         runCatching {
             val accessToken = getAccessToken()
                 ?: throw IllegalStateException("액세스 토큰이 없습니다")
-            api.getUserInitSettings("Bearer $accessToken", clientType, clientVersion)
+            api.getUserInitSettings(
+                accessToken = "Bearer $accessToken",
+                clientVersion = CLIENT_VERSION,
+                clientType = CLIENT_TYPE
+            )
         }.recoverCatching { e ->
             if (e is HttpException) {
                 val code = e.code()
@@ -186,6 +212,26 @@ class AuthRepository(
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
                 throw IllegalStateException("약관 동의 처리 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun submitSurvey(content: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.submitSurvey("Bearer $accessToken", SurveyRequest(content))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("문의 및 피드백 전송 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("문의 및 피드백 전송 실패 ($code): $msg")
             } else {
                 throw e
             }
@@ -438,6 +484,22 @@ class AuthRepository(
         }
     }
 
+    suspend fun updateUsername(username: String): Result<UserInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.updateUsername("Bearer $accessToken", UpdateUsernameRequest(username))
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("이름 업데이트 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
     /**
      * PresignedUrl 발급
      */
@@ -496,6 +558,26 @@ class AuthRepository(
                 val code = e.code()
                 val msg = e.response()?.errorBody()?.string().orEmpty()
                 throw IllegalStateException("프로필 이미지 변경 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
+     * 프로필 이미지 삭제
+     * 백엔드에서 기본 이미지로 변경된 사용자 정보를 반환한다.
+     */
+    suspend fun deleteProfileImage(): Result<UserInfo> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.deleteProfileImage("Bearer $accessToken")
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("프로필 이미지 삭제 실패 ($code): $msg")
             } else {
                 throw e
             }
@@ -760,6 +842,65 @@ class AuthRepository(
     }
 
     /**
+     * 특정 유저 차단
+     */
+    suspend fun blockUser(blockedId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.blockUser("Bearer $accessToken", blockedId)
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun getBlockedUsers(page: Int = 0, size: Int = 5): Result<SubscribeResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getBlockedUsers("Bearer $accessToken", page, size)
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("차단 목록 조회 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    suspend fun unblockUser(blockedId: Long): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.unblockUser("Bearer $accessToken", blockedId)
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 해제 실패 (${response.code()}): $errorBody")
+            }
+        }.recoverCatching { e ->
+            if (e is HttpException) {
+                val code = e.code()
+                val msg = e.response()?.errorBody()?.string().orEmpty()
+                throw IllegalStateException("유저 차단 해제 실패 ($code): $msg")
+            } else {
+                throw e
+            }
+        }
+    }
+
+    /**
      * 플레이리스트 순서 변경
      */
     suspend fun reorderDiaryOrder(diaryIds: List<Long>): Result<Unit> = withContext(Dispatchers.IO) {
@@ -779,6 +920,79 @@ class AuthRepository(
             } else {
                 throw e
             }
+        }
+    }
+
+    suspend fun addDeviceToken(token: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.addDeviceToken("Bearer $accessToken", FcmTokenRequest(token))
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("디바이스 토큰 등록 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun deleteDeviceToken(): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.deleteDeviceToken("Bearer $accessToken")
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("디바이스 토큰 삭제 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun updateAlarmEnabled(alarmEnabled: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            val response = api.updateAlarmEnabled(
+                "Bearer $accessToken",
+                AlarmEnabledRequest(alarmEnabled)
+            )
+            if (!response.isSuccessful) {
+                val errorBody = response.errorBody()?.string().orEmpty()
+                throw IllegalStateException("알림 설정 변경 실패 (${response.code()}): $errorBody")
+            }
+        }
+    }
+
+    suspend fun getAlarmEnabled(): Result<AlarmEnabledResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getAlarmEnabled("Bearer $accessToken")
+        }
+    }
+
+    /** GET /api/diaries/{diaryId} */
+    suspend fun getDiaryDetail(diaryId: Long): Result<DiaryDetail> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getDiaryDetail("Bearer $accessToken", diaryId)
+        }
+    }
+
+    /** 알림 deepLink(`/api/diaries/{id}`) → 단건 조회 */
+    suspend fun getDiaryDetailByAlarmDeepLink(deepLink: String): Result<DiaryDetail> = withContext(Dispatchers.IO) {
+        val diaryId = AlarmDeepLink.diaryId(deepLink)
+            ?: return@withContext Result.failure(
+                IllegalArgumentException("일기 deepLink가 올바르지 않습니다: $deepLink")
+            )
+        getDiaryDetail(diaryId)
+    }
+
+    suspend fun getAlarms(page: Int = 0, size: Int = 20): Result<AlarmResponse> = withContext(Dispatchers.IO) {
+        runCatching {
+            val accessToken = getAccessToken()
+                ?: throw IllegalStateException("액세스 토큰이 없습니다")
+            api.getAlarms("Bearer $accessToken", page = page, size = size)
         }
     }
 }

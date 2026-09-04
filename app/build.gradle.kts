@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
+    }
+}
+val spotifyBasicAuth: String = localProperties.getProperty("spotify.basicAuth", "")
+val amplitudeApiKey: String = localProperties.getProperty("amplitude.apiKey", "")
 
 android {
     namespace = "com.killingpart.killingpoint"
@@ -12,9 +24,11 @@ android {
         applicationId = "com.killingpart.killingpoint"
         minSdk = 29
         targetSdk = 36
-        versionCode = 26
-        versionName = "2.1.7"
+        versionCode = 49
+        versionName = "2.4.0"
 
+        buildConfigField("String", "AMPLITUDE_API_KEY", "\"$amplitudeApiKey\"")
+        buildConfigField("String", "SPOTIFY_BASIC_AUTH", "\"$spotifyBasicAuth\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -46,6 +60,9 @@ android {
 }
 
 dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics")
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
@@ -55,6 +72,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("com.kakao.sdk:v2-user:2.21.4")
+    implementation("com.kakao.sdk:v2-share:2.21.4")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -83,4 +101,6 @@ dependencies {
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:chromecast-sender:0.32")
     implementation("androidx.media3:media3-exoplayer:1.2.1")
     implementation("androidx.media3:media3-ui:1.2.1")
+    implementation("com.amplitude:analytics-android:1.+")
+    implementation("com.amplitude:plugin-session-replay-android:0.20.14")
 }

@@ -2,9 +2,11 @@ package com.killingpart.killingpoint.navigation
 
 import android.util.Log
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
+import com.killingpart.killingpoint.analytics.NotificationAnalytics
 import com.killingpart.killingpoint.ui.component.AppBackground
 import com.killingpart.killingpoint.ui.screen.HomeScreen.HelloScreen
 import com.killingpart.killingpoint.ui.screen.MainScreen.MainScreen
@@ -21,24 +23,45 @@ import com.killingpart.killingpoint.ui.screen.WriteDiaryScreen.SelectDurationScr
 import com.killingpart.killingpoint.ui.screen.DiaryDetailScreen.DiaryDetailScreen
 import com.killingpart.killingpoint.ui.screen.DiaryDetailScreen.DiaryDetailScreenForStored
 import com.killingpart.killingpoint.ui.screen.SocialScreen.SocialScreen
+import com.killingpart.killingpoint.ui.screen.SocialScreen.AlarmListScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.FriendProfileScreen
 import com.killingpart.killingpoint.ui.screen.SocialScreen.PickFandomListScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.BlockedUsersScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeNameScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeProfileImageScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.ChangeTagScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.SettingsPolicyScreen
+import com.killingpart.killingpoint.ui.screen.ProfileScreen.SettingsScreen
+import com.killingpart.killingpoint.ui.screen.OnboardingScreen.OnboardingPolicyType
 import com.killingpart.killingpoint.ui.screen.SearchScreen.SearchScreen
+import com.killingpart.killingpoint.ui.viewmodel.LoginViewModel
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    startDestination: String = "home"
+    startDestination: String = "home",
+    loginViewModel: LoginViewModel
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
-        composable("home") { HelloScreen(navController) }
+        composable("home") { HelloScreen(navController, loginViewModel) }
+        composable("settings") { SettingsScreen(navController) }
+        composable("settings/name") { ChangeNameScreen(navController) }
+        composable("settings/tag") { ChangeTagScreen(navController) }
+        composable("settings/profile-image") { ChangeProfileImageScreen(navController) }
+        composable("settings/blocks") { BlockedUsersScreen(navController) }
+        composable("settings/terms") {
+            SettingsPolicyScreen(navController, OnboardingPolicyType.SERVICE_TERMS)
+        }
+        composable("settings/privacy") {
+            SettingsPolicyScreen(navController, OnboardingPolicyType.PRIVACY)
+        }
         composable("onboarding_policy") { PolicyAgreementScreen(navController) }
         composable("onboarding_name") { OnboardingNameScreen(navController) }
         composable(
@@ -92,6 +115,10 @@ fun NavGraph(
                     "&image={image}" +
                     "&videoUrl={videoUrl}" +
                     "&totalDuration={totalDuration}" +
+                    "&sourceType={sourceType}" +
+                    "&trackId={trackId}" +
+                    "&artistId={artistId}" +
+                    "&primaryGenreName={primaryGenreName}" +
                     "&tutorial={tutorial}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
@@ -99,6 +126,10 @@ fun NavGraph(
                 navArgument("image") { type = NavType.StringType; defaultValue = "" },
                 navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("sourceType") { type = NavType.StringType; defaultValue = "ITUNES" },
+                navArgument("trackId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("artistId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("primaryGenreName") { type = NavType.StringType; defaultValue = "" },
                 navArgument("tutorial") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
@@ -108,9 +139,20 @@ fun NavGraph(
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull() ?: 0
+            val sourceType = backStackEntry.arguments?.getString("sourceType").orEmpty().ifEmpty { "ITUNES" }
+            val trackId = backStackEntry.arguments?.getString("trackId").orEmpty().ifEmpty { null }
+            val artistId = backStackEntry.arguments?.getString("artistId").orEmpty().ifEmpty { null }
+            val primaryGenreName = URLDecoder.decode(backStackEntry.arguments?.getString("primaryGenreName").orEmpty(), "UTF-8").ifEmpty { null }
             val tutorial = backStackEntry.arguments?.getBoolean("tutorial") ?: false
 
-            SelectDurationScreen(navController, title, artist, image, videoUrl, totalDuration, tutorialMode = tutorial)
+            SelectDurationScreen(
+                navController, title, artist, image, videoUrl, totalDuration,
+                tutorialMode = tutorial,
+                sourceType = sourceType,
+                trackId = trackId,
+                artistId = artistId,
+                primaryGenreName = primaryGenreName
+            )
         }
 
         composable(
@@ -123,6 +165,10 @@ fun NavGraph(
                     "&end={end}" +
                     "&videoUrl={videoUrl}" +
                     "&totalDuration={totalDuration}" +
+                    "&sourceType={sourceType}" +
+                    "&trackId={trackId}" +
+                    "&artistId={artistId}" +
+                    "&primaryGenreName={primaryGenreName}" +
                     "&tutorial={tutorial}",
             arguments = listOf(
                 navArgument("title") { type = NavType.StringType; defaultValue = "" },
@@ -133,6 +179,10 @@ fun NavGraph(
                 navArgument("end") { type = NavType.StringType; defaultValue = "" },
                 navArgument("videoUrl") { type = NavType.StringType; defaultValue = "" },
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
+                navArgument("sourceType") { type = NavType.StringType; defaultValue = "ITUNES" },
+                navArgument("trackId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("artistId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("primaryGenreName") { type = NavType.StringType; defaultValue = "" },
                 navArgument("tutorial") { type = NavType.BoolType; defaultValue = false }
             )
         ) { backStackEntry ->
@@ -145,6 +195,10 @@ fun NavGraph(
             val videoUrl = URLDecoder.decode(backStackEntry.arguments?.getString("videoUrl").orEmpty(), "UTF-8")
             val totalDurationStr = backStackEntry.arguments?.getString("totalDuration") ?: ""
             val totalDuration = totalDurationStr.toIntOrNull() ?: 0
+            val sourceType = backStackEntry.arguments?.getString("sourceType").orEmpty().ifEmpty { "ITUNES" }
+            val trackId = backStackEntry.arguments?.getString("trackId").orEmpty().ifEmpty { null }
+            val artistId = backStackEntry.arguments?.getString("artistId").orEmpty().ifEmpty { null }
+            val primaryGenreName = URLDecoder.decode(backStackEntry.arguments?.getString("primaryGenreName").orEmpty(), "UTF-8").ifEmpty { null }
             val tutorial = backStackEntry.arguments?.getBoolean("tutorial") ?: false
 
             WriteDiaryScreen(
@@ -157,7 +211,11 @@ fun NavGraph(
                 end,
                 videoUrl,
                 totalDuration,
-                tutorialMode = tutorial
+                tutorialMode = tutorial,
+                sourceType = sourceType,
+                trackId = trackId,
+                artistId = artistId,
+                primaryGenreName = primaryGenreName
             )
         }
 
@@ -178,7 +236,9 @@ fun NavGraph(
                     "&totalDuration={totalDuration}" +
                     "&fromTab={fromTab}" +
                     "&authorUsername={authorUsername}" +
-                    "&authorTag={authorTag}",
+                    "&authorTag={authorTag}" +
+                    "&notifEntryPoint={notifEntryPoint}" +
+                    "&notifType={notifType}",
             arguments = listOf(
                 navArgument("artist") { type = NavType.StringType; defaultValue = "" },
                 navArgument("musicTitle") { type = NavType.StringType; defaultValue = "" },
@@ -195,7 +255,9 @@ fun NavGraph(
                 navArgument("totalDuration") { type = NavType.StringType; defaultValue = "" },
                 navArgument("fromTab") { type = NavType.StringType; defaultValue = "" },
                 navArgument("authorUsername") { type = NavType.StringType; defaultValue = "" },
-                navArgument("authorTag") { type = NavType.StringType; defaultValue = "" }
+                navArgument("authorTag") { type = NavType.StringType; defaultValue = "" },
+                navArgument("notifEntryPoint") { type = NavType.StringType; defaultValue = "" },
+                navArgument("notifType") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val artist = URLDecoder.decode(backStackEntry.arguments?.getString("artist").orEmpty(), "UTF-8")
@@ -217,6 +279,16 @@ fun NavGraph(
             val fromTab = URLDecoder.decode(backStackEntry.arguments?.getString("fromTab").orEmpty(), "UTF-8")
             val authorUsername = URLDecoder.decode(backStackEntry.arguments?.getString("authorUsername").orEmpty(), "UTF-8")
             val authorTag = URLDecoder.decode(backStackEntry.arguments?.getString("authorTag").orEmpty(), "UTF-8")
+            val notifEntryPoint = URLDecoder.decode(backStackEntry.arguments?.getString("notifEntryPoint").orEmpty(), "UTF-8")
+            val notifType = URLDecoder.decode(backStackEntry.arguments?.getString("notifType").orEmpty(), "UTF-8")
+
+            LaunchedEffect(diaryId, notifEntryPoint, notifType) {
+                NotificationAnalytics.killingpartDetailViewed(
+                    notificationType = notifType.ifBlank { null },
+                    entryPoint = notifEntryPoint.ifBlank { null },
+                    diaryId = diaryId?.toString()
+                )
+            }
 
             if (fromTab == "stored") {
                 DiaryDetailScreenForStored(
@@ -256,13 +328,32 @@ fun NavGraph(
         }
 
         composable(
-            route = "social?tab={tab}",
+            route = "social?tab={tab}&friendListTab={friendListTab}&notifEntryPoint={notifEntryPoint}",
             arguments = listOf(
-                navArgument("tab") { type = NavType.StringType; defaultValue = "feed" }
+                navArgument("tab") { type = NavType.StringType; defaultValue = "feed" },
+                navArgument("friendListTab") { type = NavType.StringType; defaultValue = "picks" },
+                navArgument("notifEntryPoint") { type = NavType.StringType; defaultValue = "" }
             )
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "feed"
-            SocialScreen(navController, tab)
+            val friendListTab = backStackEntry.arguments?.getString("friendListTab") ?: "picks"
+            val notifEntryPoint = backStackEntry.arguments?.getString("notifEntryPoint").orEmpty()
+            SocialScreen(
+                navController,
+                initialTab = tab,
+                initialFriendListTab = friendListTab,
+                notifEntryPoint = notifEntryPoint
+            )
+        }
+
+        composable(
+            route = "alarm_list?entrySource={entrySource}",
+            arguments = listOf(
+                navArgument("entrySource") { type = NavType.StringType; defaultValue = "" }
+            )
+        ) { backStackEntry ->
+            val entrySource = backStackEntry.arguments?.getString("entrySource").orEmpty()
+            AlarmListScreen(navController, entrySource = entrySource)
         }
 
         composable(

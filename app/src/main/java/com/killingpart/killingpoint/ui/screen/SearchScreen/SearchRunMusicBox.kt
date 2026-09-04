@@ -78,10 +78,12 @@ fun SearchRunMusicBox(
     var likeCount by remember(feedDiary.diaryId) { mutableStateOf(feedDiary.likeCount) }
     var isStored by remember(feedDiary.diaryId) { mutableStateOf(feedDiary.isStored) }
     var showMenu by remember { mutableStateOf(false) }
+    var showBlockModal by remember { mutableStateOf(false) }
     var showReportModal by remember { mutableStateOf(false) }
     var showReportSuccessModal by remember { mutableStateOf(false) }
     var reportContent by remember { mutableStateOf("") }
     var isReporting by remember { mutableStateOf(false) }
+    var isBlocking by remember { mutableStateOf(false) }
     var currentUserId by remember { mutableStateOf<Long?>(null) }
     var showHeartOverlay by remember { mutableStateOf(false) }
     var heartFadeOut by remember { mutableStateOf(false) }
@@ -239,13 +241,13 @@ fun SearchRunMusicBox(
                                 shape = RoundedCornerShape(4.dp)
                             )
                     ) {
-//                        SearchMenuItem(
-//                            text = "차단하기",
-//                            iconRes = R.drawable.ic_block
-//                        ) {
-//                            showMenu = false
-//                            // TODO 차단하기
-//                        }
+                        SearchMenuItem(
+                            text = "차단하기",
+                            iconRes = R.drawable.ic_block
+                        ) {
+                            showMenu = false
+                            showBlockModal = true
+                        }
 
                         SearchMenuItem(
                             text = "신고하기",
@@ -467,6 +469,27 @@ fun SearchRunMusicBox(
             )
         }
 
+        if (showBlockModal) {
+            BlockUserModal(
+                username = feedDiary.username,
+                onDismiss = { showBlockModal = false },
+                isLoading = isBlocking,
+                onBlock = {
+                    coroutineScope.launch {
+                        isBlocking = true
+                        try {
+                            authRepository.blockUser(feedDiary.userId).getOrThrow()
+                            showBlockModal = false
+                        } catch (e: Exception) {
+                            android.util.Log.e("SearchRunMusicBox", "유저 차단 실패: ${e.message}")
+                        } finally {
+                            isBlocking = false
+                        }
+                    }
+                }
+            )
+        }
+
         if (showReportSuccessModal) {
             ReportSuccessModal(onDismiss = { showReportSuccessModal = false })
         }
@@ -604,6 +627,77 @@ fun ReportDiaryModal(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun BlockUserModal(
+    username: String,
+    onDismiss: () -> Unit,
+    isLoading: Boolean,
+    onBlock: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF111111),
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+        ) {
+            Column (
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp)
+            ){
+                Text(
+                    text = "차단하시겠습니까?",
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Text(
+                    text = "${username} 님을 차단하면 픽과 팬덤 관계가 끊기고\n서로 글을 볼 수 없어요.",
+                    fontFamily = PaperlogyFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ReportButton(
+                    text = "돌아가기",
+                    background = Color(0xFFFFFFFF),
+                    textColor = Color(0xFF181818),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    onDismiss()
+                }
+
+                ReportButton(
+                    text = if (isLoading) "처리 중..." else "차단하기",
+                    background = Color(0xFFFF5A5A),
+                    textColor = Color.White,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isLoading
+                ) {
+                    onBlock()
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun ReportSuccessModal(onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -647,10 +741,10 @@ fun ReportButton(
 ) {
     Box(
         modifier = modifier
-            .height(48.dp)
+            .height(38.dp)
             .background(
                 color = if (enabled) background else background.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(8.dp)
             )
             .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center
